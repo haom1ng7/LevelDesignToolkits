@@ -1,0 +1,297 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@500;600;700;800&family=Barlow+Semi+Condensed:wght@600;700;800&family=Noto+Sans+SC:wght@400;500;700;900&display=swap">
+  <style>
+    x-dc { display: block; }
+    body { margin: 0; background: #f1f1ee; font-family: "Barlow", "Noto Sans SC", "Microsoft YaHei", sans-serif; color: #1c1c1c; }
+    a { color: #1c1c1c; text-decoration: none; } a:hover { color: #5a3fc2; }
+    .bm * { box-sizing: border-box; }
+    .bm { --op: #8f6fe8; --op-deep: #5a3fc2; --op-ice: #7fd0ff; --op-soft: #ece6fb; --ink: #1c1c1c; --paper: #f1f1ee; --line: #d6d6d0; --muted: #84847e; --action: #f8d34d; --ok: #13a85e; --warn: #ff7d1a; --bad: #d9302c;
+      position: relative; width: 1440px; background: var(--paper); font-family: "Barlow", "Noto Sans SC", "Microsoft YaHei", sans-serif; color: var(--ink); font-variant-numeric: tabular-nums; overflow: hidden; }
+
+    /* 顶部导航 */
+    .bm .nav { height: 64px; display: flex; align-items: center; gap: 34px; padding: 0 48px; border-bottom: 1px solid var(--line); background: #fff; }
+    .bm .logo { display: flex; align-items: center; gap: 10px; }
+    .bm .logo i { width: 28px; height: 28px; background: var(--ink); clip-path: polygon(0 0, 100% 0, 100% 70%, 70% 100%, 0 100%); display: grid; place-items: center; }
+    .bm .logo i::after { content: ""; width: 10px; height: 10px; background: var(--action); }
+    .bm .logo b { font: 900 18px/1 "Noto Sans SC", sans-serif; letter-spacing: .04em; }
+    .bm .logo small { display: block; margin-top: 3px; font: 700 10px/1 "Barlow"; letter-spacing: .22em; color: var(--muted); }
+    .bm .menu { display: flex; gap: 26px; margin-left: 20px; height: 64px; }
+    .bm .menu a { display: flex; align-items: center; font: 700 15px/1 "Noto Sans SC", sans-serif; color: #4a4a46; position: relative; }
+    .bm .menu a.on { color: var(--ink); }
+    .bm .menu a.on::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: var(--action); }
+    .bm .search { margin-left: auto; width: 300px; height: 38px; border-radius: 19px; border: 1px solid var(--line); background: var(--paper); display: flex; align-items: center; gap: 10px; padding: 0 16px; font: 500 14px/1 "Noto Sans SC", sans-serif; color: var(--muted); }
+    .bm .search svg { width: 16px; height: 16px; }
+    .bm .sample { height: 28px; padding: 0 10px; background: var(--ink); color: #fff; display: flex; align-items: center; gap: 8px; font: 700 12px/1 "Noto Sans SC", sans-serif; letter-spacing: .08em; }
+    .bm .sample::before { content: ""; width: 8px; height: 8px; background: var(--warn); transform: rotate(45deg); }
+
+    .bm .wrap { padding: 0 48px; }
+    .bm .crumb { padding: 22px 0 0; font: 700 14px/1 "Noto Sans SC", sans-serif; color: #4a4a46; }
+    .bm .crumb i { font-style: normal; font-family: "Barlow"; font-weight: 800; color: #a6a6a0; margin-right: 6px; }
+
+    /* 报告抬头 */
+    .bm .head { display: flex; align-items: flex-end; gap: 26px; margin-top: 16px; padding-bottom: 16px; border-bottom: 2px solid var(--ink); }
+    .bm .head h1 { margin: 0; font: 900 40px/1 "Noto Sans SC", sans-serif; letter-spacing: .02em; display: flex; align-items: baseline; gap: 12px; }
+    .bm .head h1 small { font: 700 13px/1 "Barlow"; letter-spacing: .24em; color: var(--muted); }
+    .bm .head .tags { display: flex; gap: 6px; padding-bottom: 4px; }
+    .bm .head .tags b { height: 26px; padding: 0 10px; display: flex; align-items: center; background: #fff; border: 1px solid var(--line); font: 700 12px/1 "Noto Sans SC", sans-serif; color: #3c3c38; }
+    .bm .head .tags b.op { background: var(--op); color: #fff; border-color: var(--op); }
+    .bm .head .date { margin-left: auto; text-align: right; }
+    .bm .head .date span { display: block; font: 700 11px/1 "Noto Sans SC", sans-serif; letter-spacing: .14em; color: var(--muted); }
+    .bm .head .date b { display: block; margin-top: 6px; font: 800 30px/1 "Barlow Semi Condensed"; letter-spacing: .04em; }
+    .bm .head .date b i { font-style: normal; color: #b3b3ad; margin: 0 4px; }
+
+    /* 主图 + 量线 */
+    .bm .hero { position: relative; display: grid; grid-template-columns: 520px minmax(0, 1fr); gap: 56px; margin-top: 24px; height: 680px; }
+    .bm .art { position: relative; height: 680px; background:
+      radial-gradient(420px 320px at 30% 30%, rgba(127,208,255,.55), transparent 70%),
+      radial-gradient(360px 360px at 80% 80%, rgba(143,111,232,.55), transparent 70%),
+      linear-gradient(180deg, #f7f5ff, #e6e0fb); overflow: hidden; }
+    .bm .art::before { content: ""; position: absolute; inset: 0; background:
+      repeating-linear-gradient(90deg, rgba(28,28,28,.06) 0 1px, transparent 1px 80px),
+      repeating-linear-gradient(0deg, rgba(28,28,28,.06) 0 1px, transparent 1px 80px); }
+    .bm .frame { position: absolute; left: 96px; right: 28px; top: 28px; bottom: 28px; border: 1px dashed rgba(28,28,28,.4); }
+    .bm .frame i { position: absolute; width: 18px; height: 18px; border: 2.5px solid var(--ink); }
+    .bm .frame .tl { left: -2px; top: -2px; border-right: 0; border-bottom: 0; }
+    .bm .frame .tr { right: -2px; top: -2px; border-left: 0; border-bottom: 0; }
+    .bm .frame .bl { left: -2px; bottom: -2px; border-right: 0; border-top: 0; }
+    .bm .frame .br { right: -2px; bottom: -2px; border-left: 0; border-top: 0; }
+    .bm .ph { position: absolute; left: 96px; right: 28px; top: 40%; transform: translateY(-50%); text-align: center; }
+    .bm .ph svg { width: 56px; height: 56px; display: block; margin: 0 auto 10px; }
+    .bm .ph b { display: block; font: 700 12px/1.6 "Barlow"; letter-spacing: .2em; color: #4a4a46; }
+    .bm .ph span { display: block; font: 500 12px/1.6 "Noto Sans SC", sans-serif; color: #6b6b66; }
+    /* 身高量线：竖向 */
+    .bm .hline { position: absolute; left: 48px; top: 28px; bottom: 28px; width: 2px; background: var(--ink); }
+    .bm .hline::before, .bm .hline::after { content: ""; position: absolute; left: -9px; width: 20px; height: 2px; background: var(--ink); }
+    .bm .hline::before { top: 0; } .bm .hline::after { bottom: 0; }
+    .bm .hline b { position: absolute; left: -26px; top: 50%; transform: translate(-50%, -50%) rotate(-90deg); white-space: nowrap; font: 800 15px/1 "Barlow Semi Condensed"; letter-spacing: .06em; background: var(--paper); padding: 0 8px; }
+    .bm .hline b small { font: 700 11px/1 "Noto Sans SC", sans-serif; letter-spacing: .14em; color: var(--muted); margin-right: 6px; }
+    /* 围度量线：横向，穿出图框与右侧数据对齐 */
+    .bm .mline { position: absolute; left: 140px; width: 478px; height: 2px; background: var(--op-deep); z-index: 2; }
+    .bm .mline::before { content: ""; position: absolute; left: -4px; top: -4px; width: 10px; height: 10px; border-radius: 50%; background: var(--op-deep); }
+    .bm .mline::after { content: ""; position: absolute; right: -4px; top: -4px; width: 10px; height: 10px; background: var(--op-deep); transform: rotate(45deg); }
+    .bm .mline i { position: absolute; left: 0; right: 0; top: -1px; border-top: 1px dashed rgba(90,63,194,.35); }
+    .bm .name { position: absolute; left: 112px; bottom: 40px; }
+    .bm .name .ghost { position: absolute; left: -6px; bottom: 48px; font: 800 130px/1 "Barlow Semi Condensed"; color: transparent; -webkit-text-stroke: 1.5px rgba(28,28,28,.2); white-space: nowrap; }
+    .bm .name h2 { margin: 0; position: relative; font: 900 54px/1 "Noto Sans SC", sans-serif; letter-spacing: .04em; }
+
+    .bm .data { position: relative; height: 680px; }
+    .bm .idrow { display: flex; flex-wrap: wrap; gap: 6px 22px; padding-top: 6px; }
+    .bm .idrow div { display: flex; align-items: baseline; gap: 8px; }
+    .bm .idrow span { font: 700 11px/1 "Noto Sans SC", sans-serif; letter-spacing: .12em; color: var(--muted); }
+    .bm .idrow b { font: 800 18px/1 "Barlow Semi Condensed"; }
+    .bm .idrow b small { font: 600 12px/1 "Barlow"; color: var(--muted); margin-left: 2px; }
+    .bm .base { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; margin-top: 22px; background: var(--line); border: 1px solid var(--line); }
+    .bm .base div { background: #fff; padding: 14px 16px 14px; position: relative; }
+    .bm .base span { display: block; font: 700 11px/1 "Noto Sans SC", sans-serif; letter-spacing: .12em; color: var(--muted); }
+    .bm .base b { display: block; margin-top: 8px; font: 800 34px/1 "Barlow Semi Condensed"; }
+    .bm .base b small { font: 700 13px/1 "Barlow"; color: var(--muted); margin-left: 4px; }
+    .bm .base em { position: absolute; right: 12px; top: 12px; font: 700 10px/1 "Noto Sans SC", sans-serif; padding: 3px 6px; font-style: normal; color: #fff; background: var(--ok); }
+    .bm .meas { position: absolute; left: 0; right: 0; display: flex; align-items: center; gap: 18px; transform: translateY(-50%); }
+    .bm .meas::before { content: ""; flex: 0 0 42px; height: 0; }
+    .bm .meas .k { font: 700 13px/1 "Noto Sans SC", sans-serif; letter-spacing: .12em; color: #4a4a46; width: 64px; }
+    .bm .meas .k small { display: block; margin-top: 4px; font: 700 10px/1 "Barlow"; letter-spacing: .16em; color: var(--muted); }
+    .bm .meas .n { font: 800 56px/1 "Barlow Semi Condensed"; letter-spacing: -.01em; }
+    .bm .meas .n small { font: 700 14px/1 "Barlow"; color: var(--muted); margin-left: 6px; }
+    .bm .meas .ref { margin-left: auto; text-align: right; font: 500 12px/1.5 "Noto Sans SC", sans-serif; color: var(--muted); }
+    .bm .meas .ref b { display: block; font: 700 12px/1 "Noto Sans SC", sans-serif; color: #4a4a46; }
+    .bm .verdict { position: absolute; left: 0; right: 0; bottom: 0; display: flex; align-items: center; gap: 16px; padding: 16px 18px; background: var(--ink); color: #fff; clip-path: polygon(0 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%); }
+    .bm .verdict .g { width: 58px; height: 58px; border-radius: 50%; background: var(--action); color: var(--ink); display: grid; place-items: center; font: 800 30px/1 "Barlow Semi Condensed"; }
+    .bm .verdict .t b { display: block; font: 900 18px/1.2 "Noto Sans SC", sans-serif; }
+    .bm .verdict .t span { display: block; margin-top: 5px; font: 500 13px/1.5 "Noto Sans SC", sans-serif; color: #c9c9c2; }
+    .bm .verdict .stamp { margin-left: auto; width: 84px; height: 84px; border: 3px double var(--bad); border-radius: 50%; color: var(--bad); display: grid; place-items: center; text-align: center; font: 900 12px/1.2 "Noto Sans SC", sans-serif; letter-spacing: .1em; transform: rotate(-12deg); opacity: .9; }
+
+    /* 区块 */
+    .bm .section { margin-top: 56px; }
+    .bm .sh { display: flex; align-items: flex-end; gap: 16px; }
+    .bm .sh h3 { margin: 0; font: 900 26px/1 "Noto Sans SC", sans-serif; position: relative; padding: 0 2px 4px; }
+    .bm .sh h3::after { content: ""; position: absolute; left: 0; right: -8px; bottom: 0; height: 10px; background: var(--op-soft); z-index: -1; }
+    .bm .sh h3 small { margin-left: 10px; font: 700 12px/1 "Barlow"; letter-spacing: .22em; color: var(--muted); }
+    .bm .sh p { margin: 0 0 4px; font: 500 13px/1.5 "Noto Sans SC", sans-serif; color: var(--muted); }
+    .bm .sh p::before { content: "// "; font-family: "Barlow"; font-weight: 800; color: #c2c2bc; }
+    .bm .lg { margin-left: auto; display: flex; gap: 14px; padding-bottom: 6px; font: 600 12px/1 "Noto Sans SC", sans-serif; color: #4a4a46; }
+    .bm .lg i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+
+    /* 生理指标：圆形仪表 */
+    .bm .gauges { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-top: 18px; }
+    .bm .gauge { background: #fff; border: 1px solid var(--line); padding: 18px 18px 16px; display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 14px; align-items: center; }
+    .bm .gauge svg { width: 112px; height: 112px; display: block; }
+    .bm .gauge .k { font: 700 12px/1 "Noto Sans SC", sans-serif; letter-spacing: .12em; color: var(--muted); }
+    .bm .gauge .v { margin-top: 8px; font: 800 30px/1 "Barlow Semi Condensed"; }
+    .bm .gauge .v small { font: 700 12px/1 "Barlow"; color: var(--muted); margin-left: 3px; }
+    .bm .gauge .r { margin-top: 8px; font: 500 11px/1.5 "Noto Sans SC", sans-serif; color: var(--muted); }
+    .bm .gauge .s { display: inline-block; margin-top: 8px; padding: 3px 7px; font: 700 10px/1 "Noto Sans SC", sans-serif; color: #fff; background: var(--ok); }
+    .bm .gauge .s.w { background: var(--warn); }
+
+    /* 体能测试：横条 + 均值刻度 */
+    .bm .fit { margin-top: 18px; background: #fff; border: 1px solid var(--line); padding: 6px 20px 18px; }
+    .bm .frow { display: grid; grid-template-columns: 160px minmax(0, 1fr) 120px; gap: 20px; align-items: center; padding: 14px 0; }
+    .bm .frow + .frow { border-top: 1px solid #ecece8; }
+    .bm .frow .k { font: 700 15px/1.2 "Noto Sans SC", sans-serif; }
+    .bm .frow .k small { display: block; margin-top: 3px; font: 500 11px/1 "Noto Sans SC", sans-serif; color: var(--muted); }
+    .bm .frow .bar { position: relative; height: 14px; background: #ecece8; }
+    .bm .frow .bar i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--op); }
+    .bm .frow .bar em { position: absolute; top: -6px; width: 2px; height: 26px; background: var(--ink); }
+    .bm .frow .bar em::after { content: "均值"; position: absolute; top: 28px; left: 50%; transform: translateX(-50%); font: 600 10px/1 "Noto Sans SC", sans-serif; color: var(--muted); white-space: nowrap; }
+    .bm .frow .v { text-align: right; font: 800 22px/1 "Barlow Semi Condensed"; }
+    .bm .frow .v small { display: block; margin-top: 3px; font: 600 11px/1 "Noto Sans SC", sans-serif; color: var(--muted); }
+    .bm .frow .v small b { color: var(--ok); font-weight: 800; }
+    .bm .frow .v small b.w { color: var(--warn); }
+
+    /* 医嘱 */
+    .bm .two { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, .8fr); gap: 32px; margin-top: 18px; }
+    .bm .advice { position: relative; background: #fff; border: 1px solid var(--line); padding: 18px 22px 22px; }
+    .bm .advice h4 { margin: 0; display: flex; align-items: center; gap: 10px; font: 900 17px/1 "Noto Sans SC", sans-serif; }
+    .bm .advice h4::before { content: ""; width: 4px; height: 16px; background: var(--op); }
+    .bm .advice ol { margin: 14px 0 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+    .bm .advice li { display: flex; gap: 12px; font: 500 14px/1.7 "Noto Sans SC", sans-serif; color: #3a3a36; }
+    .bm .advice li b { flex: 0 0 22px; height: 22px; margin-top: 2px; background: var(--ink); color: #fff; display: grid; place-items: center; font: 800 12px/1 "Barlow"; }
+    .bm .advice li em { font-style: normal; background: linear-gradient(transparent 55%, rgba(248,211,77,.85) 55%, rgba(248,211,77,.85) 92%, transparent 92%); padding: 0 2px; font-weight: 700; }
+    .bm .advice .sign { margin-top: 18px; padding-top: 12px; border-top: 1px dashed var(--line); display: flex; justify-content: space-between; font: 600 12px/1 "Noto Sans SC", sans-serif; color: var(--muted); }
+    .bm .advice .sign b { color: #4a4a46; }
+    .bm .hist { background: #fff; border: 1px solid var(--line); padding: 18px 20px 16px; }
+    .bm .hist h4 { margin: 0; display: flex; align-items: center; gap: 10px; font: 900 17px/1 "Noto Sans SC", sans-serif; }
+    .bm .hist h4::before { content: ""; width: 4px; height: 16px; background: var(--op); }
+    .bm .hist .spark { margin-top: 14px; height: 110px; }
+    .bm .hist .spark svg { width: 100%; height: 100%; display: block; }
+    .bm .hist .cap { display: flex; justify-content: space-between; margin-top: 6px; font: 600 11px/1 "Barlow"; color: var(--muted); }
+    .bm .hist p { margin: 12px 0 0; font: 500 12px/1.6 "Noto Sans SC", sans-serif; color: var(--muted); }
+
+    .bm .foot { margin-top: 56px; padding: 18px 48px 22px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; align-items: flex-end; font: 500 11px/1.7 "Noto Sans SC", sans-serif; color: var(--muted); }
+    .bm .foot b { font: 800 13px/1 "Barlow"; letter-spacing: .1em; color: #4a4a46; }
+  </style>
+</helmet>
+
+<div class="bm" id="board">
+  <div class="nav">
+    <div class="logo"><i></i><div><b>终末地体检中心</b><small>OPERATOR PHYSICAL EXAM</small></div></div>
+    <nav class="menu"><a class="on" href="#">干员体检</a><a href="#">体检排行</a><a href="#">两两对比</a><a href="#">关于口径</a></nav>
+    <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="M16 16l5 5"></path></svg>搜索干员</div>
+    <span class="sample">样例数据 · 非官方设定</span>
+  </div>
+
+  <div class="wrap">
+    <div class="crumb"><i>//</i>干员体检 <span style="color:#a6a6a0;margin:0 4px">/</span> 提弗洛斯</div>
+
+    <div class="head">
+      <h1>体检报告<small>PHYSICAL EXAM REPORT</small></h1>
+      <div class="tags"><b class="op">提弗洛斯</b><b>编号 · 占位</b><b>第 3 次体检</b></div>
+      <div class="date"><span>体检日期</span><b>2026<i>/</i>08<i>/</i>22</b></div>
+    </div>
+
+    <div class="hero">
+      <span class="mline" style="top:238px"><i></i></span>
+      <span class="mline" style="top:334px"><i></i></span>
+      <span class="mline" style="top:426px"><i></i></span>
+      <div class="art">
+        <div class="hline"><b><small>身高</small>172 CM</b></div>
+        <div class="frame"><i class="tl"></i><i class="tr"></i><i class="bl"></i><i class="br"></i></div>
+        <div class="ph">
+          <svg viewBox="0 0 64 64" fill="none" stroke="#4a4a46" stroke-width="2"><rect x="8" y="8" width="48" height="48"></rect><path d="M8 44l14-14 10 10 8-8 16 16"></path><circle cx="42" cy="20" r="5"></circle></svg>
+          <b>IMAGE SLOT · 全身立绘</b>
+          <span>放置用户提供的提弗洛斯立绘，量线按人物比例对齐</span>
+        </div>
+        <div class="name"><div class="ghost" aria-hidden="true">TIFROS</div><h2>提弗洛斯</h2></div>
+      </div>
+
+      <div class="data">
+        <div class="idrow">
+          <div><span>血型</span><b>AB<small>· 占位</small></b></div>
+          <div><span>年龄</span><b>19<small>· 占位</small></b></div>
+          <div><span>出身地</span><b style="font-family:'Noto Sans SC',sans-serif;font-size:15px">雾脊 · 占位</b></div>
+          <div><span>利手</span><b style="font-family:'Noto Sans SC',sans-serif;font-size:15px">右</b></div>
+        </div>
+        <div class="base">
+          <div><span>身高</span><b>172<small>cm</small></b><em>正常</em></div>
+          <div><span>体重</span><b>54<small>kg</small></b><em>正常</em></div>
+          <div><span>BMI</span><b>18.3<small>kg/m²</small></b><em>正常</em></div>
+        </div>
+
+        <!-- 三条围度与图中量线同高 -->
+        <div class="meas" style="top:238px"><div class="k">胸围<small>BUST</small></div><div class="n">88<small>cm</small></div><div class="ref"><b>参考区间 80–92</b>同身高组 · 占位</div></div>
+        <div class="meas" style="top:334px"><div class="k">腰围<small>WAIST</small></div><div class="n">61<small>cm</small></div><div class="ref"><b>参考区间 58–66</b>同身高组 · 占位</div></div>
+        <div class="meas" style="top:426px"><div class="k">臀围<small>HIP</small></div><div class="n">90<small>cm</small></div><div class="ref"><b>参考区间 84–94</b>同身高组 · 占位</div></div>
+
+        <div class="verdict">
+          <span class="g">A</span>
+          <div class="t"><b>综合评定 A · 各项指标正常</b><span>体脂率与握力略优于同组均值；建议保持当前训练强度，半年后复查。</span></div>
+          <span class="stamp">已复核<br>医务科</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="sh"><h3>生理指标<small>VITALS</small></h3><p>仪表刻度为参考区间，指针落在绿色段内为正常</p><div class="lg"><span><i style="background:var(--ok)"></i>正常</span><span><i style="background:var(--warn)"></i>注意</span><span><i style="background:var(--bad)"></i>异常</span></div></div>
+      <div class="gauges">
+        <div class="gauge">
+          <svg viewBox="0 0 112 112"><circle cx="56" cy="56" r="46" fill="none" stroke="#ecece8" stroke-width="10"></circle><circle cx="56" cy="56" r="46" fill="none" stroke="#13a85e" stroke-width="10" stroke-dasharray="145 289" stroke-dashoffset="-72" stroke-linecap="butt"></circle><circle cx="56" cy="56" r="46" fill="none" stroke="#ff7d1a" stroke-width="10" stroke-dasharray="40 289" stroke-dashoffset="-217"></circle><g transform="rotate(36 56 56)"><path d="M56 56L56 16" stroke="#1c1c1c" stroke-width="3" stroke-linecap="round"></path></g><circle cx="56" cy="56" r="5" fill="#1c1c1c"></circle></svg>
+          <div><div class="k">静息心率</div><div class="v">72<small>bpm</small></div><div class="r">参考 60–100</div><span class="s">正常</span></div>
+        </div>
+        <div class="gauge">
+          <svg viewBox="0 0 112 112"><circle cx="56" cy="56" r="46" fill="none" stroke="#ecece8" stroke-width="10"></circle><circle cx="56" cy="56" r="46" fill="none" stroke="#13a85e" stroke-width="10" stroke-dasharray="160 289" stroke-dashoffset="-60"></circle><circle cx="56" cy="56" r="46" fill="none" stroke="#ff7d1a" stroke-width="10" stroke-dasharray="40 289" stroke-dashoffset="-220"></circle><g transform="rotate(12 56 56)"><path d="M56 56L56 16" stroke="#1c1c1c" stroke-width="3" stroke-linecap="round"></path></g><circle cx="56" cy="56" r="5" fill="#1c1c1c"></circle></svg>
+          <div><div class="k">血压</div><div class="v">108<small>/ 68</small></div><div class="r">参考 90–120 / 60–80</div><span class="s">正常</span></div>
+        </div>
+        <div class="gauge">
+          <svg viewBox="0 0 112 112"><circle cx="56" cy="56" r="46" fill="none" stroke="#ecece8" stroke-width="10"></circle><circle cx="56" cy="56" r="46" fill="none" stroke="#13a85e" stroke-width="10" stroke-dasharray="120 289" stroke-dashoffset="-84"></circle><circle cx="56" cy="56" r="46" fill="none" stroke="#ff7d1a" stroke-width="10" stroke-dasharray="30 289" stroke-dashoffset="-204"></circle><g transform="rotate(-10 56 56)"><path d="M56 56L56 16" stroke="#1c1c1c" stroke-width="3" stroke-linecap="round"></path></g><circle cx="56" cy="56" r="5" fill="#1c1c1c"></circle></svg>
+          <div><div class="k">体温</div><div class="v">36.5<small>℃</small></div><div class="r">参考 36.0–37.2</div><span class="s">正常</span></div>
+        </div>
+        <div class="gauge">
+          <svg viewBox="0 0 112 112"><circle cx="56" cy="56" r="46" fill="none" stroke="#ecece8" stroke-width="10"></circle><circle cx="56" cy="56" r="46" fill="none" stroke="#13a85e" stroke-width="10" stroke-dasharray="110 289" stroke-dashoffset="-30"></circle><circle cx="56" cy="56" r="46" fill="none" stroke="#ff7d1a" stroke-width="10" stroke-dasharray="50 289" stroke-dashoffset="-140"></circle><g transform="rotate(84 56 56)"><path d="M56 56L56 16" stroke="#1c1c1c" stroke-width="3" stroke-linecap="round"></path></g><circle cx="56" cy="56" r="5" fill="#1c1c1c"></circle></svg>
+          <div><div class="k">裸眼视力 左 / 右</div><div class="v">4.8<small>/ 5.0</small></div><div class="r">左眼轻度近视倾向</div><span class="s w">注意</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="sh"><h3>体能测试<small>FITNESS</small></h3><p>黑色刻度为同组干员均值 · 占位数据</p></div>
+      <div class="fit">
+        <div class="frow"><div class="k">握力<small>优势手</small></div><div class="bar"><i style="width:66%"></i><em style="left:52%"></em></div><div class="v">42 kg<small>高于均值 <b>+27%</b></small></div></div>
+        <div class="frow"><div class="k">肺活量</div><div class="bar"><i style="width:58%"></i><em style="left:55%"></em></div><div class="v">3.8 L<small>高于均值 <b>+5%</b></small></div></div>
+        <div class="frow"><div class="k">反应时<small>视觉信号</small></div><div class="bar"><i style="width:74%"></i><em style="left:60%"></em></div><div class="v">0.19 s<small>快于均值 <b>+23%</b></small></div></div>
+        <div class="frow"><div class="k">30 m 冲刺</div><div class="bar"><i style="width:62%"></i><em style="left:58%"></em></div><div class="v">4.6 s<small>快于均值 <b>+7%</b></small></div></div>
+        <div class="frow"><div class="k">耐力<small>12 分钟跑</small></div><div class="bar"><i style="width:47%"></i><em style="left:56%"></em></div><div class="v">2.4 km<small>低于均值 <b class="w">−16%</b></small></div></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="sh"><h3>医嘱与复查<small>ADVICE</small></h3></div>
+      <div class="two">
+        <div class="advice">
+          <h4>医嘱</h4>
+          <ol>
+            <li><b>1</b><span>各项基础指标正常，<em>保持当前训练节奏</em>即可，不需要额外干预。</span></li>
+            <li><b>2</b><span>左眼视力 4.8，建议减少夜间终端使用时长，<em>三个月后复测视力</em>。</span></li>
+            <li><b>3</b><span>耐力项低于同组均值，推荐每周两次 20 分钟低强度有氧；下次体检对比 12 分钟跑成绩。</span></li>
+          </ol>
+          <div class="sign"><span>复核 · <b>医务科 · 占位</b></span><span>下次体检 · <b>2027 / 02</b></span></div>
+        </div>
+        <div class="hist">
+          <h4>体重趋势</h4>
+          <div class="spark"><svg viewBox="0 0 300 110" preserveAspectRatio="none"><path d="M0 70 L60 62 L120 66 L180 58 L240 56 L300 50" fill="none" stroke="#8f6fe8" stroke-width="3"></path><path d="M0 70 L60 62 L120 66 L180 58 L240 56 L300 50 L300 110 L0 110Z" fill="rgba(143,111,232,.14)"></path><g fill="#1c1c1c"><circle cx="0" cy="70" r="4"></circle><circle cx="60" cy="62" r="4"></circle><circle cx="120" cy="66" r="4"></circle><circle cx="180" cy="58" r="4"></circle><circle cx="240" cy="56" r="4"></circle><circle cx="300" cy="50" r="5"></circle></g></svg></div>
+          <div class="cap"><span>2025/02</span><span>52.0</span><span>53.1</span><span>54.0 kg</span></div>
+          <p>三次体检体重稳定上升，与训练量一致；BMI 始终在正常区间。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <div>※ 本页为设计样例，所有数值、日期与"参考区间"均为占位内容，不代表任何官方设定或真实医学建议<br>※ 立绘位由用户自行提供素材，本站不内置官方图片</div>
+    <b>OPERATOR PHYSICAL EXAM · SAMPLE</b>
+  </div>
+</div>
+</x-dc>
+<script data-dc-script data-props='{"$preview":{"width":1440,"height":2000}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

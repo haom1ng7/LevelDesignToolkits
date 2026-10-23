@@ -1,0 +1,132 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=ZCOOL+KuaiLe&family=Noto+Sans+SC:wght@500;700;900&display=swap">
+  <style>
+    x-dc { display: block; }
+    body { margin: 0; background: #cfe9ff; font-family: "Fredoka", "ZCOOL KuaiLe", "Noto Sans SC", "Microsoft YaHei", sans-serif; color: #2a2a27; }
+    a { color: #2a2a27; text-decoration: none; } a:hover { color: #000; }
+    .g * { box-sizing: border-box; }
+    .g { position: relative; width: 1280px; height: 720px; overflow: hidden; font-family: "Fredoka", "ZCOOL KuaiLe", "Noto Sans SC", "Microsoft YaHei", sans-serif; color: #2a2a27; font-variant-numeric: tabular-nums; }
+    .g .scene { position: absolute; inset: 0; }
+    .g .scene svg { width: 100%; height: 100%; display: block; }
+    .g .kuai { font-family: "ZCOOL KuaiLe", "Noto Sans SC", "Microsoft YaHei", sans-serif; }
+    .g .title { position: absolute; left: 90px; top: 150px; }
+    .g .title h1 { margin: 0; font: 400 110px/1 "ZCOOL KuaiLe", "Noto Sans SC", sans-serif; color: #fff; letter-spacing: .02em; -webkit-text-stroke: 10px #2a2a27; paint-order: stroke fill; text-shadow: 8px 10px 0 #2a2a27; white-space: nowrap; }
+    .g .title h1 em { font-style: normal; color: #f8d34d; }
+    .g .title .sub { display: inline-flex; align-items: center; gap: 12px; margin-top: 24px; padding: 8px 22px; background: #2a2a27; color: #f8d34d; font: 400 30px/1 "ZCOOL KuaiLe", "Noto Sans SC", sans-serif; letter-spacing: .1em; transform: rotate(-2deg); clip-path: polygon(0 0, 100% 0, calc(100% - 12px) 100%, 0 100%); }
+    .g .title .sub small { font: 700 14px/1 "Fredoka"; letter-spacing: .22em; color: #fff; }
+    .g .menu { position: absolute; left: 96px; top: 470px; display: flex; flex-direction: column; gap: 14px; }
+    .g .btn { display: flex; align-items: center; gap: 14px; height: 64px; padding: 0 34px 0 10px; border-radius: 32px; border: 4px solid #2a2a27; background: #fff; font: 400 28px/1 "ZCOOL KuaiLe", "Noto Sans SC", sans-serif; letter-spacing: .08em; box-shadow: 0 6px 0 #2a2a27; width: max-content; }
+    .g .btn i { width: 44px; height: 44px; border-radius: 50%; background: #f8d34d; border: 3px solid #2a2a27; display: grid; place-items: center; }
+    .g .btn i svg { width: 20px; height: 20px; }
+    .g .btn.dark { background: #2a2a27; color: #fff; box-shadow: 0 6px 0 #8f8f88; height: 52px; font-size: 22px; padding: 0 26px 0 10px; }
+    .g .btn.dark i { background: #fff; width: 34px; height: 34px; }
+    .g .ver { position: absolute; right: 26px; bottom: 18px; font: 700 12px/1 "Fredoka"; letter-spacing: .2em; color: #5a5a55; }
+    .g .ver b { color: #2a2a27; }
+    .g .corner { position: absolute; left: 0; top: 0; width: 48px; height: 48px; background:
+      linear-gradient(#2a2a27, #2a2a27) 0 0 / 30px 9px no-repeat, linear-gradient(#2a2a27, #2a2a27) 0 0 / 9px 30px no-repeat; }
+
+    /* HUD */
+    .g .hud { position: absolute; inset: 0; pointer-events: none; }
+    .g .lives { position: absolute; left: 26px; top: 22px; display: flex; gap: 8px; }
+    .g .lives i { width: 40px; height: 40px; border-radius: 50%; border: 4px solid #2a2a27; background: #fbf7ee; position: relative; box-shadow: 0 3px 0 #2a2a27; }
+    .g .lives i::after { content: ""; position: absolute; left: 7px; right: 7px; top: 16px; height: 7px; background: #f8d34d; border-top: 2px solid #2a2a27; border-bottom: 2px solid #2a2a27; }
+    .g .lives i.off { background: #d6d6d0; opacity: .6; box-shadow: none; }
+    .g .lives i.off::after { background: #a6a6a0; }
+    .g .level { position: absolute; left: 26px; top: 72px; display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; background: #2a2a27; color: #fff; font: 700 15px/1 "Fredoka"; letter-spacing: .08em; clip-path: polygon(0 0, 100% 0, calc(100% - 8px) 100%, 0 100%); }
+    .g .level b { color: #f8d34d; font: 400 16px/1 "ZCOOL KuaiLe", "Noto Sans SC", sans-serif; letter-spacing: .1em; }
+    .g .score { position: absolute; left: 50%; top: 18px; transform: translateX(-50%); display: flex; align-items: center; gap: 10px; height: 52px; padding: 0 22px 0 10px; background: #fff; border: 4px solid #2a2a27; border-radius: 26px; box-shadow: 0 4px 0 #2a2a27; font: 700 30px/1 "Fredoka"; }
+    .g .score svg { width: 32px; height: 32px; }
+    .g .score small { font: 700 14px/1 "Fredoka"; color: #84847e; letter-spacing: .1em; margin-left: 4px; }
+    .g .pause { position: absolute; right: 26px; top: 20px; width: 48px; height: 48px; border-radius: 50%; background: #fff; border: 4px solid #2a2a27; box-shadow: 0 4px 0 #2a2a27; display: grid; place-items: center; }
+    .g .pause svg { width: 18px; height: 18px; }
+    .g .prog { position: absolute; left: 26px; right: 26px; bottom: 18px; height: 18px; border: 3px solid #2a2a27; background: #fff; border-radius: 9px; overflow: hidden; }
+    .g .prog i { position: absolute; left: 0; top: 0; bottom: 0; background: #f8d34d; }
+    .g .prog b { position: absolute; top: -2px; width: 3px; height: 14px; background: #2a2a27; }
+    .g .flag { position: absolute; right: 26px; bottom: 40px; font: 700 12px/1 "Fredoka"; letter-spacing: .16em; color: #5a5a55; }
+    .g .combo { position: absolute; left: 760px; top: 230px; font: 400 40px/1 "ZCOOL KuaiLe", "Noto Sans SC", sans-serif; color: #f8d34d; -webkit-text-stroke: 6px #2a2a27; paint-order: stroke fill; transform: rotate(-8deg); }
+    .g .combo small { font: 700 18px/1 "Fredoka"; color: #fff; -webkit-text-stroke: 4px #2a2a27; paint-order: stroke fill; }
+
+    /* CLEAR */
+    .g .backdrop { position: absolute; inset: 0; background: #1b1c1e; }
+    .g .wedge { position: absolute; right: 0; top: 0; width: 520px; height: 720px; background: #f8d34d; clip-path: polygon(100% 0, 100% 100%, 300px 100%, 0 0); }
+    .g .ghost { position: absolute; left: 40px; top: 40px; font: 700 280px/1 "Fredoka"; letter-spacing: .02em; color: transparent; -webkit-text-stroke: 2px rgba(255,255,255,.22); pointer-events: none; white-space: nowrap; }
+    .g .clear { position: absolute; left: 90px; top: 150px; color: #fff; }
+    .g .clear .kicker { font: 700 16px/1 "Fredoka"; letter-spacing: .3em; color: #f8d34d; }
+    .g .clear h2 { margin: 14px 0 0; font: 400 96px/1 "ZCOOL KuaiLe", "Noto Sans SC", sans-serif; letter-spacing: .04em; }
+    .g .stars { display: flex; gap: 12px; margin-top: 22px; }
+    .g .stars svg { width: 58px; height: 58px; }
+    .g .stats { display: grid; grid-template-columns: repeat(3, auto); gap: 26px; margin-top: 30px; }
+    .g .stats div span { display: block; font: 700 12px/1 "Fredoka"; letter-spacing: .18em; color: #a6a6a0; }
+    .g .stats div b { display: block; margin-top: 8px; font: 700 36px/1 "Fredoka"; }
+    .g .stats div b small { font: 700 14px/1 "Fredoka"; color: #a6a6a0; margin-left: 4px; }
+    .g .stats div b em { font-style: normal; color: #f8d34d; }
+    .g .seal { position: absolute; left: 560px; top: 120px; width: 120px; height: 120px; border: 4px solid #f8d34d; border-radius: 50%; display: grid; place-items: center; text-align: center; color: #f8d34d; font: 400 22px/1.2 "ZCOOL KuaiLe", "Noto Sans SC", sans-serif; letter-spacing: .1em; transform: rotate(-14deg); }
+    .g .seal::before { content: ""; position: absolute; inset: 6px; border: 1.5px solid #f8d34d; border-radius: 50%; }
+    .g .cmenu { position: absolute; left: 90px; bottom: 70px; display: flex; gap: 14px; }
+  </style>
+</helmet>
+<div class="g" id="board" style="background:#1b1c1e">
+
+  <div class="backdrop"></div>
+  <div class="wedge"></div>
+  <div class="ghost" aria-hidden="true">CLEAR</div>
+  <div class="scene"><svg viewBox="0 0 1280 720"><defs>
+  <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#cfe9ff"></stop><stop offset=".6" stop-color="#eef6fb"></stop><stop offset="1" stop-color="#f7f3e8"></stop></linearGradient>
+  <pattern id="hz" width="20" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(-45)"><rect width="10" height="10" fill="#2a2a27"></rect></pattern>
+  <pattern id="grid" width="64" height="64" patternUnits="userSpaceOnUse"><path d="M64 0H0V64" fill="none" stroke="rgba(42,42,39,.06)" stroke-width="1"></path></pattern>
+</defs>
+    <g opacity="0.9"><circle cx="1060" cy="520" r="40" fill="rgba(255,255,255,.35)" stroke="#fff" stroke-width="3"></circle><circle cx="1060" cy="520" r="37" fill="none" stroke="rgba(127,208,255,.7)" stroke-width="2"></circle><ellipse cx="1044.0" cy="502.0" rx="8.8" ry="4.8" fill="#fff" transform="rotate(-35 1044.0 502.0)"></ellipse></g><g opacity="0.8"><circle cx="1180" cy="300" r="26" fill="rgba(255,255,255,.35)" stroke="#fff" stroke-width="3"></circle><circle cx="1180" cy="300" r="23" fill="none" stroke="rgba(127,208,255,.7)" stroke-width="2"></circle><ellipse cx="1169.6" cy="288.3" rx="5.72" ry="3.12" fill="#fff" transform="rotate(-35 1169.6 288.3)"></ellipse></g><g opacity="0.7"><circle cx="960" cy="250" r="18" fill="rgba(255,255,255,.35)" stroke="#fff" stroke-width="3"></circle><circle cx="960" cy="250" r="15" fill="none" stroke="rgba(127,208,255,.7)" stroke-width="2"></circle><ellipse cx="952.8" cy="241.9" rx="3.96" ry="2.16" fill="#fff" transform="rotate(-35 952.8 241.9)"></ellipse></g><g opacity="0.6"><circle cx="1220" cy="600" r="16" fill="rgba(255,255,255,.35)" stroke="#fff" stroke-width="3"></circle><circle cx="1220" cy="600" r="13" fill="none" stroke="rgba(127,208,255,.7)" stroke-width="2"></circle><ellipse cx="1213.6" cy="592.8" rx="3.52" ry="1.92" fill="#fff" transform="rotate(-35 1213.6 592.8)"></ellipse></g>
+    <g transform="translate(900 330) scale(1.3 1.3)">
+      <ellipse cx="100" cy="186" rx="54" ry="10" fill="rgba(40,40,36,.18)"></ellipse>
+      <path d="M150 150q26 10 30 30-22-4-36-16z" fill="#fbf7ee" stroke="#2a2a27" stroke-width="5" stroke-linejoin="round"></path>
+      <circle cx="100" cy="110" r="66" fill="#fbf7ee" stroke="#2a2a27" stroke-width="5"></circle>
+      <path d="M52 62l10-34 24 24z" fill="#d2a86a" stroke="#2a2a27" stroke-width="5" stroke-linejoin="round"></path>
+      <path d="M148 62l-10-34-24 24z" fill="#d2a86a" stroke="#2a2a27" stroke-width="5" stroke-linejoin="round"></path>
+      <path d="M40 128q60 34 120 0l4 22q-64 30-128 0z" fill="#f8d34d" stroke="#2a2a27" stroke-width="5" stroke-linejoin="round"></path>
+      <rect x="92" y="130" width="18" height="22" rx="3" fill="#2a2a27"></rect>
+      <rect x="97" y="135" width="8" height="12" rx="1.5" fill="#f8d34d"></rect>
+      <ellipse cx="72" cy="108" rx="9" ry="5" fill="#f5a9b4"></ellipse>
+      <ellipse cx="132" cy="108" rx="9" ry="5" fill="#f5a9b4"></ellipse>
+      <path d="M72 94q10-12 20 0" fill="none" stroke="#2a2a27" stroke-width="5" stroke-linecap="round"></path><path d="M112 94q10-12 20 0" fill="none" stroke="#2a2a27" stroke-width="5" stroke-linecap="round"></path><path d="M96 108q6 6 12 0" fill="none" stroke="#2a2a27" stroke-width="4" stroke-linecap="round"></path>
+      <ellipse cx="70" cy="172" rx="16" ry="10" fill="#fbf7ee" stroke="#2a2a27" stroke-width="5"></ellipse>
+      <ellipse cx="130" cy="172" rx="16" ry="10" fill="#fbf7ee" stroke="#2a2a27" stroke-width="5"></ellipse>
+    </g>
+    <g fill="#f8d34d" stroke="#2a2a27" stroke-width="3"><path d="M860 260l8 16 18 2-13 12 3 18-16-9-16 9 3-18-13-12 18-2z"></path><path d="M1200 180l6 12 13 2-9 9 2 13-12-7-12 7 2-13-9-9 13-2z"></path></g>
+  </svg></div>
+  <div class="clear">
+    <div class="kicker">STAGE 1-2 · 旧矿道</div>
+    <h2>关卡完成！</h2>
+    <div class="stars">
+      <svg viewBox="0 0 24 24"><path d="M12 2.5l2.9 6.2 6.8.8-5 4.7 1.3 6.8L12 17.6 6 21l1.3-6.8-5-4.7 6.8-.8z" fill="#f8d34d" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"></path></svg>
+      <svg viewBox="0 0 24 24"><path d="M12 2.5l2.9 6.2 6.8.8-5 4.7 1.3 6.8L12 17.6 6 21l1.3-6.8-5-4.7 6.8-.8z" fill="#f8d34d" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"></path></svg>
+      <svg viewBox="0 0 24 24"><path d="M12 2.5l2.9 6.2 6.8.8-5 4.7 1.3 6.8L12 17.6 6 21l1.3-6.8-5-4.7 6.8-.8z" fill="none" stroke="#8f8f88" stroke-width="1.5" stroke-linejoin="round"></path></svg>
+    </div>
+    <div class="stats">
+      <div><span>收集泡泡</span><b><em>24</em><small>/ 30</small></b></div>
+      <div><span>用时</span><b>1:42</b></div>
+      <div><span>最佳</span><b>1:37</b></div>
+    </div>
+  </div>
+  <div class="seal">还差<br>6 个<br>泡泡</div>
+  <div class="cmenu">
+    <span class="btn"><i><svg viewBox="0 0 24 24" fill="#2a2a27"><path d="M7 4l13 8-13 8z"></path></svg></i>下一关</span>
+    <span class="btn dark"><i><svg viewBox="0 0 24 24" fill="none" stroke="#2a2a27" stroke-width="3"><path d="M4 12a8 8 0 1 0 3-6.2M4 4v5h5"></path></svg></i>重玩</span>
+    <span class="btn dark"><i><svg viewBox="0 0 24 24" fill="#2a2a27"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"></path></svg></i>选关</span>
+  </div>
+</div>
+</x-dc>
+<script data-dc-script data-props='{"$preview":{"width":1280,"height":720}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,25 @@
+{
+  "pages": [
+    { "id": "page-exam", "name": "01 · 终末地体检中心" },
+    { "id": "page-robot", "name": "02 · 小机远程作业 APP" },
+    { "id": "page-bubble", "name": "03 · 龙泡泡大冒险" }
+  ],
+  "artboards": [
+    { "file": "Main.dc.html", "title": "体检报告 · 桌面端", "x": 0, "y": 0, "w": 1440, "h": 2056, "page": "page-exam", "print": "flow" },
+    { "file": "ExamMobile.dc.html", "title": "体检报告 · 手机端", "x": 1520, "y": 0, "w": 390, "h": 1391, "page": "page-exam", "print": "flow" },
+
+    { "file": "RobotHome.dc.html", "title": "状态 · 首页", "x": 0, "y": 0, "w": 390, "h": 844, "page": "page-robot" },
+    { "file": "RobotTasks.dc.html", "title": "任务列表", "x": 470, "y": 0, "w": 390, "h": 844, "page": "page-robot" },
+    { "file": "RobotDispatch.dc.html", "title": "派遣任务", "x": 940, "y": 0, "w": 390, "h": 844, "page": "page-robot" },
+
+    { "file": "BubbleTitle.dc.html", "title": "标题画面", "x": 0, "y": 0, "w": 1280, "h": 720, "page": "page-bubble" },
+    { "file": "BubblePlay.dc.html", "title": "关卡 1-2 · 游玩", "x": 1360, "y": 0, "w": 1280, "h": 720, "page": "page-bubble" },
+    { "file": "BubbleClear.dc.html", "title": "关卡完成", "x": 2720, "y": 0, "w": 1280, "h": 720, "page": "page-bubble" }
+  ],
+  "annotations": [
+    { "id": "note-exam", "x": 0, "y": -170, "w": 700, "page": "page-exam", "text": "Build · 通讯/Wiki 信息工具（档案型报告）· 锚点：立绘 + 从立绘引出的量线 · 主题：角色紫/冰蓝接管，黄只做导航选中 · 静态 mock · signature：围度量线从立绘穿出，右侧数据与线同高；生理指标用圆形仪表（形状=仪器）\n立绘位为 IMAGE SLOT，等待用户提供的提弗洛斯图；所有数值为占位。" },
+    { "id": "note-robot", "x": 0, "y": -150, "w": 620, "page": "page-robot", "text": "Build · HUD/枢纽 + 任务列表（优先级语义 黄!!! / 白!，左缘类型色条）· 锚点：机器人的全息表情 · 主题：系统黄（全息灯色）· signature：机器人的表情就是状态（工作中 > <、待命 – –、休眠 — —）；进度条黄填充，任务类型色只做左缘。" },
+    { "id": "note-bubble", "x": 0, "y": -150, "w": 620, "page": "page-bubble", "text": "Build · 活动 KV（标题）+ 运行 HUD（游玩）+ 完成态反转（深底 + 黄色区 + 描边大词）· 锚点：龙泡泡本体（原创绘制，非官方吉祥物）· 主题：奶白 + 黄带 + 天蓝 · signature：泡泡既是命也是收集物——HUD 的生命图标与场景里的泡泡同形。" }
+  ],
+  "launch": { "view": "canvas", "page": "page-exam" }
+}

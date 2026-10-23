@@ -1,0 +1,3 @@
+interface:
+  display_name: "关卡设计工具箱 · 功能维护"
+  short_description: "在本项目修改编辑功能并维护数据兼容、撤销行为和功能变更日志"

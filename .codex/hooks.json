@@ -1,0 +1,41 @@
+{
+  "description": "功能或开发流程发生变更时，要求本轮追加 logs/CHANGELOG.md。",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"C:/Users/Prtswang/Desktop/LevelDesignTools/.codex/hooks/changelog.cjs\"",
+            "timeout": 15,
+            "statusMessage": "加载项目变更日志规则"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"C:/Users/Prtswang/Desktop/LevelDesignTools/.codex/hooks/changelog.cjs\"",
+            "timeout": 15,
+            "statusMessage": "记录本轮文件基线"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"C:/Users/Prtswang/Desktop/LevelDesignTools/.codex/hooks/changelog.cjs\"",
+            "timeout": 15,
+            "statusMessage": "检查功能变更日志"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,25 @@
+const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),{pathToFileURL}=require('node:url'),{chromium}=require('playwright-core');
+(async()=>{
+ const browser=await chromium.launch({headless:true,...(process.env.STUDIO_BROWSER?{executablePath:process.env.STUDIO_BROWSER}:{channel:'chrome'})});
+ try{
+  const page=await browser.newPage({viewport:{width:1600,height:1000}}),out=path.join(__dirname,'../qa/ellipse-placement'),errors=[],network=[],report=[];fs.mkdirSync(out,{recursive:true});page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>{if(/^https?:/.test(r.url()))network.push(r.url())});
+  await page.goto(pathToFileURL(path.join(__dirname,'../dist/index.html')).href);
+  const at=async p=>page.evaluate(p=>{const q=new DOMPoint(...p).matrixTransform(document.querySelector('#canvas').getScreenCTM());return {x:q.x,y:q.y}},p);
+  const firstFrame=()=>page.evaluate(()=>{
+   const A=SpatialEditor,M=StudioModel,R=StudioRender,o=A.document.objects.at(-1),face=A.scene.faces.find(f=>f.owner.id===o.id),paths=[...document.querySelectorAll(`[data-object="${o.id}"] path`)],corner=M.project(M.world(A.document,o,[o.points[0][0]+1,o.points[0][1]+1,0]),A.scene.basis),center=M.project(M.origin(A.document,o),A.scene.basis),size=[0,1].map(i=>Math.max(...o.points.map(p=>p[i]))-Math.min(...o.points.map(p=>p[i])));
+   return {id:o.id,shape:o.shape,vertices:face?.points.length,pathVertices:Math.max(...paths.map(p=>(p.getAttribute('d').match(/[ML]/g)||[]).length)),cornerFilled:R.pickAll(corner,A.scene,A.document,A.view).some(h=>h.id===o.id),centerFilled:R.pickAll(center,A.scene,A.document,A.view).some(h=>h.id===o.id),size,position:[...o.position]};
+  });
+  for(const snap of [true,false])for(const circle of [false,true]){
+   await page.evaluate(name=>{SpatialEditor.createDocument('space',name);SpatialEditor.project.documents.splice(0,SpatialEditor.project.documents.length-1);SpatialEditor.document.objects=[];SpatialEditor.setTool('select')},`${circle?'圆形':'椭圆'} · ${snap?'网格吸附':'自由放置'}`);
+   await page.locator('#snap').setChecked(snap);await page.locator('[data-tool="plane"]').click();await page.locator('#creation-shape').selectOption('ellipse');
+   const start=await at([200,200]),end=await at([600,450]);if(circle)await page.keyboard.down('Shift');await page.mouse.move(start.x,start.y);await page.mouse.down();await page.mouse.move(end.x,end.y,{steps:10});await page.mouse.up();if(circle)await page.keyboard.up('Shift');
+   const first=await firstFrame();assert.equal(first.shape,'ellipse');assert.equal(first.vertices,32,'first frame is a sampled curve');assert.equal(first.pathVertices,32,'painted SVG is curved before any move');assert(!first.cornerFilled);assert(first.centerFilled);if(circle)assert(Math.abs(first.size[0]-first.size[1])<1e-5);else assert.notEqual(first.size[0],first.size[1]);
+   await page.screenshot({path:path.join(out,`${circle?'circle':'ellipse'}-${snap?'grid':'free'}-first-frame.png`)});
+   await page.keyboard.press('Control+z');assert.equal(await page.evaluate(()=>SpatialEditor.document.objects.length),0);await page.keyboard.press('Control+Shift+z');assert.deepEqual(await firstFrame(),first,'redo paints the same contour immediately');
+   const saved=await page.evaluate(()=>JSON.stringify(SpatialEditor.project));await page.evaluate(s=>SpatialEditor.loadProject(JSON.parse(s)),saved);assert.deepEqual(await firstFrame(),first,'JSON round trip retains contour');report.push({snap,circle,...first});
+  }
+  await page.locator('[data-panel="document"]').click();assert.equal(await page.locator('label[for="doc-gridSize"]').innerText(),'每格/cm');assert(!await page.locator('#document-properties').innerText().then(s=>s.includes('默认 100 UU')));await page.screenshot({path:path.join(out,'grid-settings-cm.png')});
+  await page.setViewportSize({width:390,height:844});await page.locator('[data-shell-pane="properties"]').click();await page.locator('#doc-gridSize').scrollIntoViewIfNeeded();assert(await page.getByLabel('每格/cm',{exact:true}).isVisible());assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);await page.screenshot({path:path.join(out,'grid-settings-cm-mobile.png')});
+  assert.deepEqual(errors,[]);assert.deepEqual(network,[]);fs.writeFileSync(path.join(out,'report.json'),JSON.stringify({placements:report,errors,network},null,2));console.log('PASS Chrome ellipse placement: circle/ellipse first-frame SVG and corner picking with grid on/off; undo/redo and JSON retain curves; cm label and removed note on desktop/mobile; no page errors or online requests. Evidence qa/ellipse-placement/.');
+ }finally{await browser.close()}
+})().catch(e=>{console.error(e);process.exitCode=1});

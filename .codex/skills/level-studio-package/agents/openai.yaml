@@ -1,0 +1,3 @@
+interface:
+  display_name: "关卡设计工具箱 · 离线打包"
+  short_description: "构建关卡设计工具箱离线网页、同步使用说明并检查 Windows 封装产物"

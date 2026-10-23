@@ -1,0 +1,47 @@
+# npm 依赖：包括桌面应用等子目录中的安装结果，保留 package-lock.json。
+node_modules/
+
+# 桌面构建中间文件、本地发行附件与上传准备目录。
+/.build/
+/release/
+/release-upload/
+
+# dist 仅保留正式离线单页，忽略构建报告、QA 页面及其他临时产物。
+/dist/*
+!/dist/index.html
+
+# 自动化检查的截图、下载文件、报告及桌面冒烟测试结果。
+/qa/
+/test-results/
+/playwright-report/
+/docs/desktop-test-results.json
+
+# Python 字节码与本地虚拟环境。
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# 本地工具缓存与 npm 诊断日志。
+/.cache/
+/.npm/
+npm-debug.log*
+
+# 本机环境配置；允许提交不含本机配置值的示例文件。
+/.env
+/.env.*
+!/.env.example
+!/.env.*.example
+
+# 编辑器交换文件、临时文件与系统元数据。
+*.swp
+*.swo
+*~
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db
+ehthumbs.db
+[Dd]esktop.ini
+
+# 源码、教程、字体、示例、测试夹具、许可、.codex/ 和 logs/CHANGELOG.md 均保留。

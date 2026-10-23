@@ -1,0 +1,8 @@
+{
+  "name": "level-design-toolkits-desktop",
+  "productName": "关卡设计工具箱",
+  "version": "1.0.0",
+  "main": "main.cjs",
+  "private": true,
+  "description": "Level Design Toolkits - offline editor"
+}

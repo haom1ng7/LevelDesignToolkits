@@ -1,0 +1,150 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@500;600;700;800&family=Barlow+Semi+Condensed:wght@600;700;800&family=Noto+Sans+SC:wght@400;500;700;900&display=swap">
+  <style>
+    x-dc { display: block; }
+    body { margin: 0; background: #f1f1ee; font-family: "Barlow", "Noto Sans SC", "Microsoft YaHei", sans-serif; color: #1c1c1c; }
+    a { color: #1c1c1c; text-decoration: none; } a:hover { color: #5a3fc2; }
+    .mb * { box-sizing: border-box; }
+    .mb { --op: #8f6fe8; --op-deep: #5a3fc2; --op-soft: #ece6fb; --ink: #1c1c1c; --paper: #f1f1ee; --line: #d6d6d0; --muted: #84847e; --action: #f8d34d; --ok: #13a85e; --warn: #ff7d1a;
+      position: relative; width: 390px; background: var(--paper); font-family: "Barlow", "Noto Sans SC", "Microsoft YaHei", sans-serif; color: var(--ink); font-variant-numeric: tabular-nums; overflow: hidden; }
+    .mb .nav { height: 56px; display: flex; align-items: center; gap: 10px; padding: 0 18px; background: #fff; border-bottom: 1px solid var(--line); }
+    .mb .nav i.lg { width: 24px; height: 24px; background: var(--ink); clip-path: polygon(0 0, 100% 0, 100% 70%, 70% 100%, 0 100%); display: grid; place-items: center; }
+    .mb .nav i.lg::after { content: ""; width: 8px; height: 8px; background: var(--action); }
+    .mb .nav b { font: 900 16px/1 "Noto Sans SC", sans-serif; }
+    .mb .nav .sp { margin-left: auto; height: 24px; padding: 0 8px; background: var(--ink); color: #fff; display: flex; align-items: center; gap: 6px; font: 700 11px/1 "Noto Sans SC", sans-serif; }
+    .mb .nav .sp::before { content: ""; width: 7px; height: 7px; background: var(--warn); transform: rotate(45deg); }
+    .mb .nav svg { width: 22px; height: 22px; }
+    .mb .crumb { padding: 14px 18px 0; font: 700 12px/1 "Noto Sans SC", sans-serif; color: #4a4a46; }
+    .mb .crumb i { font-style: normal; font-family: "Barlow"; font-weight: 800; color: #a6a6a0; margin-right: 5px; }
+    .mb .head { margin: 12px 18px 0; padding-bottom: 10px; border-bottom: 2px solid var(--ink); display: flex; align-items: flex-end; }
+    .mb .head h1 { margin: 0; font: 900 26px/1 "Noto Sans SC", sans-serif; }
+    .mb .head h1 small { display: block; margin-top: 5px; font: 700 10px/1 "Barlow"; letter-spacing: .22em; color: var(--muted); }
+    .mb .head .date { margin-left: auto; text-align: right; }
+    .mb .head .date span { display: block; font: 700 10px/1 "Noto Sans SC", sans-serif; letter-spacing: .12em; color: var(--muted); }
+    .mb .head .date b { display: block; margin-top: 4px; font: 800 20px/1 "Barlow Semi Condensed"; letter-spacing: .04em; }
+
+    /* 立绘 + 量线：手机上量线直接带数字 */
+    .mb .art { position: relative; margin: 14px 18px 0; height: 430px; background:
+      radial-gradient(240px 200px at 30% 30%, rgba(127,208,255,.55), transparent 70%),
+      radial-gradient(240px 240px at 80% 80%, rgba(143,111,232,.55), transparent 70%),
+      linear-gradient(180deg, #f7f5ff, #e6e0fb); overflow: hidden; }
+    .mb .art::before { content: ""; position: absolute; inset: 0; background:
+      repeating-linear-gradient(90deg, rgba(28,28,28,.06) 0 1px, transparent 1px 60px),
+      repeating-linear-gradient(0deg, rgba(28,28,28,.06) 0 1px, transparent 1px 60px); }
+    .mb .frame { position: absolute; left: 58px; right: 120px; top: 18px; bottom: 18px; border: 1px dashed rgba(28,28,28,.4); }
+    .mb .frame i { position: absolute; width: 14px; height: 14px; border: 2px solid var(--ink); }
+    .mb .frame .tl { left: -2px; top: -2px; border-right: 0; border-bottom: 0; }
+    .mb .frame .tr { right: -2px; top: -2px; border-left: 0; border-bottom: 0; }
+    .mb .frame .bl { left: -2px; bottom: -2px; border-right: 0; border-top: 0; }
+    .mb .frame .br { right: -2px; bottom: -2px; border-left: 0; border-top: 0; }
+    .mb .ph { position: absolute; left: 58px; right: 120px; top: 34%; text-align: center; font: 700 9px/1.6 "Barlow"; letter-spacing: .16em; color: #4a4a46; }
+    .mb .ph svg { width: 34px; height: 34px; display: block; margin: 0 auto 6px; }
+    .mb .hline { position: absolute; left: 30px; top: 18px; bottom: 18px; width: 2px; background: var(--ink); }
+    .mb .hline::before, .mb .hline::after { content: ""; position: absolute; left: -7px; width: 16px; height: 2px; background: var(--ink); }
+    .mb .hline::before { top: 0; } .mb .hline::after { bottom: 0; }
+    .mb .hline b { position: absolute; left: -14px; top: 50%; transform: translate(-50%, -50%) rotate(-90deg); white-space: nowrap; font: 800 12px/1 "Barlow Semi Condensed"; background: var(--paper); padding: 0 6px; }
+    .mb .hline b small { font: 700 9px/1 "Noto Sans SC", sans-serif; color: var(--muted); margin-right: 4px; }
+    .mb .ml { position: absolute; left: 90px; right: 14px; height: 2px; background: var(--op-deep); display: flex; align-items: center; }
+    .mb .ml::before { content: ""; position: absolute; left: -4px; width: 9px; height: 9px; border-radius: 50%; background: var(--op-deep); }
+    .mb .ml .tag { margin-left: auto; transform: translateY(-1px); background: var(--paper); padding: 2px 0 2px 8px; display: flex; align-items: baseline; gap: 5px; }
+    .mb .ml .tag span { font: 700 10px/1 "Noto Sans SC", sans-serif; letter-spacing: .1em; color: #4a4a46; }
+    .mb .ml .tag b { font: 800 24px/1 "Barlow Semi Condensed"; }
+    .mb .ml .tag small { font: 700 10px/1 "Barlow"; color: var(--muted); }
+    .mb .name { position: absolute; left: 66px; bottom: 14px; }
+    .mb .name .ghost { position: absolute; left: -4px; bottom: 30px; font: 800 70px/1 "Barlow Semi Condensed"; color: transparent; -webkit-text-stroke: 1.2px rgba(28,28,28,.2); white-space: nowrap; }
+    .mb .name h2 { margin: 0; position: relative; font: 900 30px/1 "Noto Sans SC", sans-serif; letter-spacing: .04em; }
+
+    .mb .base { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; margin: 12px 18px 0; background: var(--line); border: 1px solid var(--line); }
+    .mb .base div { background: #fff; padding: 10px 10px 11px; position: relative; }
+    .mb .base span { display: block; font: 700 10px/1 "Noto Sans SC", sans-serif; letter-spacing: .1em; color: var(--muted); }
+    .mb .base b { display: block; margin-top: 6px; font: 800 24px/1 "Barlow Semi Condensed"; }
+    .mb .base b small { font: 700 10px/1 "Barlow"; color: var(--muted); margin-left: 2px; }
+    .mb .base em { position: absolute; right: 8px; top: 8px; font: 700 9px/1 "Noto Sans SC", sans-serif; padding: 2px 5px; font-style: normal; color: #fff; background: var(--ok); }
+    .mb .verdict { margin: 12px 18px 0; display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: var(--ink); color: #fff; clip-path: polygon(0 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%); }
+    .mb .verdict .g { flex: 0 0 40px; width: 40px; height: 40px; border-radius: 50%; background: var(--action); color: var(--ink); display: grid; place-items: center; font: 800 22px/1 "Barlow Semi Condensed"; }
+    .mb .verdict b { display: block; font: 900 14px/1.2 "Noto Sans SC", sans-serif; }
+    .mb .verdict span { display: block; margin-top: 4px; font: 500 11px/1.5 "Noto Sans SC", sans-serif; color: #c9c9c2; }
+
+    .mb .sh { display: flex; align-items: flex-end; gap: 10px; padding: 24px 18px 0; }
+    .mb .sh h3 { margin: 0; font: 900 18px/1 "Noto Sans SC", sans-serif; position: relative; padding: 0 2px 3px; }
+    .mb .sh h3::after { content: ""; position: absolute; left: 0; right: -6px; bottom: 0; height: 8px; background: var(--op-soft); z-index: -1; }
+    .mb .sh small { font: 700 10px/1 "Barlow"; letter-spacing: .2em; color: var(--muted); padding-bottom: 4px; }
+    .mb .gauges { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 12px 18px 0; }
+    .mb .gauge { background: #fff; border: 1px solid var(--line); padding: 12px; display: grid; grid-template-columns: 58px minmax(0, 1fr); gap: 10px; align-items: center; }
+    .mb .gauge svg { width: 58px; height: 58px; display: block; }
+    .mb .gauge .k { font: 700 10px/1 "Noto Sans SC", sans-serif; letter-spacing: .1em; color: var(--muted); }
+    .mb .gauge .v { margin-top: 5px; font: 800 20px/1 "Barlow Semi Condensed"; }
+    .mb .gauge .v small { font: 700 10px/1 "Barlow"; color: var(--muted); margin-left: 2px; }
+    .mb .gauge .s { display: inline-block; margin-top: 6px; padding: 2px 5px; font: 700 9px/1 "Noto Sans SC", sans-serif; color: #fff; background: var(--ok); }
+    .mb .gauge .s.w { background: var(--warn); }
+    .mb .fit { margin: 12px 18px 0; background: #fff; border: 1px solid var(--line); padding: 4px 14px 12px; }
+    .mb .frow { display: grid; grid-template-columns: 64px minmax(0, 1fr) 62px; gap: 10px; align-items: center; padding: 11px 0 13px; }
+    .mb .frow + .frow { border-top: 1px solid #ecece8; }
+    .mb .frow .k { font: 700 12px/1.2 "Noto Sans SC", sans-serif; }
+    .mb .frow .bar { position: relative; height: 10px; background: #ecece8; }
+    .mb .frow .bar i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--op); }
+    .mb .frow .bar em { position: absolute; top: -5px; width: 2px; height: 20px; background: var(--ink); }
+    .mb .frow .v { text-align: right; font: 800 15px/1 "Barlow Semi Condensed"; }
+    .mb .frow .v small { display: block; margin-top: 2px; font: 700 9px/1 "Barlow"; color: var(--ok); }
+    .mb .frow .v small.w { color: var(--warn); }
+    .mb .foot { margin-top: 22px; padding: 12px 18px 16px; border-top: 1px solid var(--line); font: 500 10px/1.6 "Noto Sans SC", sans-serif; color: var(--muted); }
+  </style>
+</helmet>
+
+<div class="mb" id="board">
+  <div class="nav"><i class="lg"></i><b>终末地体检中心</b><span class="sp">样例数据</span><svg viewBox="0 0 24 24" fill="none" stroke="#1c1c1c" stroke-width="2.4"><path d="M4 7h16M4 12h16M4 17h16"></path></svg></div>
+  <div class="crumb"><i>//</i>干员体检 <span style="color:#a6a6a0;margin:0 3px">/</span> 提弗洛斯</div>
+  <div class="head"><h1>体检报告<small>PHYSICAL EXAM REPORT</small></h1><div class="date"><span>体检日期</span><b>2026 / 08 / 22</b></div></div>
+
+  <div class="art">
+    <div class="hline"><b><small>身高</small>172 CM</b></div>
+    <div class="frame"><i class="tl"></i><i class="tr"></i><i class="bl"></i><i class="br"></i></div>
+    <div class="ph"><svg viewBox="0 0 64 64" fill="none" stroke="#4a4a46" stroke-width="2"><rect x="8" y="8" width="48" height="48"></rect><path d="M8 44l14-14 10 10 8-8 16 16"></path><circle cx="42" cy="20" r="5"></circle></svg>IMAGE SLOT</div>
+    <div class="ml" style="top:150px"><span class="tag"><span>胸围</span><b>88</b><small>cm</small></span></div>
+    <div class="ml" style="top:212px"><span class="tag"><span>腰围</span><b>61</b><small>cm</small></span></div>
+    <div class="ml" style="top:270px"><span class="tag"><span>臀围</span><b>90</b><small>cm</small></span></div>
+    <div class="name"><div class="ghost" aria-hidden="true">TIFROS</div><h2>提弗洛斯</h2></div>
+  </div>
+
+  <div class="base">
+    <div><span>身高</span><b>172<small>cm</small></b><em>正常</em></div>
+    <div><span>体重</span><b>54<small>kg</small></b><em>正常</em></div>
+    <div><span>BMI</span><b>18.3</b><em>正常</em></div>
+  </div>
+  <div class="verdict"><span class="g">A</span><div><b>综合评定 A · 各项指标正常</b><span>体脂率与握力略优于同组均值；半年后复查。</span></div></div>
+
+  <div class="sh"><h3>生理指标</h3><small>VITALS</small></div>
+  <div class="gauges">
+    <div class="gauge"><svg viewBox="0 0 112 112"><circle cx="56" cy="56" r="46" fill="none" stroke="#ecece8" stroke-width="12"></circle><circle cx="56" cy="56" r="46" fill="none" stroke="#13a85e" stroke-width="12" stroke-dasharray="145 289" stroke-dashoffset="-72"></circle><circle cx="56" cy="56" r="46" fill="none" stroke="#ff7d1a" stroke-width="12" stroke-dasharray="40 289" stroke-dashoffset="-217"></circle><g transform="rotate(36 56 56)"><path d="M56 56L56 16" stroke="#1c1c1c" stroke-width="4" stroke-linecap="round"></path></g><circle cx="56" cy="56" r="6" fill="#1c1c1c"></circle></svg><div><div class="k">静息心率</div><div class="v">72<small>bpm</small></div><span class="s">正常</span></div></div>
+    <div class="gauge"><svg viewBox="0 0 112 112"><circle cx="56" cy="56" r="46" fill="none" stroke="#ecece8" stroke-width="12"></circle><circle cx="56" cy="56" r="46" fill="none" stroke="#13a85e" stroke-width="12" stroke-dasharray="160 289" stroke-dashoffset="-60"></circle><circle cx="56" cy="56" r="46" fill="none" stroke="#ff7d1a" stroke-width="12" stroke-dasharray="40 289" stroke-dashoffset="-220"></circle><g transform="rotate(12 56 56)"><path d="M56 56L56 16" stroke="#1c1c1c" stroke-width="4" stroke-linecap="round"></path></g><circle cx="56" cy="56" r="6" fill="#1c1c1c"></circle></svg><div><div class="k">血压</div><div class="v">108<small>/ 68</small></div><span class="s">正常</span></div></div>
+    <div class="gauge"><svg viewBox="0 0 112 112"><circle cx="56" cy="56" r="46" fill="none" stroke="#ecece8" stroke-width="12"></circle><circle cx="56" cy="56" r="46" fill="none" stroke="#13a85e" stroke-width="12" stroke-dasharray="120 289" stroke-dashoffset="-84"></circle><circle cx="56" cy="56" r="46" fill="none" stroke="#ff7d1a" stroke-width="12" stroke-dasharray="30 289" stroke-dashoffset="-204"></circle><g transform="rotate(-10 56 56)"><path d="M56 56L56 16" stroke="#1c1c1c" stroke-width="4" stroke-linecap="round"></path></g><circle cx="56" cy="56" r="6" fill="#1c1c1c"></circle></svg><div><div class="k">体温</div><div class="v">36.5<small>℃</small></div><span class="s">正常</span></div></div>
+    <div class="gauge"><svg viewBox="0 0 112 112"><circle cx="56" cy="56" r="46" fill="none" stroke="#ecece8" stroke-width="12"></circle><circle cx="56" cy="56" r="46" fill="none" stroke="#13a85e" stroke-width="12" stroke-dasharray="110 289" stroke-dashoffset="-30"></circle><circle cx="56" cy="56" r="46" fill="none" stroke="#ff7d1a" stroke-width="12" stroke-dasharray="50 289" stroke-dashoffset="-140"></circle><g transform="rotate(84 56 56)"><path d="M56 56L56 16" stroke="#1c1c1c" stroke-width="4" stroke-linecap="round"></path></g><circle cx="56" cy="56" r="6" fill="#1c1c1c"></circle></svg><div><div class="k">视力 左 / 右</div><div class="v">4.8<small>/ 5.0</small></div><span class="s w">注意</span></div></div>
+  </div>
+
+  <div class="sh"><h3>体能测试</h3><small>FITNESS · 黑刻度为同组均值</small></div>
+  <div class="fit">
+    <div class="frow"><div class="k">握力</div><div class="bar"><i style="width:66%"></i><em style="left:52%"></em></div><div class="v">42 kg<small>+27%</small></div></div>
+    <div class="frow"><div class="k">肺活量</div><div class="bar"><i style="width:58%"></i><em style="left:55%"></em></div><div class="v">3.8 L<small>+5%</small></div></div>
+    <div class="frow"><div class="k">反应时</div><div class="bar"><i style="width:74%"></i><em style="left:60%"></em></div><div class="v">0.19 s<small>+23%</small></div></div>
+    <div class="frow"><div class="k">30 m 冲刺</div><div class="bar"><i style="width:62%"></i><em style="left:58%"></em></div><div class="v">4.6 s<small>+7%</small></div></div>
+    <div class="frow"><div class="k">耐力</div><div class="bar"><i style="width:47%"></i><em style="left:56%"></em></div><div class="v">2.4 km<small class="w">−16%</small></div></div>
+  </div>
+
+  <div class="foot">※ 设计样例 · 所有数值为占位内容，不代表官方设定或医学建议 · 立绘位由用户提供素材</div>
+</div>
+</x-dc>
+<script data-dc-script data-props='{"$preview":{"width":390,"height":1400}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
