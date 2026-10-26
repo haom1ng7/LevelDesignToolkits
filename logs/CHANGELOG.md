@@ -563,3 +563,51 @@
 - 验证：使用本机运行时 Python 执行 tools/build-manual.py 成功，同步 8 节教程和 7 段离线媒体；npm run build 成功，离线页 6,147,812 字节。node --check 检查本次交互、吸附、应用入口及两个新增专项脚本通过；本次源码、配置与日志的 Git 空白检查通过。
 - 验证：node tests/browser-orthographic-size.cjs 最终通过真实 Chrome 平面/立面及网格开关共 4 组鼠标检查，验证横向与纵向角点独立尺寸、Ctrl、Shift、一次历史、撤销重做、Esc、宿主空洞有效性、三视图与 JSON 同步；无页面异常或网络请求。首轮脚本因重复选行触发重命名、连续放大后角点超出画布及网格半格浮点临界值而失败，调整测试选取、预留取景范围及非临界拖动量后重跑通过，未放宽尺寸断言。已查看平面自由尺寸、立面网格尺寸截图，证据在 qa/orthographic-size/。
 - 未运行：实际 PNG/SVG 下载、窄屏/手机真机及 Windows 重新封装；本次交付源码和离线网页，自动回归已检查 SVG 不含编辑手柄及 FBX/OBJ 文件读取。
+
+## 2026-10-26 · 顶点编辑改为终末地工业定位节点
+
+- 变更：组件顶点由蓝色圆点改为骨白切角方形、炭黑描边和中心定位点，悬停及当前顶点使用信号黄，当前顶点额外显示对角角标。边中点改为较轻的菱形加号，区分移动顶点与插入顶点；路线的直接节点沿用同套样式。按画布横纵比例分别换算，缩放及窗口变化时保持固定屏幕尺寸，顶点和中点均提供直径 20px 的透明命中区，顶点优先于重叠中点命中。使用骨白隔离线适应深浅图稿及组件填色，保留原有编辑、取消及一次操作一次历史的流程。
+- 影响文件：src/app.js、src/interactions.js、src/editor.css、tests/browser-vertex-handles.cjs、docs/UI设计说明.md、dist/index.html、dist/build-report.json、logs/CHANGELOG.md。
+- 验证：npm run build 成功，离线单页 6,149,223 字节；npm test 全部 18 组回归通过。node --check 检查 src/app.js、src/interactions.js 和 tests/browser-vertex-handles.cjs 通过；本次源码、设计说明、浏览器专项及日志的 Git 空白检查通过。
+- 验证：node tests/browser-vertex-handles.cjs 通过真实 Chrome 的 23 项检查，包含 1440/390px、深浅界面及黑白画布共 8 组布局，平面/椭圆/墙壁/空洞/楼梯/旋转楼梯及三视图路线共 13 组节点命中，平面和路线 2 组真实拖动、插入、删除、撤销重做及 Esc 取消；同时检查悬停、选中角标、透明边缘命中、缩放尺寸、无横向溢出及 SVG 不含编辑手柄，无页面异常或在线请求。已查看桌面浅色、窄屏深色及节点局部截图，证据在 qa/vertex-handles/。首轮专项在撤销重做后未重新选择组件而等待节点超时，已按现有撤销会清空选择的行为修正测试并重跑通过，未改变应用历史语义。
+- 未运行：实际 PNG/SVG 下载、手机真机及 Windows 重新封装；本次更新源码与离线网页，导出隔离已通过实际浏览器生成的 SVG 和既有自动回归检查。
+- 检查范围：完整 npm test 结果针对本次 6,149,223 字节的顶点样式构建；验证期间工作区出现切割功能相关的同期源码与构建更新，已在同期重新生成的网页上再次运行 node tests/browser-vertex-handles.cjs，23 项顶点专项仍全部通过。切割功能自身不在本次改动和验证结论内。
+
+## 2026-10-26 · 以逐点切割替换空洞工具
+
+- 变更：工具栏原“空洞”按钮替换为“切割”（O）。先选中一个未锁定、可见的平面（含圆形）或墙壁，鼠标变为剪刀；在组件内部或边缘连续取点，显示折线、首点和悬停预览，并吸附组件边缘。点击首点闭合、边到边贯穿或折线形成可分区域时，自动拆分为两个或多个独立组件，保留全部材料并选中结果；拆分组件不沿用原编组，可分别移动和编辑。支持平面、墙面、墙体占地及立体图中对应的可见正面/背面，侧向无可见面积、楼梯/文字/路线、多选或锁定时禁用。Backspace/Delete 退一个点，Esc/右键/指针取消/切换工具、视图、图稿或组件取消未完成切割；整次切割一次撤销/重做。
+- 变更：新增材料平面图细分，处理凹轮廓、折线交叉、多个分区及原有开口。闭合切割的外块将内部轮廓保存在自身 cutouts 中，不额外增加组件列表条目；旧版宿主空洞继续兼容。内轮廓随宿主尺寸、移动、复制、旋转、楼层、JSON 与三视图保持一致，并复用 PNG/SVG/FBX/OBJ 几何；隐藏开口在可归属时保留，切割跨越隐藏开口时拒绝并回滚。墙体占地允许三点以上多边形，面积/体积校验防止丢失材料。切割预览不进入导出，内轮廓也不作为独立空洞参与画布命中。
+- 变更：同步工具提示、内置及外部说明，使用真实 Chrome 切割和独立移动过程替换旧打洞 GIF 与封面；新增模型及浏览器专项，将切割回归接入 npm test，更新构建拼装清单和项目验证入口。
+- 影响文件：src/cutting-geometry.js、src/cutting.js、src/app.js、src/interactions.js、src/advanced-interactions.js、src/curved-geometry.js、src/render.js、src/keyboard.js、src/editor.html、src/usage-help.js、src/help/content.json、src/help/build.gif、src/help/build.png、tools/build.mjs、package.json、tests/verify-cutting.cjs、tests/browser-cutting.cjs、tests/verify-spatial-update.cjs、.codex/project-context.md、.codex/rules/validation.md、docs/使用说明.md、docs/使用说明.html、dist/index.html、dist/build-report.json、logs/CHANGELOG.md。保留工作区同期顶点样式修改。
+- 验证：npm run build 成功；最终离线网页 6,990,505 字节，正式种子仍为空工程。使用本机 bundled Python 执行 tools/build-manual.py 成功，输出 8 节说明与 7 段自包含媒体。npm test 全部 19 组通过；最终可见正面/背面取点投影调整后，重新构建并运行 node tests/verify-cutting.cjs 和 node tests/browser-cutting.cjs 均通过。
+- 验证：切割专项覆盖闭合/贯穿/交叉多块、凹形三块、开口分割和再次切割、圆形及正反面、面积/体积守恒、隐藏开口保留与失败回滚、组件独立选择/尺寸/复制、跨图稿内轮廓 ID、JSON、撤销重做、取消和工具限制；FBX/OBJ 自动回归保留独立 Three.js 读取检查。
+- 验证：真实 Chrome 检查剪刀指针、边缘与首点吸附、逐点预览、闭合后独立拖移、凹形一次三块、墙体立面、历史与四种取消方式、390px 工具访问；实际下载 PNG/SVG/OBJ/FBX，无页面异常或在线请求。独立 Three.js 读取本次两个模型下载文件，各为 2 个网格、64 个三角面，总体积约 4,200,000，与原组件一致；Pillow 检查 1200×800 PNG 的切口为白色、内外材料颜色一致，教程 GIF 为 960px 宽、8 个有效帧。已查看闭合预览、切下组件移动、三块拆分及窄屏截图，证据在 qa/cutting/。首轮像素采样落在网格线上，改取非网格点后通过，未调整图像输出。
+- 验证：node --check 检查新增两个源码模块和两个专项脚本通过；本次源码、构建清单、包配置和协作入口的 git diff --check 通过（仅提示既有 LF/CRLF 转换）。
+- 未运行：Windows 重新封装/桌面 EXE 冒烟、手机真机；本次交付源码、离线网页和同步教程。旧版斜向开口组件暂不支持切割，普通开口墙壁需在与其一致的切割面操作；复杂轮廓超出 2500 段时提示减少取点。
+
+## 2026-10-26 · 简化切割工具画布提示
+
+- 变更：将切割工具的画布提示改为“左键取点，Backspace退点，Esc取消”。
+- 影响文件：src/app.js、dist/index.html、dist/build-report.json、logs/CHANGELOG.md。
+- 验证：npm run build、node --check src/app.js 通过；Node.js 检查离线网页包含新提示且不再包含原提示。未运行全套回归与浏览器操作，本次仅替换一处提示文案。
+
+## 2026-10-26 · 修复多选后单击已选组件无法切回单选
+
+- 变更：平面图、立面图和立体图中，多选后单击其中一个组件，松开鼠标即只选中该组件；编组及宿主附属关系仍沿用整组选择。按下时暂时保留多选，使平面图、立面图中的拖动继续整体移动；Ctrl/Command 增减选择、Alt 拖动复制和 Shift 保留选择沿用原行为。锁定组件或立体图使用世界手柄时也可通过单击收起多选，拖过点击阈值则不误判为单击；Esc、指针取消、失焦和切换工具/视图不提交待处理的单击选择。选择变化不修改工程几何或增加撤销记录。
+- 变更：同步内置帮助及外部教程，说明多选后的单击和整体拖动；新增真实浏览器专项，并把三视图单击、取消、锁定、编组及整体拖动断言加入现有空间回归。
+- 影响文件：src/app.js、src/help/content.json、tests/verify-spatial-update.cjs、tests/browser-multi-selection.cjs、docs/使用说明.md、docs/使用说明.html、dist/index.html、dist/build-report.json、logs/CHANGELOG.md。
+- 验证：新增空间回归断言在修复前构建上复现“单击后仍保留两个组件”的失败；npm run build 成功，最终离线网页 6,990,934 字节；node tests/verify-spatial-update.cjs 及最终 npm test 全部 19 组回归通过，包含创建退出、宿主空洞、世界移动/旋转、楼层、多选属性、列表、切割及模型导出检查。
+- 验证：node tests/browser-multi-selection.cjs 最终通过真实 Chrome 的 7 组检查，覆盖三视图 Ctrl 多选后点击任一成员、微小指针抖动、锁定/编组、Esc/指针取消/失焦、立体图拖过点击阈值、平面/立面整体拖动及相对位置、一次撤销/重做、Alt 整体复制、真实拖框多选后单击，以及 390px 画布；无页面异常或在线请求。已查看立体图选择截图，证据在 qa/multi-selection/。
+- 验证：使用本机 bundled Python 执行 tools/build-manual.py 成功，同步 8 节教程和 7 段自包含媒体；Node.js 检查内置帮助、外部 Markdown/HTML 均包含新选择说明。node --check 检查应用入口及两个专项脚本通过；本次源码、帮助、测试及日志的 Git 空白检查通过（仅提示既有 LF/CRLF 转换）。
+- 未运行：实际 PNG/SVG 下载、手机真机、Windows 重新封装和桌面 EXE 冒烟；本次交付源码、同步教程与离线网页，未修改导出和桌面代码。
+
+## 2026-10-26 · 精简组件操作并改为逐层上移下移
+
+- 变更：左下组件列表移除“复制”“粘贴”，仅保留等宽两列的“编组”“解组”；右侧组件属性底部移除“编辑顶点”“复制副本”“编组”“解组”，保留“上移”“下移”“锁定编辑”和“删除”。顶点工具栏、复制粘贴快捷键及右键复制副本继续可用，右键排序菜单同步显示“上移”“下移”。
+- 变更：原置顶/置底改为每次在当前楼层及筛选列表的同级组件间调整一位；连续或分散多选保留所选组件的相对顺序。宿主携带附属空洞的列表行，空洞只在同一宿主内排序，锁定成员或附属空洞阻止整次调整；不改变几何、编组、宿主关系及其他楼层或筛选外组件的槽位。沿用一次操作一次撤销、失败回滚和 JSON 保存，边界不产生空历史。同步内置与外部教程。
+- 影响文件：src/editor.html、src/editor.css、src/app.js、src/component-list.js、src/help/content.json、tests/verify-component-list.cjs、tests/verify-world-move.cjs、tests/browser-solid-properties.cjs、docs/使用说明.md、docs/使用说明.html、dist/index.html、dist/build-report.json、logs/CHANGELOG.md。
+- 验证：新增 node tests/verify-component-list.cjs 逐层断言在旧构建上复现“一次直接置顶”的失败；npm run build 成功，离线单页 6,991,608 字节，正式种子仍为空工程；重建后的列表专项及最终 npm test 全部 19 组通过，覆盖单选/连续与分散多选、编组、边界、筛选/楼层、锁定、宿主空洞、失败回滚、撤销重做、JSON 和曲线标注排序。
+- 验证：一次性 Node.js/Playwright/Chrome 专项通过 1440/390px 与深浅主题共 4 组，确认两处按钮、两列编组布局、真实编组/解组与逐层按钮点击、几何不变及撤销重做；确认右键菜单同义、Ctrl+C/V、复制副本及左侧顶点工具可用，无横向溢出、页面异常或在线请求。已查看桌面浅色及窄屏深色截图，证据在 qa/component-actions/。node tests/browser-component-list.cjs 和 node tests/browser-solid-properties.cjs 均通过，覆盖真实拖排、宿主空洞、自动暂存、宽窄主题和立体属性编辑。
+- 验证：全套回归首轮因旧测试仍查找已移除的属性顶点/副本按钮失败，已改查左侧顶点工具、保留的排序按钮及实际复制命令限制。立体属性浏览器脚本首轮因默认网格将 32 取整为 100 失败，已在该自由数值编辑场景显式关闭网格后重跑通过，保留原数值断言；应用网格行为未改。
+- 验证：使用本机 bundled Python 执行 tools/build-manual.py 成功，同步 8 节教程与 7 段自包含媒体；Node.js 检查离线按钮、空种子、旧排序文案移除及教程同步通过。node --check 检查本次应用入口、列表模块及三个修改的测试脚本通过；本次源文件、测试、Markdown 教程与日志的 Git 空白检查通过（仅提示既有 LF/CRLF 转换）。
+- 未运行：实际 PNG/SVG 下载、手机真机、Windows 重新封装与桌面 EXE 冒烟；本次交付源码、离线网页和同步教程，未改导出或桌面代码。

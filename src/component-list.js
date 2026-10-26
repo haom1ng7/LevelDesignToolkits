@@ -18,6 +18,23 @@ function chooseLayer(id,e){
 }
 function layerOrderScope(){return current+'|'+(doc()?.activeFloor||'')+'|'+$('#layer-filter').value}
 function layerOrderLocked(objects){return objects.some(o=>o.locked||o.type==='hole'&&doc().objects.find(h=>h.id===o.host)?.locked)}
+function moveComponentStep(direction){
+ const d=doc();if(!d||!selection.length)return;
+ const ids=childIds();if(layerOrderLocked(d.objects.filter(o=>ids.has(o.id))))return;
+ const lanes=new Map(),replacements=new Map();
+ for(const o of componentListRows()){
+  if(o.type==='hole'&&ids.has(o.host))continue;
+  const parent=o.type==='hole'?o.host:null;if(!lanes.has(parent))lanes.set(parent,[]);lanes.get(parent).push(o);
+ }
+ for(const lane of lanes.values()){
+  const next=[...lane],start=direction<0?1:next.length-2,end=direction<0?next.length:-1,step=direction<0?1:-1;
+  for(let i=start;i!==end;i+=step){const j=i+direction;if(ids.has(next[i].id)&&!ids.has(next[j].id))[next[i],next[j]]=[next[j],next[i]]}
+  // Replace only listed sibling slots; host links and omitted objects stay intact.
+  lane.forEach((o,i)=>{if(o!==next[i])replacements.set(o.id,next[i])});
+ }
+ if(!replacements.size)return;
+ mutate(()=>{d.objects=d.objects.map(o=>replacements.get(o.id)||o)},direction<0?'已上移组件 · Ctrl+Z 撤销':'已下移组件 · Ctrl+Z 撤销');
+}
 function layerOrderCandidates(a){
  const visible=componentListRows(),sameLevel=o=>a.host?o.type==='hole'&&o.host===a.host:o.type!=='hole';
  return visible.filter(o=>sameLevel(o)&&!a.ids.includes(o.id)).map(o=>{

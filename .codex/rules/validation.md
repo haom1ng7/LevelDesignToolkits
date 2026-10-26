@@ -11,6 +11,7 @@
 | 改动范围 | 优先检查 |
 | --- | --- |
 | 工程保存、首次位置选择与 Ctrl/Command+S | `node tests/browser-project-saving.cjs`；真实 Chrome 键盘/编辑及 Electron IPC/文件写盘，浏览器文件句柄与原生对话框选择使用测试替身，证据在 `qa/project-saving/` |
+| 逐点切割、闭合/贯穿拆分、内轮廓和历史 | `node tests/verify-cutting.cjs`；真实鼠标、剪刀、退点/取消、窄屏和实际四种格式下载用 `node tests/browser-cutting.cjs`，证据在 `qa/cutting/` |
 | 空间创建、宿主空洞、可见性与输出范围 | `node tests/verify-spatial-update.cjs` |
 | 立体世界移动、Alt 复制、楼层、文字/路线工具限制 | `node tests/verify-world-move.cjs` |
 | 固定单位网格、创建/移动/尺寸网格吸附 | `node tests/verify-grid-snapping.cjs`；真实鼠标、缩放与窄屏设置用 `node tests/browser-grid-snapping.cjs` |

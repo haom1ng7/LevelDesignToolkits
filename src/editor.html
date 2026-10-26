@@ -41,7 +41,7 @@
     <button data-tool="plane"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18v14H3Z"/></svg>矩形<kbd>P</kbd></button>
     <button data-tool="ellipse"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/></svg>圆形<kbd>C</kbd></button>
     <button data-tool="wall"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6 21 3v15L3 21Zm6-1v15m6-16v15M3 13l18-3"/></svg>墙壁</button>
-    <button data-tool="hole"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h18v18H3Z"/><path d="M8 8h8v8H8Z" stroke-dasharray="2 2"/></svg>空洞<kbd>O</kbd></button>
+    <button data-tool="cut"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="5" r="3"/><circle cx="5" cy="19" r="3"/><path d="m7 7 14 14M7 17 21 3"/></svg>切割<kbd>O</kbd></button>
     <button data-tool="stairs"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 21h5v-6h5V9h5V3h5M2 21h20V3"/></svg>楼梯</button>
     <button data-tool="ladder"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2v20M18 2v20M6 5h12M6 10h12M6 15h12M6 20h12"/></svg>爬梯</button>
     <button data-tool="spiral"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v20m0-18c12 0 12 8 0 8s-12 8 0 8M6 6l12 4M6 14l12 4"/></svg>旋转楼梯</button>
@@ -52,7 +52,7 @@
   </div>
   <div class="section-heading component-heading"><h2 class="ui-pair"><span class="ui-eyebrow">COMPONENTS</span><span>组件</span></h2><select id="layer-filter" aria-label="筛选组件"><option value="all">全部</option><option value="plane">平面</option><option value="wall">墙壁</option><option value="hole">空洞</option><option value="stairs">楼梯</option><option value="text">文字</option><option value="route">路线</option></select></div>
   <div id="layers"></div>
-  <div class="selection-actions"><button data-action="copy">复制</button><button data-action="paste">粘贴</button><button data-action="group">编组</button><button data-action="ungroup">解组</button></div>
+  <div class="selection-actions"><button data-action="group">编组</button><button data-action="ungroup">解组</button></div>
 </aside>
 <main id="workspace-canvas" tabindex="-1" aria-label="图稿编辑区">
   <div class="canvas-heading"><span class="view-index" id="shell-view-index" aria-hidden="true">00</span><div class="header-title"><span class="ui-eyebrow" id="shell-mode-label">START</span><h1 id="doc-title">新建图稿</h1><small id="doc-kind" hidden></small></div><div class="workspace-readout"><span id="workspace-count">0</span><small id="workspace-count-label">张图稿</small></div></div>

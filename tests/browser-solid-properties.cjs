@@ -17,6 +17,8 @@ const {chromium}=require('playwright-core');
    A.document.objects.push(plane,stairs);A.setTool('select');return {plane:plane.id,stairs:stairs.id};
   });
   const value=(id,key)=>page.evaluate(({id,key})=>SpatialEditor.document.objects.find(o=>o.id===id)[key],{id,key});
+  // This scenario verifies free numeric editing; grid quantization has its own regression.
+  await page.locator('#snap').uncheck();
   await page.locator('[data-view="solid"]').click();
   await page.locator(`[data-layer="${ids.plane}"]`).click();
   const name=page.locator('#prop-name');assert(await name.isEnabled());
@@ -35,7 +37,7 @@ const {chromium}=require('playwright-core');
    assert.equal(await page.locator('#prop-fill').inputValue(),'#123456');
    assert.equal(await page.locator('#prop-opacity').inputValue(),'0.65');
   }
-  assert(await page.locator('[data-tool="rotate"]').isEnabled());assert(await page.locator('[data-tool="size"]').isEnabled());assert(await page.locator('[data-action="vertices"]').isDisabled());
+  assert(await page.locator('[data-tool="rotate"]').isEnabled());assert(await page.locator('[data-tool="size"]').isEnabled());assert(await page.locator('[data-tool="vertex"]').isDisabled());
   await page.locator('#properties [data-action="lock"]').click();assert(await name.isDisabled());assert(await page.locator('#prop-dimensionZ').isDisabled());
   await page.locator('#properties [data-action="lock"]').click();assert(await name.isEnabled());
   await page.locator(`[data-layer="${ids.stairs}"]`).click();

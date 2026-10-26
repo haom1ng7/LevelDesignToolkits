@@ -28,7 +28,7 @@ try{
  A.createDocument('curve');assert(d.querySelector('[data-tool="plane"]').disabled);assert(d.querySelector('[data-tool="ellipse"]').disabled);
  for(const type of ['plane','wall']){blank();A.setTool(type);drag([100,100],[300,200]);const id=A.document.objects.at(-1).id;tap([1100,750]);assert.equal(A.tool,'select');assert.equal(A.selection.id,id);A.setTool(type);tap([150,150]);assert.equal(A.tool,'select');assert.equal(A.selection.id,id)}
  let doc=blank(),p=add(doc,'plane',[100,100,0],{points:[[0,0],[300,0],[300,300],[0,300]]}),p2=add(doc,'plane',[500,100,0],{points:[[0,0],[300,0],[300,300],[0,300]]});
- refresh();assert(!d.querySelector('[data-tool="hole"]').disabled);A.select(p.id,false,true);A.setTool('hole');assert(d.querySelector(`[data-selection-outline="${p.id}"]`));
+ refresh();assert(d.querySelector('[data-tool="cut"]').disabled);A.select(p.id,false,true);assert(!d.querySelector('[data-tool="cut"]').disabled);A.setTool('hole');assert(d.querySelector(`[data-selection-outline="${p.id}"]`));
  drag([150,150],[200,200]);let h=A.document.objects.at(-1);assert.equal(h.type,'hole');assert.equal(h.host,p.id);assert.equal(A.selection.id,h.id);assert.equal(A.tool,'hole');assert.equal(pick([175,175]),h.id);
  drag([550,150],[600,200]);h=A.document.objects.at(-1);assert.equal(h.host,p2.id);assert.equal(A.selection.id,h.id);tap([1100,750]);assert.equal(A.tool,'select');assert.equal(A.selection.id,h.id);
  A.select(p2.id);assert(!d.querySelector(`[data-selection-outline="${h.id}"]`),'dependent hole has no selection outline');
@@ -48,5 +48,27 @@ try{
  doc=blank();const ladder=add(doc,'ladder',[0,0,0]),spiral=add(doc,'spiral',[0,0,0]);near(ladder.end,160);near(spiral.end,160);const route=add(doc,'route',[0,0,0]);near(route.width,5);near(route.outlineWidth,.5);assert.equal(route.outlineMode,'auto');refresh();A.select(route.id,false,true);assert(d.querySelector('[data-route-selection="outline"]'));
  route.width=3;route.outlineWidth=0;delete route.outlineMode;const loaded=M.validate(JSON.parse(JSON.stringify(A.project)));const old=loaded.documents.at(-1).objects.find(o=>o.id===route.id);near(old.width,3);near(old.outlineWidth,0);assert.equal(old.outlineMode,'manual');
  doc=blank();p=add(doc,'plane',[100,100,0]);A.select(p.id,false,true);d.querySelector('[data-view="solid"]').click();A.select(p.id,false,true);const q=[A.camera.x+A.camera.w*.99,A.camera.y+A.camera.h*.01],azimuth=A.view.azimuth;drag(q,[q[0]-50,q[1]+30],{button:2});assert.notEqual(A.view.azimuth,azimuth,'right drag orbits');assert.equal(A.selection.id,p.id,'orbit drag preserves selection');tap(q);assert.equal(A.selection.ids.length,0,'solid blank click deselects');
- assert.deepEqual(errors,[]);console.log('PASS spatial update: creation exit/selection; cross-host holes, invalid holes and save; dependent outlines; visible layer picking, depth, reorder/undo; bidirectional snaps; defaults and legacy routes; route selection ring; solid click versus orbit.');
+ // Clicking one member of a multi-selection must select it without breaking batch drags.
+ const selectionIds=()=>JSON.stringify(A.selection.ids);
+ function hitCenter(id){for(const h of A.scene.faces.filter(h=>h.owner.id===id)){const q=h.poly[0].map((_,i)=>h.poly.reduce((sum,p)=>sum+p[i],0)/h.poly.length);if(pick(q)===id)return q}throw Error('No exposed face for '+id)}
+ for(const mode of ['plan','elevation','solid']){
+  doc=blank();const first=add(doc,'wall',[150,100,0]),second=add(doc,'wall',[650,100,0]);
+  d.querySelector(`[data-view="${mode}"]`).click();A.select(first.id,false,true);A.select(second.id,true,true);
+  const selected=selectionIds(),before=JSON.stringify(A.project),undo=A.undoCount,q=hitCenter(first.id);
+  pointer('pointerdown',q);assert.equal(selectionIds(),selected,'press preserves batch for dragging');pointer('pointerup',q);
+  assert.equal(selectionIds(),JSON.stringify([first.id]),mode+' click collapses multi-selection');assert.equal(A.undoCount,undo);assert.equal(JSON.stringify(A.project),before);
+  A.select(second.id,true,true);pointer('pointerdown',q);pointer('pointercancel',q);assert.equal(selectionIds(),selected,'pointer cancel keeps selection');
+  pointer('pointerdown',q);c.dispatchEvent(new w.KeyboardEvent('keydown',{key:'Escape',bubbles:true}));pointer('pointerup',q);assert.equal(selectionIds(),selected,'Escape cancels pending selection');
+  pointer('pointerdown',q);w.dispatchEvent(new w.Event('blur'));pointer('pointerup',q);assert.equal(selectionIds(),selected,'blur does not commit a click');
+  pointer('pointerdown',q,{ctrlKey:true});pointer('pointerup',q,{ctrlKey:true});assert.equal(selectionIds(),JSON.stringify([second.id]),'Ctrl still toggles');
+  A.select(first.id,true,true);first.locked=true;refresh();tap(q);assert.equal(selectionIds(),JSON.stringify([first.id]),'locked member can be selected alone');first.locked=false;
+  A.select(second.id,true,true);first.group=second.group=M.uid();refresh();tap(q);assert.equal(A.selection.ids.length,2,'canvas preserves group selection');delete first.group;delete second.group;
+  if(mode!=='solid'){
+   A.select(first.id,false,true);A.select(second.id,true,true);const original=JSON.stringify(doc.objects),start=hitCenter(first.id),end=M.add(start,[70,30]),undo=A.undoCount;
+   drag(start,end);assert.equal(A.selection.ids.length,2,'body drag retains multi-selection');assert.equal(A.undoCount,undo+1,'batch drag is one history entry');
+   const delta=M.sub(doc.objects[0].position,JSON.parse(original)[0].position);assert(Math.hypot(...delta)>0);doc.objects[1].position.forEach((v,i)=>near(v-JSON.parse(original)[1].position[i],delta[i],'batch keeps relative positions'));
+   A.command('undo');assert.equal(JSON.stringify(A.document.objects),original);A.command('redo');
+  }
+ }
+ assert.deepEqual(errors,[]);console.log('PASS spatial update: creation exit/selection; cross-host holes, invalid holes and save; dependent outlines; visible layer picking, depth, reorder/undo; bidirectional snaps; defaults and legacy routes; route selection ring; solid click versus orbit; multi-selection click/drag/modifiers/groups/locks/cancel in three views.');
 }finally{w.close()}

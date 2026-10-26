@@ -37,7 +37,8 @@ try{
   assert.equal(A.document.objects.find(o=>o.id===id).name,originalName,'one undo restores the name before typing');A.command('redo');A.select(id,false,true);
   change('#prop-fill','#123456');change('#prop-opacity',.65);
   const beforeSVG=A.renderSVG();change(selector,value);assert.notEqual(A.renderSVG(),beforeSVG,type+' property redraws geometry');
-  assert(d.querySelector('[data-action="vertices"]').disabled);assert(d.querySelector('[data-action="duplicate"]').disabled,'solid command restrictions retained');
+  assert(d.querySelector('[data-tool="vertex"]').disabled);assert(d.querySelector('#properties [data-action="front"]').disabled,'solid command restrictions retained');
+  const beforeDuplicate=JSON.stringify(A.document.objects);A.command('duplicate');assert.equal(JSON.stringify(A.document.objects),beforeDuplicate,'solid geometry duplication remains blocked without the inspector shortcut');
   for(const mode of ['plan','elevation','solid']){
    d.querySelector(`[data-view="${mode}"]`).click();A.select(id,false,true);o=A.document.objects.find(o=>o.id===id);
    assert.equal(o.name,'立体属性 '+type);assert.equal(o.fill,'#123456');near(o.opacity,.65);near(read(o),value,type+' property persists in '+mode);

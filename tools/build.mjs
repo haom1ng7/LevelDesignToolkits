@@ -3,8 +3,8 @@ import {minify} from 'terser';
 const root=new URL('../',import.meta.url);
 const productVersion=JSON.parse(readFileSync(new URL('package.json',root),'utf8')).version;
 const read=p=>readFileSync(new URL(p,root),'utf8');
-const modules=['model','geometry','model-features','curved-geometry','creation-colors','model-v10','geometry-cache','mesh-export','render','render-features','view-features','advanced-render','app'];
-const interactions=['interactions','ui-features','advanced-interactions','component-list','export-preview','curve-panel','project-saving','keyboard','grid-snapping','move-snapping','transform-snapping','world-move','world-transform','property-inspector','usage-help','event-editing','ui-shell'];
+const modules=['model','geometry','model-features','curved-geometry','creation-colors','model-v10','cutting-geometry','geometry-cache','mesh-export','render','render-features','view-features','advanced-render','app'];
+const interactions=['interactions','ui-features','advanced-interactions','cutting','component-list','export-preview','curve-panel','project-saving','keyboard','grid-snapping','move-snapping','transform-snapping','world-move','world-transform','property-inspector','usage-help','event-editing','ui-shell'];
 const source=modules.map(name=>read(`src/${name}.js`)
   .replace('/*TEXT_EDITING*/',()=>read('src/text-editing.js'))
   .replace('/*INTERACTIONS*/',()=>interactions.map(name=>read(`src/${name}.js`)).join('\n'))).join('\n');

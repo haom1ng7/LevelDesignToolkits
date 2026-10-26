@@ -39,7 +39,7 @@
 
 ```text
 model → geometry → model-features → curved-geometry → creation-colors
-→ model-v10 → geometry-cache → mesh-export → render → render-features
+→ model-v10 → cutting-geometry → geometry-cache → mesh-export → render → render-features
 → view-features → advanced-render → app
 ```
 
@@ -47,7 +47,7 @@ model → geometry → model-features → curved-geometry → creation-colors
 
 `src/app.js` 是编辑器主闭包，负责工程状态、选择、视图/相机、撤销重做、自动暂存、命令和界面更新。其中两个占位符会在构建时展开：
 
-- `/*INTERACTIONS*/`：依次插入 `interactions`、`ui-features`、`advanced-interactions`、`component-list`、`export-preview`、`curve-panel`、`keyboard`、`grid-snapping`、`move-snapping`、`transform-snapping`、`world-move`、`world-transform`、`property-inspector`、`usage-help`、`event-editing`、`ui-shell`。
+- `/*INTERACTIONS*/`：依次插入 `interactions`、`ui-features`、`advanced-interactions`、`cutting`、`component-list`、`export-preview`、`curve-panel`、`keyboard`、`grid-snapping`、`move-snapping`、`transform-snapping`、`world-move`、`world-transform`、`property-inspector`、`usage-help`、`event-editing`、`ui-shell`。
 - `/*TEXT_EDITING*/`：插入 `text-editing.js`。
 
 这些插入片段共享 `app.js` 的闭包变量，不能一概作为独立脚本加载。新增文件需在构建脚本中显式接入。
@@ -60,6 +60,7 @@ model → geometry → model-features → curved-geometry → creation-colors
 | 三维坐标、实体/空洞几何、曲面与缓存 | `geometry.js`、`curved-geometry.js`、`geometry-cache.js` |
 | SVG 场景、三视图、文字对比色图像 | `render.js`、`render-features.js`、`view-features.js`、`advanced-render.js` |
 | 选择、拖拽、创建和属性操作 | `app.js`、`interactions.js`、`ui-features.js`、`advanced-interactions.js` |
+| 逐点切割与实体拆分 | `cutting-geometry.js` 的材料平面图细分和内置 `cutouts`，`cutting.js` 的剪刀指针、点击闭合/贯穿、预览及原子历史；平面、墙面和墙体占地共享原有实体几何与导出 |
 | 组件列表范围选择与拖动排序 | `component-list.js`，按当前列表顺序连选，复用 `objects` 顺序与工程历史，宿主携带空洞 |
 | 多选共有属性、三轴变换与批量属性编辑 | `property-inspector.js`，复用 `app.js` 的组件字段及 `world-transform.js` 的本地尺寸约束 |
 | 网格与移动吸附、旋转/大小吸附 | `grid-snapping.js`、`move-snapping.js`、`transform-snapping.js` |
@@ -100,7 +101,7 @@ npm run manual
 ```
 
 - `build`：生成 `dist/index.html` 和 `dist/build-report.json`。修改源码后先构建，再运行测试，因为多数回归加载的是构建产物。
-- `test`：顺序运行 18 组 `tests/verify-*.cjs`，覆盖版本兼容、事件、视角、空间操作、楼梯吸附、世界移动、立体旋转与角点尺寸、变换吸附、平面/立面独立尺寸、多选属性与三轴数值编辑、组件列表排序与范围选择、导出临时图像内存限制及 FBX/OBJ 的独立读取、空洞/法线/世界坐标和取消下载。
+- `test`：顺序运行 19 组 `tests/verify-*.cjs`，覆盖版本兼容、事件、视角、空间操作、楼梯吸附、世界移动、立体旋转与角点尺寸、变换吸附、平面/立面独立尺寸、多选属性与三轴数值编辑、组件列表排序与范围选择、导出临时图像内存限制及 FBX/OBJ 的独立读取、空洞/法线/世界坐标和取消下载。
 - `manual`：等价于 `python -X utf8 tools/build-manual.py`，从 `src/help/content.json` 和媒体生成 `docs/使用说明.md`、`docs/使用说明.html`。修改教程后需同时重建网页和外部说明。
 - `npm run qa`：生成 `data/qa-project.json` 和带示例种子的 `dist/qa.html`；会覆盖已有 QA 示例数据，按需使用。
 - 单组回归可用 `node tests/verify-world-move.cjs` 等直接执行；仍需先构建。
