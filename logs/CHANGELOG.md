@@ -611,3 +611,10 @@
 - 验证：全套回归首轮因旧测试仍查找已移除的属性顶点/副本按钮失败，已改查左侧顶点工具、保留的排序按钮及实际复制命令限制。立体属性浏览器脚本首轮因默认网格将 32 取整为 100 失败，已在该自由数值编辑场景显式关闭网格后重跑通过，保留原数值断言；应用网格行为未改。
 - 验证：使用本机 bundled Python 执行 tools/build-manual.py 成功，同步 8 节教程与 7 段自包含媒体；Node.js 检查离线按钮、空种子、旧排序文案移除及教程同步通过。node --check 检查本次应用入口、列表模块及三个修改的测试脚本通过；本次源文件、测试、Markdown 教程与日志的 Git 空白检查通过（仅提示既有 LF/CRLF 转换）。
 - 未运行：实际 PNG/SVG 下载、手机真机、Windows 重新封装与桌面 EXE 冒烟；本次交付源码、离线网页和同步教程，未改导出或桌面代码。
+
+## 2026-10-26 · 移除规整为矩形功能
+
+- 变更：移除平面、墙壁及宿主空洞属性面板中的“规整为矩形”按钮，同时删除 regularize 命令分发及实现函数。
+- 影响文件：src/app.js、src/ui-features.js、dist/index.html、dist/build-report.json、logs/CHANGELOG.md。
+- 验证：npm run build 成功，离线单页 6,991,077 字节；node tests/verify-property-inspector.cjs、node tests/verify-spatial-update.cjs、node tests/verify-cutting.cjs 均通过；node --check src/app.js 和 node --check src/ui-features.js 通过；一次性 Node.js 检查确认源码及构建网页不再含 regularize 或按钮文案；git diff --check 通过（仅既有 LF/CRLF 转换提示）。
+- 未运行：全套 npm test、真实浏览器交互、实际导出下载及 Windows 重新封装/桌面冒烟；本次仅移除单个属性操作，已运行相关三组回归，未改模型、导出或桌面实现。
