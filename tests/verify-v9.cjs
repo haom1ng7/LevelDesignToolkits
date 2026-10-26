@@ -7,6 +7,8 @@ function drag(p,q){pointer(c,'pointerdown',p);pointer(c,'pointermove',q);pointer
 function tap(p){pointer(c,'pointerdown',p);pointer(c,'pointerup',p)}
 function size(n){const i=d.querySelector('#inline-font-size');i.value=String(n);i.dispatchEvent(new w.Event('input',{bubbles:true}));i.dispatchEvent(new w.Event('change',{bubbles:true}))}
 try{
+ // Palette and freehand gesture checks use coordinates outside the unit grid.
+ d.querySelector('#snap').checked=false;
  A.createDocument('space','v9验收');const green=A.document.objects.find(o=>o.type==='plane').fill,colors=[green];
  A.setTool('plane');drag([100,120],[200,180]);const first=A.document.objects.at(-1);colors.push(first.fill);drag([250,120],[350,180]);colors.push(A.document.objects.at(-1).fill);A.setTool('marker');A.setTool('plane');drag([400,120],[500,180]);colors.push(A.document.objects.at(-1).fill);assert.equal(new Set(colors).size,4);const allocated=A.document.objects.at(-1).fill;A.command('undo');A.setTool('plane');drag([400,120],[500,180]);assert.equal(A.document.objects.at(-1).fill,allocated,'undo restores allocation');
  const used=M.clone(A.document.planeColors);A.setTool('plane');tap([1100,700]);assert.equal(A.tool,'select');same(A.document.planeColors,used);A.setTool('plane');tap([150,150]);assert.equal(A.tool,'select');assert.equal(A.selection.id,first.id);const count=A.document.objects.length;

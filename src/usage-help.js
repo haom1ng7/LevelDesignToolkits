@@ -1,6 +1,6 @@
 function toolTeaching(t){
  const solid=view.mode==='solid';
- return {select:solid?'点击选中组件':'点击选中，拖框多选',move:solid&&usesWorldGizmo()?'拖动坐标轴或平面手柄':'选中后拖动组件',size:solid?'拖角点调整长宽高，对角点固定；拖旁边的轴只改一个尺寸':'拖边拉伸，拖角等比缩放',rotate:solid&&solidRotationAvailable()?'拖动 X/Y/Z 圆环旋转；Shift 每次 15°':'拖动圆环调整方向',vertex:'拖动角点，调整图形轮廓',plane:'拖拽创建平面',wall:'拖拽创建墙壁',hole:view.mode==='elevation'?'在墙壁上拖拽打洞':'在平面上拖拽打洞',stairs:'点击放置楼梯',ladder:'点击放置爬梯',spiral:'点击放置旋转楼梯',marker:'点击放置标记',route:'依次点击连线，Enter结束',text:'点击添加，双击修改',pan:'按住左键拖动画面'}[t];
+ return {select:solid?'点击选中组件':'点击选中，拖框多选',move:solid&&usesWorldGizmo()?'拖动坐标轴或平面手柄':'选中后拖动组件',size:solid?'拖角点调整长宽高，对角点固定；拖旁边的轴只改一个尺寸':'拖边调整单个尺寸；拖角分别调整两个尺寸，Shift 等比缩放',rotate:solid&&solidRotationAvailable()?'拖动 X/Y/Z 圆环旋转；Shift 每次 15°':'拖动圆环调整方向',vertex:'拖动角点，调整图形轮廓',plane:'拖拽创建矩形 · Shift 正方形',ellipse:'拖拽创建椭圆 · Shift 正圆',wall:'拖拽创建墙壁',hole:view.mode==='elevation'?'在墙壁上拖拽打洞':'在平面上拖拽打洞',stairs:'点击放置楼梯',ladder:'点击放置爬梯',spiral:'点击放置旋转楼梯',marker:'点击放置标记',route:'依次点击连线，Enter结束',text:'点击添加，双击修改',pan:'按住左键拖动画面'}[t];
 }
 // GIFs are decoded only on demand, and replaced with their still when stopped.
 const helpDialog=$('#help-dialog');

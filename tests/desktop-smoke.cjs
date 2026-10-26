@@ -13,7 +13,7 @@ const start=async()=>{
 };
 (async()=>{
  let {a,p}=await start();app=a;
- assert.equal(await p.title(),'关卡设计工具箱 v1.0');
+ assert.equal(await p.title(),'关卡设计工具箱 v1.1');
  assert.equal(await p.evaluate(()=>typeof require),'undefined');
  assert(await p.evaluate(()=>window.SpatialEditor.project.documents.length===0));results.checks.push('real EXE starts offline, empty seed, Node unavailable');
  const preferences=await a.evaluate(({BrowserWindow})=>{const w=BrowserWindow.getAllWindows()[0];return w.webContents.getLastWebPreferences()});
@@ -34,11 +34,15 @@ const start=async()=>{
  const prepare=async file=>a.evaluate(({session},file)=>{global.studioDownload=null;session.defaultSession.once('will-download',(_event,item)=>{item.setSavePath(file);item.once('done',(_e,state)=>{global.studioDownload=state})})},file);
  const saved=async()=>{for(let i=0;i<100;i++){const state=await a.evaluate(()=>global.studioDownload);if(state){assert.equal(state,'completed');return}await new Promise(r=>setTimeout(r,100))}throw Error('Native download did not complete')};
  const downloaded=path.join(profile,'工程.json');
- await prepare(downloaded);await p.locator('[data-action="project"]').click();await saved();assert.equal(JSON.parse(fs.readFileSync(downloaded,'utf8')).version,7);results.checks.push('native JSON import and real file download');
+ // Select a path through the native save entry while exercising real IPC/disk writes.
+ await a.evaluate(({dialog},file)=>{global.studioSaveDialog=dialog.showSaveDialog;dialog.showSaveDialog=async()=>({canceled:false,filePath:file})},downloaded);
+ try{await p.locator('[data-action="project"]').click();await p.waitForFunction(()=>!document.querySelector('[data-action="project"]').hasAttribute('aria-busy'));assert.equal(JSON.parse(fs.readFileSync(downloaded,'utf8')).version,7)}
+ finally{await a.evaluate(({dialog})=>{dialog.showSaveDialog=global.studioSaveDialog})}
+ results.checks.push('native JSON import and real project file save');
  await p.evaluate(()=>SpatialEditor.command('png'));await p.locator('#export-download').waitFor({state:'visible'});await p.waitForFunction(()=>!document.querySelector('#export-download').disabled);
  const png=path.join(profile,'图稿.png');await prepare(png);await p.locator('#export-download').click();await saved();assert.equal(fs.readFileSync(png).subarray(0,8).toString('hex'),'89504e470d0a1a0a');results.checks.push('PNG preview and real PNG export');
  await p.locator('[data-action="export-close"]').first().click();
- await p.evaluate(()=>{SpatialEditor.document.name='重开恢复验证';SpatialEditor.command('save')});
+ await p.evaluate(()=>{SpatialEditor.document.name='重开恢复验证';SpatialEditor.command('autosave')});
  await a.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].close());await a.process().exitCode;
  // Await process disposal before reusing the isolated profile.
  await new Promise(resolve=>{if(a.process().exitCode!==null)resolve();else a.process().once('exit',resolve)});

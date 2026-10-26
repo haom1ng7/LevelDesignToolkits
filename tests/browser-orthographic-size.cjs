@@ -1,0 +1,30 @@
+// Real corner hit testing, independent dimensions and modifier keys in Chrome.
+const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),{pathToFileURL}=require('node:url'),{chromium}=require('playwright-core');
+(async()=>{
+ const browser=await chromium.launch({headless:true,...(process.env.STUDIO_BROWSER?{executablePath:process.env.STUDIO_BROWSER}:{channel:'chrome'})});
+ try{
+  const page=await browser.newPage({viewport:{width:1440,height:1000}}),errors=[],network=[],checks=[],out=path.join(__dirname,'../qa/orthographic-size');fs.mkdirSync(out,{recursive:true});page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>{if(/^https?:/.test(r.url()))network.push(r.url())});
+  await page.goto(pathToFileURL(path.join(__dirname,'../dist/index.html')).href);
+  const near=(a,b,msg='')=>assert(Math.abs(a-b)<1e-4,`${msg}: ${a} != ${b}`),state=()=>page.evaluate(()=>JSON.stringify(SpatialEditor.document.objects)),history=()=>page.evaluate(()=>SpatialEditor.undoCount);
+  const select=async id=>{await page.evaluate(id=>SpatialEditor.select(id,false,true),id);await page.locator('#canvas').focus();await page.keyboard.press('r')};
+  const corner=()=>page.locator('[data-size-corner="2"]').evaluate(el=>{const p=new DOMPoint(+el.getAttribute('cx'),+el.getAttribute('cy')).matrixTransform(el.getScreenCTM()),hit=document.elementFromPoint(p.x,p.y);if(hit!==el)throw Error('Size corner is not reachable: '+JSON.stringify({x:p.x,y:p.y,hit:hit?.outerHTML.slice(0,200),camera:SpatialEditor.camera}));return {x:p.x,y:p.y}});
+  const delta=(id,v)=>page.evaluate(({id,v})=>{const A=SpatialEditor,M=StudioModel,o=A.document.objects.find(o=>o.id===id),b=A.scene.basis,p=M.mat(o.orientation,v),m=document.querySelector('#canvas').getScreenCTM();return {x:M.dot(p,b.r)*m.a,y:M.dot(p,b.down)*m.d}},{id,v});
+  const drag=async(id,v)=>{const p=await corner(),q=await delta(id,v);await page.mouse.move(p.x,p.y);await page.mouse.down();await page.mouse.move(p.x+q.x,p.y+q.y,{steps:12});await page.mouse.up()};
+  const dimensions=id=>page.evaluate(id=>{const A=SpatialEditor,M=StudioModel,o=A.document.objects.find(o=>o.id===id),p=M.geometry(A.document,o).flatMap(f=>f.points).map(p=>M.local(A.document,o,p));return [0,1,2].map(i=>Math.max(...p.map(p=>p[i]))-Math.min(...p.map(p=>p[i])))},id);
+  for(const mode of ['plan','elevation'])for(const grid of [false,true]){
+   const id=await page.evaluate(mode=>{const A=SpatialEditor,M=StudioModel;A.createDocument('space',mode==='plan'?'平面尺寸验收':'立面尺寸验收');A.project.documents.splice(0,A.project.documents.length-1);A.document.objects=[];A.document.floors[0].height=70;const o=M.createObject(A.document,mode==='plan'?'plane':'wall',[550,400,30]);o.points=[[0,0],[200,0],[200,120],[0,120]];const h=Object.assign(M.createObject(A.document,'hole'),{host:o.id,floor:o.floor,points:[[40,40],[80,40],[80,80],[40,80]]});A.document.objects.push(o,h);return o.id},mode);
+   await page.locator(`[data-view="${mode}"]`).click();await select(id);await page.locator('#snap').setChecked(grid);await page.locator('#move-snap').uncheck();await page.locator('[data-action="fit-selected"]').click();for(let i=0;i<6;i++)await page.locator('[data-action="zoom-out"]').click();await select(id);
+   let before=await state(),undo=await history(),initial=await dimensions(id);await drag(id,[63,0,0]);let e=await dimensions(id);near(e[0],grid?300:263,'horizontal corner changes only width');for(let i=1;i<3;i++)near(e[i],initial[i],'other dimension fixed');assert.equal(await history(),undo+1);const changed=await state();await page.keyboard.press('Control+z');assert.equal(await state(),before);await page.keyboard.press('Control+Shift+z');assert.equal(await state(),changed);
+   await select(id);const secondAxis=mode==='plan'?1:2,v=[0,0,0];v[secondAxis]=40;await drag(id,v);e=await dimensions(id);near(e[0],grid?300:263,'vertical corner preserves width');near(e[secondAxis],grid?200:160,'vertical corner changes second dimension');await page.screenshot({path:path.join(out,`${mode}-${grid?'grid':'free'}.png`)});
+   // Ctrl bypasses the grid without coupling the other dimension.
+   await select(id);before=await dimensions(id);await page.keyboard.down('Control');try{await drag(id,[37,0,0])}finally{await page.keyboard.up('Control')}e=await dimensions(id);near(e[0],before[0]+37);near(e[secondAxis],before[secondAxis]);
+   // Shift keeps the current aspect ratio, including with grid snapping enabled.
+   await select(id);before=await dimensions(id);await page.keyboard.down('Shift');try{await drag(id,[80,0,0])}finally{await page.keyboard.up('Shift')}e=await dimensions(id);near(e[0]/e[secondAxis],before[0]/before[secondAxis],'Shift ratio');if(grid)near(e[0]/100,Math.round(e[0]/100),'Shift width on grid');
+   await select(id);before=await state();undo=await history();let p=await corner();await page.mouse.move(p.x,p.y);await page.mouse.down();await page.mouse.move(p.x+40,p.y-15,{steps:5});await page.keyboard.press('Escape');await page.mouse.up();assert.equal(await state(),before);assert.equal(await history(),undo);
+   for(const view of ['plan','elevation','solid']){await page.locator(`[data-view="${view}"]`).click();assert.equal(await state(),before);assert(await page.evaluate(()=>StudioModel.validGeometry(SpatialEditor.document)))}
+   const saved=await page.evaluate(()=>JSON.stringify(SpatialEditor.project));await page.evaluate(s=>SpatialEditor.loadProject(JSON.parse(s)),saved);assert.equal(await page.evaluate(()=>JSON.stringify(SpatialEditor.project)),saved);
+   checks.push(`${mode}, grid ${grid}: real X/second-axis corner drags, Ctrl, Shift, history, Esc, holes, shared views and JSON`);
+  }
+  assert.deepEqual(errors,[]);assert.deepEqual(network,[]);fs.writeFileSync(path.join(out,'report.json'),JSON.stringify({checks,errors,network},null,2));console.log('PASS Chrome orthographic size: real plan/elevation corners, independent dimensions, grid/Ctrl/Shift, undo/redo/Esc, holes, three-view and JSON consistency. Evidence qa/orthographic-size/.');
+ }finally{await browser.close()}
+})().catch(e=>{console.error(e);process.exitCode=1});

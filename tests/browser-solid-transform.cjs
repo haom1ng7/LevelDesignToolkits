@@ -4,10 +4,22 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('n
  const browser=await chromium.launch({headless:true,...(process.env.STUDIO_BROWSER?{executablePath:process.env.STUDIO_BROWSER}:{channel:'chrome'})});
  try{
   const page=await browser.newPage({viewport:{width:1440,height:1000}}),errors=[],out=path.join(__dirname,'../qa/solid-transform');fs.mkdirSync(out,{recursive:true});page.on('pageerror',e=>errors.push(e.message));
+  await page.addInitScript(()=>{window.showSaveFilePicker=async()=>({name:'快捷键回归.json',async createWritable(){return {async write(content){window.shortcutSavedJSON=content},async close(){}}}})});
   await page.goto(pathToFileURL(path.join(__dirname,'../dist/index.html')).href);
   const id=await page.evaluate(()=>{const A=SpatialEditor,M=StudioModel;A.createDocument('space','立体图 W E R 验收');A.document.objects=[];const o=M.createObject(A.document,'wall',[550,400,30]),h=Object.assign(M.createObject(A.document,'hole'),{host:o.id,floor:o.floor,points:[[-30,50],[30,50],[30,120],[-30,120]]});A.document.objects.push(o,h);return o.id});
   await page.locator('[data-view="solid"]').click();await page.locator(`[data-layer="${id}"]`).click();await page.locator('#snap').uncheck();await page.locator('#rotation-snap').uncheck();await page.locator('#canvas').focus();
   const state=()=>page.evaluate(()=>JSON.stringify(SpatialEditor.document.objects)),history=()=>page.evaluate(()=>SpatialEditor.undoCount);
+  const shortcutSource=await state(),shortcutUndo=await history();
+  for(const mode of ['plan','elevation','solid']){
+   await page.locator(`[data-view="${mode}"]`).click();await page.locator(`[data-layer="${id}"]`).click();await page.locator('#canvas').focus();
+   for(const [key,tool] of [['q','select'],['w','move'],['e','rotate']]){
+    await page.keyboard.press(key);await page.keyboard.press('s');assert.equal(await page.evaluate(()=>SpatialEditor.tool),tool,`${mode}: S preserves ${tool}`);
+    await page.keyboard.press('Shift+s');assert.equal(await page.evaluate(()=>SpatialEditor.tool),tool,`${mode}: Shift+S preserves ${tool}`);
+   }
+   await page.keyboard.press('r');assert.equal(await page.evaluate(()=>SpatialEditor.tool),'size',`${mode}: R selects size`);
+  }
+  assert.equal(await state(),shortcutSource);assert.equal(await history(),shortcutUndo);
+  await page.keyboard.press('w');await page.evaluate(()=>localStorage.removeItem('spatial-studio-v9:'+location.pathname));await page.keyboard.press('Control+s');await page.waitForFunction(()=>!!window.shortcutSavedJSON);assert.equal(await page.evaluate(()=>SpatialEditor.tool),'move','Ctrl+S saves without switching tools');assert(await page.evaluate(()=>JSON.stringify(JSON.parse(shortcutSavedJSON))===JSON.stringify(SpatialEditor.project)),'Ctrl+S writes the current project file');assert(await page.evaluate(()=>localStorage.getItem('spatial-studio-v9:'+location.pathname)===JSON.stringify(SpatialEditor.project)),'Ctrl+S also updates autosave');
   const at=async p=>page.evaluate(p=>{const c=document.querySelector('#canvas'),q=new DOMPoint(...p).matrixTransform(c.getScreenCTM());return {x:q.x,y:q.y}},p);
   const drag=async(p,q)=>{await page.mouse.move(p.x,p.y);await page.mouse.down();await page.mouse.move(q.x,q.y,{steps:12});await page.mouse.up()};
   const line=async selector=>page.locator(selector).evaluate(el=>{const p=el.getPointAtLength(el.getTotalLength()*.72).matrixTransform(el.getScreenCTM());return {x:p.x,y:p.y}});
@@ -31,6 +43,6 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('n
   const project=await page.evaluate(()=>JSON.stringify(SpatialEditor.project));await page.evaluate(json=>SpatialEditor.loadProject(JSON.parse(json)),project);assert(await page.evaluate(()=>StudioModel.validGeometry(SpatialEditor.document)));
   for(const mode of ['plan','elevation','solid']){await page.locator(`[data-view="${mode}"]`).click();await page.locator(`[data-layer="${id}"]`).click();assert.equal(await page.locator('#prop-name').inputValue(),'输入不切工具 WERL')}
   await page.locator('#properties [data-action="lock"]').click();assert(await page.locator('[data-tool="rotate"]').isDisabled());assert(await page.locator('[data-tool="size"]').isDisabled());await page.keyboard.press('r');assert.equal(await page.locator('[data-solid-corner]').count(),0);
-  assert.deepEqual(errors,[]);fs.writeFileSync(path.join(out,'report.json'),JSON.stringify({checks:['real W move','real E ring hit and rigid rotation','real R corner and local axis hits with fixed opposite corner','atomic undo/redo/Esc','L route','typing/locks','JSON and three-view sync','SVG helper exclusion'],errors},null,2));console.log('PASS Chrome W/E/R/L: actual keyboard, mouse hits and drags, fixed opposite corners, history/Esc, typing/locks, host/JSON/view sync and SVG exclusion; evidence qa/solid-transform/.');
+  assert.deepEqual(errors,[]);fs.writeFileSync(path.join(out,'report.json'),JSON.stringify({checks:['S and Shift+S preserve select/move/rotate in three views','R size in three views','Ctrl+S local save preserves tool','real W move','real E ring hit and rigid rotation','real R corner and local axis hits with fixed opposite corner','atomic undo/redo/Esc','L route','typing/locks','JSON and three-view sync','SVG helper exclusion'],errors},null,2));console.log('PASS Chrome W/E/R/L: S ignored and R size in three views, Ctrl+S save, actual keyboard, mouse hits and drags, fixed opposite corners, history/Esc, typing/locks, host/JSON/view sync and SVG exclusion; evidence qa/solid-transform/.');
  }finally{await browser.close()}
 })().catch(e=>{console.error(e);process.exitCode=1});

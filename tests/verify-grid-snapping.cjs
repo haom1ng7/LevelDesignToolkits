@@ -29,14 +29,14 @@ try{
  const id=o.id;A.command('undo');assert.equal(A.document.objects.length,0);A.command('redo');assert.equal(A.document.objects[0].id,id);
  // Placement must render the sampled contour on its first frame, before a move.
  for(const snapping of [true,false])for(const circle of [false,true]){
-  fresh();d.querySelector('#snap').checked=snapping;A.setTool('plane');change('#creation-shape','ellipse');
+  fresh();d.querySelector('#snap').checked=snapping;A.setTool('ellipse');
   drag([200,200],[500,400],c,{shiftKey:circle});o=A.document.objects.at(-1);assert.equal(o.shape,'ellipse');
   const firstFace=A.scene.faces.find(f=>f.owner.id===o.id);assert.equal(firstFace?.points.length,32,`${circle?'circle':'ellipse'} renders curved immediately, grid ${snapping}`);
   const corner=at(M.world(A.document,o,[o.points[0][0]+1,o.points[0][1]+1,0]));assert(!R.pickAll(corner,A.scene,A.document,A.view).some(h=>h.id===o.id),'outside ellipse corner is not filled or pickable');
   const center=at(M.origin(A.document,o));assert(R.pickAll(center,A.scene,A.document,A.view).some(h=>h.id===o.id));
   const mesh=JSON.stringify(M.geometry(A.document,o).map(f=>f.points));A.command('undo');assert.equal(A.document.objects.length,0);A.command('redo');o=A.document.objects[0];assert.equal(JSON.stringify(M.geometry(A.document,o).map(f=>f.points)),mesh,'redo keeps curved geometry');
  }
- fresh();A.setTool('plane');change('#creation-shape','rectangle');
+ fresh();A.setTool('plane');
  // Neighbor edges at 497 must not pull a grid rectangle away from 500.
  add('plane',[617,600,0]);A.setTool('plane');drag([12,412],[497,695]);o=A.document.objects.at(-1);b=box(o);multiple(b.max[0]);
  // Ghosts and committed placements share constraints in all three views.
@@ -59,7 +59,7 @@ try{
  // A size gesture rounds the resulting dimension and preserves its opposite corner.
  fresh('solid',75);o=add('plane');A.select(o.id,false,true);A.setTool('size');let g=d.querySelector('[data-solid-size-axis="0"]'),p=d.querySelector('[data-solid-corner="7"] circle'),start=[+p.getAttribute('cx'),+p.getAttribute('cy')],before=box(o,true),fixed=M.world(A.document,o,before.min);drag(start,M.add(start,M.sub(at([24,0,0]),at([0,0,0]))),g);o=A.document.objects.find(x=>x.id===o.id);b=box(o,true);near(b.max[0]-b.min[0],300);M.world(A.document,o,b.min).forEach((n,i)=>near(n,fixed[i]));A.command('undo');
  // Orthographic edge/corner resizing and numeric size fields use the document step.
- fresh();o=add('plane');A.select(o.id,false,true);A.setTool('size');g=d.querySelector('[data-size-edge="1"]');p=A.scene.basis;const ps=o.points.map(v=>at(M.world(A.document,o,[...v,0]))),edge=M.mul(M.add(ps[1],ps[2]),.5);drag(edge,M.add(edge,[63,0]),g);o=A.document.objects.find(x=>x.id===o.id);b=box(o,true);multiple(b.max[0]-b.min[0]);change('#prop-thickness',137);o=A.document.objects.find(x=>x.id===o.id);multiple(o.thickness);M.validate(A.project);
+ fresh();o=add('plane');A.select(o.id,false,true);A.setTool('size');g=d.querySelector('[data-size-edge="1"]');p=A.scene.basis;const ps=o.points.map(v=>at(M.world(A.document,o,[...v,0]))),edge=M.mul(M.add(ps[1],ps[2]),.5);drag(edge,M.add(edge,[63,0]),g);o=A.document.objects.find(x=>x.id===o.id);b=box(o,true);multiple(b.max[0]-b.min[0]);change('#prop-dimensionZ',137);o=A.document.objects.find(x=>x.id===o.id);multiple(o.thickness);M.validate(A.project);
  // Showing the grid is independent of enabling snapping; curves retain their own units.
  const geometry=JSON.stringify(A.document.objects);d.querySelector('#snap').checked=false;d.querySelector('#snap').dispatchEvent(new w.Event('change',{bubbles:true}));assert.equal(JSON.stringify(A.document.objects),geometry);A.createDocument('curve');assert(!d.querySelector('#doc-gridSize'));assert.deepEqual(errors,[]);
  console.log('PASS grid: defaults/migration/validation/history/JSON; fixed world lattice across views and zooms; rectangle and three placement types in plan/elevation; whole-grid dimensions, negative/off-grid absolute movement, component priority, Ctrl, Alt host/hole/group copy and cancel, fixed-corner 3D size, 2D size and properties, curve isolation.');

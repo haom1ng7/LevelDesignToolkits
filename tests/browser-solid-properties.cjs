@@ -23,7 +23,7 @@ const {chromium}=require('playwright-core');
   await name.fill('立体属性');await name.press('End');await name.pressSequentially('修改');
   assert.equal(await value(ids.plane,'name'),'立体属性修改');assert(await name.evaluate(el=>el===document.activeElement),'typing retains focus');
   const originalThickness=await value(ids.plane,'thickness');
-  await page.locator('#prop-thickness').fill('32');await page.locator('#prop-thickness').press('Tab');
+  await page.locator('#prop-dimensionZ').fill('32');await page.locator('#prop-dimensionZ').press('Tab');
   assert.equal(await value(ids.plane,'thickness'),32);
   await page.locator('[data-action="undo"]').click();assert.equal(await value(ids.plane,'thickness'),originalThickness);
   await page.locator('[data-action="redo"]').click();assert.equal(await value(ids.plane,'thickness'),32);
@@ -31,12 +31,12 @@ const {chromium}=require('playwright-core');
   await page.locator('#prop-fill').fill('#123456');await page.locator('#prop-opacity').fill('0.65');await page.locator('#prop-opacity').press('Tab');
   for(const mode of ['plan','elevation','solid']){
    await page.locator(`[data-view="${mode}"]`).click();
-   assert.equal(await page.locator('#prop-thickness').inputValue(),'32');
+   assert.equal(await page.locator('#prop-dimensionZ').inputValue(),'32');
    assert.equal(await page.locator('#prop-fill').inputValue(),'#123456');
    assert.equal(await page.locator('#prop-opacity').inputValue(),'0.65');
   }
   assert(await page.locator('[data-tool="rotate"]').isEnabled());assert(await page.locator('[data-tool="size"]').isEnabled());assert(await page.locator('[data-action="vertices"]').isDisabled());
-  await page.locator('#properties [data-action="lock"]').click();assert(await name.isDisabled());assert(await page.locator('#prop-thickness').isDisabled());
+  await page.locator('#properties [data-action="lock"]').click();assert(await name.isDisabled());assert(await page.locator('#prop-dimensionZ').isDisabled());
   await page.locator('#properties [data-action="lock"]').click();assert(await name.isEnabled());
   await page.locator(`[data-layer="${ids.stairs}"]`).click();
   await page.locator('#flight-end').fill('240');await page.locator('#flight-end').press('Tab');

@@ -67,13 +67,16 @@ function beginSolidTransform(e,q){
 function solidRigidRotation(angle){
  const matrix=M.axisRotation(worldAxes[drag.axis],angle);for(const o of selected().filter(o=>o.type!=='hole')){const p=M.add(drag.center,M.mat(matrix,M.sub(M.origin(doc(),o),drag.center)));o.position=M.sub(p,[0,0,M.floor(doc(),o)?.height||0]);o.orientation=M.product(matrix,o.orientation);if(o.type==='text')o.textAngle+=angle*180/Math.PI}
 }
-function resizeSolidFromCorner(delta,grid=false){
- const o=doc().objects.find(o=>o.id===drag.id),{b,index}=drag.info,extent=M.sub(b.max,b.min),factors=extent.map((n,i)=>Math.max(grid?gridStep()/n:.02,1+delta[i]*((index>>i)&1?1:-1)/n));
+function constrainSolidFactors(o,factors,axes){
  // Circular arcs and spiral radii keep their shape; their two radial dimensions move together.
  let coupled=o.type==='spiral'||o.wallPath?[0,1]:null;
  if([o,...M.holes(doc(),o)].some(h=>h.curves?.some(v=>Math.abs(v)>1e-7)))coupled=o.type==='wall'?[0,2]:[0,1];
- if(coupled){const i=coupled.find(i=>drag.axes.includes(i));if(i!==undefined)for(const j of coupled)factors[j]=factors[i]}
+ if(coupled){const i=coupled.find(i=>axes.includes(i));if(i!==undefined)for(const j of coupled)factors[j]=factors[i]}
  if(o.type==='ladder'){factors[0]=Math.max(factors[0],5/o.span,1/o.railWidth);factors[1]=Math.max(factors[1],1/o.thickness)}
+}
+function resizeSolidFromCorner(delta,grid=false){
+ const o=doc().objects.find(o=>o.id===drag.id),{b,index}=drag.info,extent=M.sub(b.max,b.min),factors=extent.map((n,i)=>Math.max(grid?gridStep()/n:.02,1+delta[i]*((index>>i)&1?1:-1)/n));
+ constrainSolidFactors(o,factors,drag.axes);
  const original=M.clone(o),before=doc().objects.filter(t=>t.type==='text').map(t=>({t,position:[...t.position]}));
  scaleHost(o,worldAxes,factors,drag.anchor);if(['stairs','spiral'].includes(o.type))o.thickness*=factors[2];
  // Size changes leave label typography intact and affect only selected annotations.

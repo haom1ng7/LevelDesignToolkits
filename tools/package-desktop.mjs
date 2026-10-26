@@ -13,11 +13,12 @@ cpSync(path.join(root,'third_party'),path.join(staging,'third_party'),{recursive
 // The browser keeps its historical path key; desktop autosave survives moving the app folder.
 writeFileSync(path.join(staging,'index.html'),readFileSync(path.join(root,'dist','index.html'),'utf8')
  .replace(/<html\b/i,'<html data-storage-key="level-diagram-studio-desktop-v1"'));
+const productVersion=JSON.parse(readFileSync(path.join(root,'package.json'),'utf8')).version;
 const version=JSON.parse(readFileSync(path.join(root,'node_modules/electron/package.json'),'utf8')).version;
 const results=await packager({dir:staging,name:'关卡设计工具箱',platform:'win32',arch:'x64',
  out:path.join(root,'.build','desktop'),overwrite:true,asar:true,prune:false,
  electronVersion:version,electronZipDir:process.env.ELECTRON_ZIP_DIR||undefined,icon:path.join(root,'desktop','icon.ico'),
- appVersion:'1.0.0',buildVersion:'1.0.0',
+ appVersion:productVersion,buildVersion:productVersion,
  win32metadata:{ProductName:'关卡设计工具箱',FileDescription:'Level Design Toolkits',CompanyName:'Level Design Toolkits'}});
 console.log(results.join('\n'));
 const manualFiles=['使用说明.html','使用说明.md','空间图_平面.png','空间图_立面.png','空间图_立体.png','曲线图_总览.png','曲线图_事件.png','导出图稿_预览.png','事件名称排序_拖动中.png'];

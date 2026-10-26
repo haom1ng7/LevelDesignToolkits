@@ -13,7 +13,7 @@ const url=pathToFileURL(path.join(__dirname,'../dist/index.html')).href;
  const track=page=>{page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>{if(/^https?:/.test(r.url()))network.push(r.url())});page.on('console',m=>{if(m.type()==='error')errors.push(m.text())})};
  const bounds=async(page,label)=>{
   const result=await page.evaluate(()=>{
-   const clipped=[...document.querySelectorAll('button,select,input,textarea')].filter(el=>!el.closest('#canvas,[inert]')).filter(el=>{const r=el.getBoundingClientRect();return r.width&&r.height&&r.bottom>0&&r.top<innerHeight}).filter(el=>{const r=el.getBoundingClientRect();return r.left<-.5||r.right>innerWidth+.5}).map(el=>el.id||el.textContent.trim().slice(0,20));
+   const clipped=[...document.querySelectorAll('button,select,input,textarea')].filter(el=>!el.closest('#canvas,[inert],.canvas-top')).filter(el=>{const r=el.getBoundingClientRect();return r.width&&r.height&&r.bottom>0&&r.top<innerHeight}).filter(el=>{const r=el.getBoundingClientRect();return r.left<-.5||r.right>innerWidth+.5}).map(el=>el.id||el.textContent.trim().slice(0,20));
    return {overflow:document.documentElement.scrollWidth>innerWidth,clipped};
   });assert.equal(result.overflow,false,label+' has no horizontal page scroll');assert.deepEqual(result.clipped,[],label+' controls fit the viewport');
  };
@@ -92,7 +92,11 @@ const url=pathToFileURL(path.join(__dirname,'../dist/index.html')).href;
   await phone.screenshot({path:path.join(out,'touch-dark.png')});
   await phone.setViewportSize({width:390,height:844});await phone.locator('#welcome [data-template="space"]').tap();
   let stage=await phone.locator('#stage').boundingBox();assert(stage.height>250,'touch canvas gets enough drawing space');
-  await phone.locator('[data-shell-options]').tap();assert(await phone.locator('#move-snap').isVisible(),'touch editing options expand');await bounds(phone,'touch options');await phone.locator('[data-shell-options]').tap();assert.equal(await phone.locator('#move-snap').isVisible(),false);
+  assert.equal(await phone.locator('[data-shell-options]').count(),0);
+  const toolbar=phone.locator('.canvas-top');
+  await toolbar.evaluate(el=>el.scrollLeft=el.scrollWidth);
+  await phone.locator('[data-action="fit"]').tap();await bounds(phone,'touch toolbar');
+  assert(await phone.locator('[data-action="fit"]').evaluate(el=>{const a=el.getBoundingClientRect(),b=el.closest('.canvas-top').getBoundingClientRect();return a.left>=b.left&&a.right<=b.right}),'touch toolbar reaches final actions');
   await phone.locator('[data-shell-pane="tools"]').tap();await phone.locator('[data-tool="plane"]').tap();stage=await phone.locator('#stage').boundingBox();assert(stage.height>200,'touch creation controls preserve drawing space');
   await phone.waitForTimeout(220);await phone.screenshot({path:path.join(out,'touch-space.png')});
   await phone.setViewportSize({width:844,height:390});await bounds(phone,'touch landscape');stage=await phone.locator('#stage').boundingBox();assert(stage.height>100,'landscape preserves drawing space');await phone.screenshot({path:path.join(out,'touch-landscape.png')});await touch.close();

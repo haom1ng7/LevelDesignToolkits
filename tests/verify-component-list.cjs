@@ -1,0 +1,47 @@
+const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict'),{JSDOM,VirtualConsole}=require('jsdom');
+const errors=[],vc=new VirtualConsole();vc.on('jsdomError',e=>errors.push(e.message));
+const dom=new JSDOM(fs.readFileSync(path.join(__dirname,'../dist/index.html'),'utf8'),{url:'https://qa.local/components',runScripts:'dangerously',pretendToBeVisual:true,virtualConsole:vc,beforeParse(w){
+ w.HTMLCanvasElement.prototype.getContext=()=>null;w.HTMLElement.prototype.getBoundingClientRect=function(){
+  const rows=[...w.document.querySelectorAll('#layers .layer')],i=rows.indexOf(this),top=i<0?300:300+i*36;
+  if(i>=0)return {left:10,right:250,top,bottom:top+36,width:240,height:36};
+  if(this.id==='layers')return {left:10,right:250,top:300,bottom:300+rows.length*36,width:240,height:rows.length*36};
+  return {left:0,right:1000,top:0,bottom:760,width:1000,height:760};
+ };w.HTMLDialogElement.prototype.showModal=function(){this.setAttribute('open','')};w.HTMLDialogElement.prototype.close=function(){this.removeAttribute('open')};w.URL.createObjectURL=()=> 'blob:test';w.URL.revokeObjectURL=()=>{};
+}});
+const w=dom.window,d=w.document,A=w.SpatialEditor,M=w.StudioModel,$=s=>d.querySelector(s),same=(a,b,m)=>assert.equal(JSON.stringify(a),JSON.stringify(b),m),rows=()=>[...d.querySelectorAll('#layers [data-layer]')].map(el=>el.dataset.layer),object=id=>A.document.objects.find(o=>o.id===id);
+function fresh(types=['plane','plane','plane','plane','plane']){A.createDocument('space','组件列表');A.project.documents.splice(0,A.project.documents.length-1);A.document.objects=[];$('#layer-filter').value='all';const ids=types.map((type,i)=>{const o=M.createObject(A.document,type,[300+i*400,350,0]);o.name=String.fromCharCode(65+i);A.document.objects.push(o);return o.id});A.setTool('select');return ids}
+function click(id,mods={}){$(`[data-layer="${id}"]`).dispatchEvent(new w.MouseEvent('click',{bubbles:true,cancelable:true,...mods}))}
+function pointer(target,type,x,y){const e=new w.MouseEvent(type,{bubbles:true,cancelable:true,button:0,clientX:x,clientY:y});Object.defineProperty(e,'pointerId',{value:1});target.dispatchEvent(e)}
+function start(id,target,after=false){const source=$(`[data-layer="${id}"]`).closest('.layer').getBoundingClientRect(),b=$(`[data-layer="${target}"]`).closest('.layer').getBoundingClientRect();pointer($(`[data-layer="${id}"]`),'pointerdown',60,source.top+18);pointer(d,'pointermove',60,after?b.bottom-2:b.top+2);return after?b.bottom-2:b.top+2}
+function drop(y,x=60){pointer(d,'pointerup',x,y);$('#layers').dispatchEvent(new w.MouseEvent('click',{bubbles:true,cancelable:true,detail:1}))}
+function reorder(id,target,after=false){drop(start(id,target,after))}
+function key(key,mods={}){d.dispatchEvent(new w.KeyboardEvent('keydown',{key,bubbles:true,cancelable:true,...mods}))}
+function filter(value){$('#layer-filter').value=value;$('#layer-filter').dispatchEvent(new w.Event('change',{bubbles:true}))}
+const model=()=>Object.fromEntries(A.document.objects.map(o=>[o.id,JSON.stringify(o)]).sort(([a],[b])=>a.localeCompare(b)));
+try{
+ let [a,b,c,e,f]=fresh();same(rows(),[f,e,c,b,a]);let h=A.undoCount;
+ click(e);click(b,{shiftKey:true});same(A.selection.ids,[e,c,b]);click(c,{shiftKey:true});same(A.selection.ids,[e,c],'same anchor allows shrinking');same(A.selection.id,c);assert.equal(A.undoCount,h,'selection is not a project mutation');
+ click(a);click(c,{shiftKey:true});same(A.selection.ids,[c,b,a],'reverse range includes endpoints');click(f,{ctrlKey:true});click(c,{ctrlKey:true,shiftKey:true});same(A.selection.ids,[c,b,a,f,e],'Ctrl+Shift unions ranges');
+ object(e).group=object(a).group=M.uid();object(b).visible=false;object(c).locked=true;A.setTool('select');click(e);same(A.selection.ids,[e],'list selects one group member');click(b,{shiftKey:true});same(A.selection.ids,[e,c,b],'hidden and locked listed rows participate');
+ [a,b,c,e,f]=fresh(['plane','text','plane','text','plane']);filter('plane');click(f);click(a,{shiftKey:true});same(A.selection.ids,[f,c,a],'filter range does not select other types');filter('text');click(b,{shiftKey:true});same(A.selection.ids,[b],'filtered-out anchor cannot select invisible rows');
+ [a,b,c,e,f]=fresh();let before=model();h=A.undoCount;let y=start(a,e);assert($('.layer-drag-ghost'));assert.equal($('.layer-insertion-line').hidden,false);same(rows(),[f,e,c,b,a]);same(model(),before,'preview leaves model intact');drop(y);same(rows(),[f,a,e,c,b]);same(model(),before,'reorder preserves every object property');assert.equal(A.undoCount,h+1);same(A.selection.ids,[a]);assert(!$('.layer-drag-ghost,.layer-insertion-line,.layer-dragging'));A.command('undo');same(rows(),[f,e,c,b,a]);A.command('redo');same(rows(),[f,a,e,c,b]);
+ reorder(f,b,true);same(rows(),[a,e,c,b,f],'downward insertion');h=A.undoCount;reorder(c,e,true);assert.equal(A.undoCount,h,'same slot adds no history');
+ click(a);click(c,{ctrlKey:true});reorder(c,f,true);same(rows(),[e,b,f,a,c],'disjoint selection moves as a stable block');same([...A.selection.ids].sort(),[a,c].sort());
+ let order=rows();h=A.undoCount;y=start(e,c);key('Escape');drop(y);same(rows(),order);assert.equal(A.undoCount,h);y=start(e,c);drop(y,500);same(rows(),order,'outside drop cancels');
+ y=start(e,c);pointer(d,'pointercancel',60,y);drop(y);same(rows(),order);y=start(e,c);w.dispatchEvent(new w.Event('blur'));drop(y);same(rows(),order);y=start(e,c);key('z',{ctrlKey:true});drop(y);same(rows(),order,'Ctrl+Z cancels active drag without consuming history');
+ object(e).locked=true;A.setTool('select');reorder(e,c);same(rows(),order,'locked row cannot reorder');object(e).locked=false;click(e);click(b,{ctrlKey:true});object(b).locked=true;A.setTool('select');reorder(e,c);same(rows(),order,'locked member blocks whole reorder');object(b).locked=false;
+ // Hosts travel with holes; holes reorder among siblings without changing host or geometry.
+ [a,b,c]=fresh(['plane','plane','text']);const holes=[-60,60].map((x,i)=>Object.assign(M.createObject(A.document,'hole'),{host:a,floor:object(a).floor,name:'空洞'+i,points:[[x-15,-15],[x+15,-15],[x+15,15],[x-15,15]]}));A.document.objects.push(...holes);A.setTool('select');const [ha,hb]=holes.map(o=>o.id);same(rows(),[c,b,a,ha,hb]);before=model();reorder(a,c);same(rows(),[a,ha,hb,c,b]);same(model(),before);reorder(hb,ha);same(rows(),[a,hb,ha,c,b]);same(model(),before,'hole order changes no properties');reorder(ha,b,true);same(rows(),[a,hb,ha,c,b],'hole cannot move to another host');
+ object(ha).locked=true;A.setTool('select');reorder(a,b,true);same(rows(),[a,hb,ha,c,b],'locked dependent hole blocks host reorder');object(ha).locked=false;filter('hole');reorder(ha,hb);same(rows(),[ha,hb]);assert.equal(object(ha).host,a);filter('all');
+ // Other floors, filter omissions and group identities survive a reorder and JSON round trip.
+ const otherFloor={id:M.uid(),name:'二层',height:200,visible:true};A.document.floors.push(otherFloor);const off=M.createObject(A.document,'plane',[500,500,0]);off.floor=otherFloor.id;A.document.objects.push(off);A.setTool('select');before=model();filter('plane');reorder(a,b,true);same(rows(),[b,a]);same(model(),before);assert(!rows().includes(off.id));const json=JSON.stringify(A.project);A.loadProject(JSON.parse(json));same(JSON.stringify(A.project),json,'JSON retains component order and host links');
+ for(const mode of ['plan','elevation','solid']){$(`[data-view="${mode}"]`).click();filter('all');assert(A.scene);assert(!/layer-drag-ghost|layer-insertion-line/.test(A.renderSVG()));click(c);click(a,{shiftKey:true});same(A.selection.id,a)}
+ // A real double click still reaches inline rename, and icon buttons do not start a drag.
+ click(c);click(c);assert($('.row-rename'));key('Escape');const count=object(c).visible;pointer($(`[data-visible="${c}"]`),'pointerdown',220,320);pointer(d,'pointermove',220,360);assert(!$('.layer-drag-ghost'));$(`[data-visible="${c}"]`).click();assert.equal(object(c).visible,!count);
+ [a,b,c]=fresh(['plane','plane','plane']);const initialOrder=rows(),validate=M.validate;h=A.undoCount;M.validate=()=>{throw Error('test validation failure')};reorder(a,c);M.validate=validate;same(rows(),initialOrder,'validation failure rolls back the complete ordering');assert.equal(A.undoCount,h);
+ y=start(a,c);filter('plane');drop(y);same(rows(),initialOrder,'changing filter cancels the preview');assert(!$('.layer-drag-ghost'));
+ // Curve annotations share the list without selecting curve event nodes.
+ A.createDocument('curve','曲线标注');A.document.objects=[];filter('all');const annotations=['text','marker','route'].map((type,i)=>M.createObject(A.document,type,[200+i*200,300,0]));A.document.objects.push(...annotations);A.setTool('select');[a,b,c]=annotations.map(o=>o.id);click(c);click(a,{shiftKey:true});same(A.selection.ids,[c,b,a]);click(a);reorder(a,c);same(rows(),[a,c,b]);assert.equal(A.selection.event,null);
+ y=start(b,a);const oldDocument=A.document,oldOrder=rows();A.createDocument('space','切换图稿');drop(y);same([...oldDocument.objects].reverse().map(o=>o.id),oldOrder,'document switch cannot commit an old drag');assert(!$('.layer-drag-ghost'));
+ assert.deepEqual(errors,[]);console.log('PASS component list: anchored bidirectional/filtered Shift ranges, Ctrl union, single group members, stable single/batch ordering, preview/history/no-op/rollback, cancellation on escape/filter/document/blur, locks, host holes/siblings, floors, JSON, three views, curve annotations, rename and icon buttons.');
+}finally{dom.window.close()}

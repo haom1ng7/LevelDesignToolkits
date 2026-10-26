@@ -4,11 +4,12 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('n
  try{
   const page=await browser.newPage({viewport:{width:1600,height:1000}}),out=path.join(__dirname,'../qa/grid-snapping'),errors=[],network=[];fs.mkdirSync(out,{recursive:true});page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>{if(/^https?:/.test(r.url()))network.push(r.url())});
   await page.goto(pathToFileURL(path.join(__dirname,'../dist/index.html')).href);
+  assert(await page.locator('#snap').isChecked(),'grid snapping starts enabled');
   await page.evaluate(()=>{SpatialEditor.createDocument('space','100 UU 网格搭建');SpatialEditor.document.objects=[];SpatialEditor.setTool('select')});
   await page.locator('[data-panel="document"]').click();assert.equal(await page.locator('#doc-gridSize').inputValue(),'100');
   await page.locator('#doc-gridSize').fill('50');await page.locator('#doc-gridSize').press('Tab');assert.equal(await page.evaluate(()=>SpatialEditor.document.gridSize),50);
   await page.locator('#doc-gridSize').fill('100');await page.locator('#doc-gridSize').press('Tab');
-  await page.locator('#snap').check();await page.locator('#show-grid').check();
+  assert(await page.locator('#snap').isChecked(),'new drawings retain the enabled default');await page.locator('#show-grid').check();
   const at=async p=>page.evaluate(p=>{const q=new DOMPoint(...p).matrixTransform(document.querySelector('#canvas').getScreenCTM());return {x:q.x,y:q.y}},p);
   const drag=async(p,q)=>{await page.mouse.move(p.x,p.y);await page.mouse.down();await page.mouse.move(q.x,q.y,{steps:10});await page.mouse.up()};
   const state=()=>page.evaluate(()=>JSON.stringify(SpatialEditor.document.objects));

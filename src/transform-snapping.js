@@ -1,5 +1,5 @@
-// Rotation and size stay on their original one-dimensional gesture. Targets
-// are shared with move snapping; analytic contacts never translate the object.
+// Targets are shared with move snapping; contacts follow the active gesture
+// without translating the object or coupling independently edited dimensions.
 const TransformSnapping=(()=>{
  const cross=(a,b)=>a[0]*b[1]-a[1]*b[0],dot=M.dot,sub=M.sub,add=M.add,mul=M.mul,len=v=>Math.hypot(...v),mix=(a,b,f)=>add(a,mul(sub(b,a),f));
  const wrap=a=>Math.atan2(Math.sin(a),Math.cos(a));
@@ -70,12 +70,12 @@ function sizeSnapParameter(q){
  const info=drag.info,p=info.screen,j=drag.index;
  if(info.kind==='spiral'){const c=M.project(info.center,scene.basis),v=M.sub(q,c),length=Math.hypot(...v);return {axis:M.mul(v,1/(length||1)),value:length-(drag.radius==='inner'?info.inner:info.outer)}}
  let vector;
- if(drag.corner){const center=info.world.reduce((a,b)=>M.add(a,M.mul(b,1/info.world.length)),[0,0,0]),regular=info.kind!=='polygon'||info.points.length===4&&info.points.every((a,i)=>{const b=info.points[(i+1)%4],c=info.points[(i+2)%4];return Math.abs((b[0]-a[0])*(c[0]-b[0])+(b[1]-a[1])*(c[1]-b[1]))<1e-4}),anchor=regular?info.world[(j+2)%4]:center;vector=M.sub(drag.start,M.project(anchor,scene.basis))}
+ if(drag.corner)vector=drag.proportional?M.sub(drag.start,M.project(sizeCornerAnchor(info,j),scene.basis)):M.sub(q,drag.start);
  else if(p.length===2)vector=M.sub(p[1],p[0]);else{const v=M.sub(p[(j+1)%p.length],p[j]);vector=[-v[1],v[0]]}
  const length=Math.hypot(...vector),axis=M.mul(vector,1/(length||1));return {axis,value:M.dot(M.sub(q,drag.start),axis)};
 }
 function sizeWithSnapping(q,e){
- moveSnapGuides=[];if(gridEnabled(e)){editSize(q);gridResize2D();return}const active=!e.ctrlKey&&!e.metaKey&&$('#move-snap').checked&&doc().type==='space',c=active?transformCache():drag.transformCache;editSize(q);if(!active){if(c)c.held=null;return}
+ drag.proportional=!!e.shiftKey||!!drag.keepRatio;moveSnapGuides=[];if(gridEnabled(e)){editSize(q);gridResize2D();return}const active=!e.ctrlKey&&!e.metaKey&&$('#move-snap').checked&&doc().type==='space',c=active?transformCache():drag.transformCache;editSize(q);if(!active){if(c)c.held=null;return}
  const parameter=sizeSnapParameter(q),sources=transformFeatures(doc(),[drag.id]),hit=TransformSnapping.resize(c,c.original,sources,parameter.value,pixel());if(!hit)return;
  const next=M.add(q,M.mul(parameter.axis,hit.value));editSize(next);const guide=TransformSnapping.guide(hit,transformFeatures(doc(),[drag.id]),pixel());if(guide&&valid()){moveSnapGuides=[guide];status('已吸附组件边 · Ctrl 暂停')}else{c.held=null;editSize(q)}
 }

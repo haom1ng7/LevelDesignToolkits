@@ -13,6 +13,17 @@ function rotateGesture(axis,angle,props={},cancel=false){key('e');assert.equal(A
 function chooseCorner(index=7){const g=d.querySelector(`[data-solid-corner="${index}"]`),circle=g.querySelector('circle'),p=[+circle.getAttribute('cx'),+circle.getAttribute('cy')];pointer('pointerdown',p,g);pointer('pointerup',p);return p}
 function resizeAxis(axis,amount,props={},cancel=false){key('r');assert.equal(A.tool,'size');chooseCorner();const g=d.querySelector(`[data-solid-size-axis="${axis}"]`);assert(g,'available local size axis');const nums=g.querySelector('.gizmo-size-hit').getAttribute('d').match(/-?\d+(?:\.\d+)?(?:e[+-]?\d+)?/gi).map(Number),p=[(nums[0]+nums[2])/2,(nums[1]+nums[3])/2],o=object(A.selection.ids.find(id=>types.includes(object(id).type))),delta=M.mat(o.orientation,M.mul(axes[axis],amount)),v=M.sub(M.project(delta,A.scene.basis),M.project([0,0,0],A.scene.basis)),q=M.add(p,v);pointer('pointerdown',p,g,props);pointer('pointermove',q,c,props);pointer(cancel?'pointercancel':'pointerup',q,c,props)}
 try{
+ // S has no tool binding; R is the size shortcut in every spatial view.
+ const shortcutId=blank('wall'),shortcutSource=JSON.stringify(A.document.objects),shortcutUndo=A.undoCount;
+ for(const mode of ['plan','elevation','solid']){
+  d.querySelector(`[data-view="${mode}"]`).click();A.select(shortcutId,false,true);
+  for(const current of ['select','move','rotate']){
+   A.setTool(current);
+   for(const [value,props] of [['s',{}],['S',{shiftKey:true}],['s',{code:''}],['Process',{code:'KeyS',keyCode:229,isComposing:true}]]){key(value,props);assert.equal(A.tool,current,`${mode}: S preserves ${current}`)}
+  }
+  key('r');assert.equal(A.tool,'size',`${mode}: R still selects size`);
+ }
+ assert.equal(JSON.stringify(A.document.objects),shortcutSource,'tool shortcuts preserve geometry');assert.equal(A.undoCount,shortcutUndo,'tool shortcuts preserve history');
  for(const type of types)for(let axis=0;axis<3;axis++){
   const id=blank(type),o=object(id),before=M.geometry(A.document,o).flatMap(f=>f.points),count=A.undoCount,center=rotateGesture(axis,.6),matrix=M.axisRotation(axes[axis],.6),after=M.geometry(A.document,object(id)).flatMap(f=>f.points);assert.equal(after.length,before.length,'rotation preserves mesh topology');before.forEach((p,i)=>vector(after[i],M.add(center,M.mat(matrix,M.sub(p,center))),type+' rigid rotation'));assert.equal(A.undoCount,Math.min(80,count+1));A.command('undo');assert.equal(JSON.stringify(M.geometry(A.document,object(id)).flatMap(f=>f.points)),JSON.stringify(before));A.command('redo');vector(object(id).orientation,M.product(matrix,M.I()),'redo orientation');M.validate(A.project);
  }

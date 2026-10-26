@@ -10,12 +10,16 @@
 
 | 改动范围 | 优先检查 |
 | --- | --- |
+| 工程保存、首次位置选择与 Ctrl/Command+S | `node tests/browser-project-saving.cjs`；真实 Chrome 键盘/编辑及 Electron IPC/文件写盘，浏览器文件句柄与原生对话框选择使用测试替身，证据在 `qa/project-saving/` |
 | 空间创建、宿主空洞、可见性与输出范围 | `node tests/verify-spatial-update.cjs` |
 | 立体世界移动、Alt 复制、楼层、文字/路线工具限制 | `node tests/verify-world-move.cjs` |
 | 固定单位网格、创建/移动/尺寸网格吸附 | `node tests/verify-grid-snapping.cjs`；真实鼠标、缩放与窄屏设置用 `node tests/browser-grid-snapping.cjs` |
 | 大小/旋转吸附 | `node tests/verify-transform-snapping.cjs` |
+| 平面/立面角点独立尺寸、Shift 等比、网格与固定对角点 | `node tests/verify-orthographic-size.cjs`；真实鼠标、Ctrl/Shift、历史和三视图同步用 `node tests/browser-orthographic-size.cjs`，证据在 `qa/orthographic-size/` |
+| 多选属性、多个值、三轴位置/旋转/尺寸与批量历史 | `node tests/verify-property-inspector.cjs`；真实输入、分组折叠和响应式布局用 `node tests/browser-property-inspector.cjs`；横向拖动、精细/网格、多选差值、取消与历史用 `node tests/browser-property-scrub.cjs` |
 | 爬梯/旋转楼梯与平台/墙壁吸附 | `node tests/verify-ladder-snapping.cjs` |
 | 曲线事件编辑和拖动排序 | `node tests/verify-events.cjs`；阶段/刻度兼容另看 `verify-v10.cjs` |
+| 组件列表排序、Shift 连选、宿主空洞与历史 | `node tests/verify-component-list.cjs`；真实指针、自动滚动、暂存及深浅主题/窄屏用 `node tests/browser-component-list.cjs` |
 | 俯仰范围及近地平线网格 | `node tests/verify-min-pitch.cjs`、`node tests/verify-horizon.cjs` |
 | 临时对比色图像内存 | `node tests/verify-release.cjs`，这不等于验证所有发布产物 |
 | FBX/OBJ 模型、空洞、法线、世界坐标与格式切换 | `node tests/verify-mesh-export.cjs`；实际下载及窄屏操作用 `node tests/browser-mesh-export.cjs`，两者用开发依赖 `three` 的独立读取器验证文件 |

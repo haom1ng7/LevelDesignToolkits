@@ -6,7 +6,7 @@
 
 ## 项目概况
 
-- 名称：关卡设计工具箱 / Level Design Toolkits；npm 包名 `level-design-toolkits`，当前产品版本 `1.0.0`。
+- 名称：关卡设计工具箱 / Level Design Toolkits；npm 包名 `level-design-toolkits`，当前产品版本 `1.1.0`。
 - 用途：供关卡策划绘制空间布局和游玩节奏，包括空间三视图、楼层与组件、节奏/压力曲线，以及 JSON 工程保存和 PNG/SVG 导出。
 - 网页采用原生 JavaScript、HTML、CSS 与 SVG，无前端框架或第三方运行时脚本。构建后是可离线打开的单个 `dist/index.html`，无需后端。
 - Windows 桌面版使用 Electron，复用构建后的网页；支持目录版和单文件便携版。
@@ -17,8 +17,8 @@
 | 路径 | 职责 |
 | --- | --- |
 | `src/` | 可维护的网页源码，包括模型、几何、渲染、编辑器交互及样式 |
-| `src/editor.html`、`src/editor.css`、`src/ui-shell.js` | 页面模板、工业风界面样式、深浅主题与窄屏面板；HTML 中的占位符由构建脚本替换 |
-| `src/fonts/` | Saira 可变字体与 OFL 许可，构建时一并嵌入单页；中文与画布文字使用系统黑体 |
+| `src/editor.html`、`src/editor.css`、`src/endfield-shell.css`、`src/ui-shell.js` | 页面模板、共享控件、Endfield 极繁外壳与状态构图、深浅主题和窄屏面板；两份 CSS 随构建一起嵌入单页 |
+| `src/fonts/` | Saira 英文与 Noto Sans SC 中文可变字体、来源及 OFL 许可，构建时一并嵌入单页；中文缺字及画布文字保留系统黑体 |
 | `src/help/` | 内置教程内容 `content.json`、7 段 GIF 及其 PNG 封面 |
 | `data/initial-project.json` | 正式启动种子，当前为空工程 |
 | `data/qa-project.json`、`data/two-storey-house.json` | 空间/曲线和两层小楼示例 |
@@ -47,7 +47,7 @@ model → geometry → model-features → curved-geometry → creation-colors
 
 `src/app.js` 是编辑器主闭包，负责工程状态、选择、视图/相机、撤销重做、自动暂存、命令和界面更新。其中两个占位符会在构建时展开：
 
-- `/*INTERACTIONS*/`：依次插入 `interactions`、`ui-features`、`advanced-interactions`、`export-preview`、`curve-panel`、`keyboard`、`grid-snapping`、`move-snapping`、`transform-snapping`、`world-move`、`world-transform`、`usage-help`、`event-editing`、`ui-shell`。
+- `/*INTERACTIONS*/`：依次插入 `interactions`、`ui-features`、`advanced-interactions`、`component-list`、`export-preview`、`curve-panel`、`keyboard`、`grid-snapping`、`move-snapping`、`transform-snapping`、`world-move`、`world-transform`、`property-inspector`、`usage-help`、`event-editing`、`ui-shell`。
 - `/*TEXT_EDITING*/`：插入 `text-editing.js`。
 
 这些插入片段共享 `app.js` 的闭包变量，不能一概作为独立脚本加载。新增文件需在构建脚本中显式接入。
@@ -60,9 +60,12 @@ model → geometry → model-features → curved-geometry → creation-colors
 | 三维坐标、实体/空洞几何、曲面与缓存 | `geometry.js`、`curved-geometry.js`、`geometry-cache.js` |
 | SVG 场景、三视图、文字对比色图像 | `render.js`、`render-features.js`、`view-features.js`、`advanced-render.js` |
 | 选择、拖拽、创建和属性操作 | `app.js`、`interactions.js`、`ui-features.js`、`advanced-interactions.js` |
+| 组件列表范围选择与拖动排序 | `component-list.js`，按当前列表顺序连选，复用 `objects` 顺序与工程历史，宿主携带空洞 |
+| 多选共有属性、三轴变换与批量属性编辑 | `property-inspector.js`，复用 `app.js` 的组件字段及 `world-transform.js` 的本地尺寸约束 |
 | 网格与移动吸附、旋转/大小吸附 | `grid-snapping.js`、`move-snapping.js`、`transform-snapping.js` |
 | 立体图世界轴/平面手柄 | `world-move.js`、`world-transform.js` |
 | 文字编辑、输入法和快捷键 | `text-editing.js`、`keyboard.js`，以及 `app.js` 中的事件绑定 |
+| 工程文件保存、Ctrl/Command+S 与桌面写盘 | `project-saving.js`，桌面通过 `preload.cjs` 的受限 IPC 调用 `main.cjs` |
 | 曲线属性、事件位置和排序 | `curve-panel.js`、`event-editing.js` |
 | PNG/SVG 预览、输出范围、异步下载 | `export-preview.js`，以及 `app.js`、`render.js` 中的导出逻辑 |
 | FBX/OBJ 三维网格、空洞三角化与文件序列化 | `mesh-export.js` 的 `StudioMeshExport`；复用模型几何，由 `export-preview.js` 接入格式选择和下载 |
@@ -72,14 +75,15 @@ model → geometry → model-features → curved-geometry → creation-colors
 
 ## 数据与交互约定
 
-- 当前工程格式为 `format: "level-spatial-editor"`、`version: 7`。产品版本 `1.0.0`、文件名中的 v9/v10 与工程格式版本含义不同。
-- 空间图的 `gridSize` 表示每格虚幻单位，默认 100，允许 1–10000 的整数，随 JSON、暂存和撤销保存；旧工程缺省为 100。网格显示与网格吸附独立开关。网格吸附优先于组件边吸附，新建实体取整格尺寸，移动按主组件包围框边界对齐，调整尺寸按当前网格取整，Ctrl 暂停；已有组件不会在切换开关时批量修改。
+- 当前工程格式为 `format: "level-spatial-editor"`、`version: 7`。产品版本 `1.1.0`、文件名中的 v9/v10 与工程格式版本含义不同。
+- 空间图的 `gridSize` 表示每格虚幻单位，默认 100，允许 1–10000 的整数，随 JSON、暂存和撤销保存；旧工程缺省为 100。网格显示与网格吸附独立开关，网格吸附启动时默认开启，可手动关闭。网格吸附优先于组件边吸附，新建实体取整格尺寸，移动按主组件包围框边界对齐，调整尺寸按当前网格取整，Ctrl 暂停；已有组件不会在切换开关时批量修改。
 - 工程包含 `documents` 和可选的 `activeDocument`；图稿类型为 `space` 或 `curve`。空间对象包含平面、墙壁、宿主空洞、楼梯、爬梯、旋转楼梯、文字、路线及标记。
 - 导入和启动恢复通过 `StudioModel.validate` 完成校验/迁移；修改数据结构时应一起检查各层校验包装和旧工程兼容性。
 - `app.js` 的 `mutate`、`history` 管理变更校验、失败回滚和撤销记录；编辑功能需沿用现有的操作提交/取消机制。
-- 网页暂存键默认为 `spatial-studio-v9:` 加 `location.pathname`；桌面封装时改为固定键 `level-diagram-studio-desktop-v1`。更换网页路径、浏览器或电脑不会自动迁移暂存，JSON 下载用于长期保存和跨端转移。
-- 界面字体、控件及间距统一为原界面的约 110%，使用 rem 尺寸，不缩放图稿坐标。“工程图稿”内提供新增、改名、复制、删除；改名沿用工程撤销历史，不改变曲线图内标题。界面主题使用独立的 `level-toolkits-ui-theme` 键，不进入工程、撤销记录或导出图稿。990px 及以下使用底部三个面板入口，编辑选项默认收起；选择绘图工具后返回画布。桌面注入暂存键时保留 `<html>` 上的设计配置属性。
-- 立体图实体支持 W 世界轴移动、E 三轴刚体旋转、R 单实体本地角点调尺寸（对角点固定）；路线快捷键为 L，S 保留为大小工具别名。多实体可一起移动/旋转，独立轮廓顶点编辑仍在平面/立面完成；文字保留各视图字号和旋转，空洞依附宿主。路线使用直接节点操作。
+- 属性面板的三轴数值框及色块支持横向拖动：右增左减，Shift 精细调整，Ctrl/Command 暂停尺寸网格；多选拖动保留各件数值差，直接输入统一设置。拖动过程从起始状态预览，松开一次提交历史，Esc/指针取消/失焦及切换操作恢复原状态。
+- 网页暂存键默认为 `spatial-studio-v9:` 加 `location.pathname`；桌面封装时改为固定键 `level-diagram-studio-desktop-v1`。更换网页路径、浏览器或电脑不会自动迁移暂存，JSON 工程文件用于长期保存和跨端转移。“保存工程”及 Ctrl/Command+S 首次选择位置，本次打开期间复用目标；导入或 `loadProject` 后重置目标，目标不写入工程 JSON/撤销历史。不支持文件保存接口的浏览器回退下载，位置由浏览器设置决定。桌面使用隔离 preload 和受限 IPC，通过临时文件写完后替换目标；关闭窗口使用 `autosave` 命令，不触发文件选择。
+- 界面字体、控件及间距统一为原界面的约 110%，使用 rem 尺寸，不缩放图稿坐标。“工程图稿”内提供新增、切换、复制、删除，复制与删除以两列排列；空间图名称通过右侧“图稿设置”修改，曲线图的图内标题单独设置。界面采用 Endfield 工业工作台风格（endfield / maximal）：灰白工作面、炭黑操作区、信号黄与切角；启动、空间三视图、曲线、导出与帮助分别构图，真实视图和选择状态驱动外壳；标题左侧两位编号由当前图稿在工程 documents 中的顺序生成（空工程 00），切换三视图保持图稿号，编号不写入工程数据。界面主题使用独立的 `level-toolkits-ui-theme` 键，不进入工程、撤销记录或导出图稿。990px 及以下使用底部三个面板入口；三视图、参考线、箭头、吸附、背景、取景及上下文选项在所有窗口下保持单行，空间不足时工具栏内横向滚动，键盘焦点自动滚动到对应控件，不再折叠编辑选项。选择绘图工具后返回画布；键盘跳转链接会恢复画布面板和焦点。左侧 LD/ 导航列与底部工作状态行已移除；英文小标签只保留英文，中文主要标题与功能名称保留。`data-workspace-mode` 等外壳状态与按钮的 `data-view`、`data-tool` 属性分开，避免通用选择器误命中根节点。桌面注入暂存键时保留 `<html>` 上的设计配置属性。
+- 立体图实体支持 W 世界轴移动、E 三轴刚体旋转、R 单实体本地角点调尺寸（对角点固定）；路线快捷键为 L，S 不切换工具。多实体可一起移动/旋转，独立轮廓顶点编辑仍在平面/立面完成；文字保留各视图字号和旋转，空洞依附宿主。路线使用直接节点操作。
 - 导出需区分完整图稿和当前视野；编辑手柄不得进入成品。异步预览切换/关闭后应取消旧下载并释放临时对象 URL。
 - FBX/OBJ 仅用于空间图，输出所有可见楼层的五类实体及宿主空洞，不按当前视角、选中范围或预览取景裁切；不输出文字、路线和标记。三角网格保持世界坐标数值 1:1、Z 轴向上；二进制 FBX 7.4 使用厘米并含基础颜色/透明度，OBJ 为单个几何文件（含法线，不带 MTL）。`three` 仅作为开发测试依赖，用独立读取器验证输出，不嵌入网页。
 - 网页 CSP 禁止网络连接；Electron 也拦截外部网络，关闭 Node 集成并启用上下文隔离及沙箱。
@@ -96,7 +100,7 @@ npm run manual
 ```
 
 - `build`：生成 `dist/index.html` 和 `dist/build-report.json`。修改源码后先构建，再运行测试，因为多数回归加载的是构建产物。
-- `test`：顺序运行 15 组 `tests/verify-*.cjs`，覆盖版本兼容、事件、视角、空间操作、楼梯吸附、世界移动、立体旋转与角点尺寸、变换吸附、导出临时图像内存限制及 FBX/OBJ 的独立读取、空洞/法线/世界坐标和取消下载。
+- `test`：顺序运行 18 组 `tests/verify-*.cjs`，覆盖版本兼容、事件、视角、空间操作、楼梯吸附、世界移动、立体旋转与角点尺寸、变换吸附、平面/立面独立尺寸、多选属性与三轴数值编辑、组件列表排序与范围选择、导出临时图像内存限制及 FBX/OBJ 的独立读取、空洞/法线/世界坐标和取消下载。
 - `manual`：等价于 `python -X utf8 tools/build-manual.py`，从 `src/help/content.json` 和媒体生成 `docs/使用说明.md`、`docs/使用说明.html`。修改教程后需同时重建网页和外部说明。
 - `npm run qa`：生成 `data/qa-project.json` 和带示例种子的 `dist/qa.html`；会覆盖已有 QA 示例数据，按需使用。
 - 单组回归可用 `node tests/verify-world-move.cjs` 等直接执行；仍需先构建。
@@ -108,7 +112,7 @@ npm run package:portable
 python -X utf8 tools/package-release.py
 ```
 
-`package:portable` 依次构建网页、生成 `.build/desktop/关卡设计工具箱-win32-x64/` 目录版，再生成 `.build/portable/LevelDesignToolkits-1.0.0-Windows-x64.exe`。发布脚本将产物、源码、示例和校验值整理到 `release/`；它本身不上传或部署。当前快照的封装缺件见下节。
+`package:portable` 依次构建网页、生成 `.build/desktop/关卡设计工具箱-win32-x64/` 目录版，再生成 `.build/portable/LevelDesignToolkits-1.1.0-Windows-x64.exe`。发布脚本将产物、源码、示例和校验值整理到 `release/`；它本身不上传或部署。当前快照的封装缺件见下节。
 
 ## 验证方式与当前快照缺件
 

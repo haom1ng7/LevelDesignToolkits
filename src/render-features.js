@@ -25,7 +25,7 @@ R.scene=(d,view,options={})=>{const show=d.gridVisible;let s;d.gridVisible=false
   if(o.type==='hole'){const p=M.controls(d,o,view.mode).map(c=>M.project(c.point,s.basis));s.outlines.set(o.id,{poly:p});if(o.cut&&!ghost)s.holeHits.push({id:o.id,host:o.host,poly:p})}
   if(o.type==='text'&&s.textBoxes.has(o.id))s.outlines.set(o.id,{poly:s.textBoxes.get(o.id).corners});
   if(o.type==='marker')s.outlines.set(o.id,{circle:{p:M.project(M.origin(d,o),s.basis),r:o.r}});
-  if(o.type==='route'){const p=o.points.map(p=>M.project(M.world(d,o,p),s.basis)),sampled=o.curve==='smooth'?sample(p,'smooth'):p;s.outlines.set(o.id,{line:sampled,control:p,arrow:o.arrow,heads:R.routeShape(d,o,s.basis).heads});for(const h of s.hits.filter(h=>h.id===o.id&&h.line))h.line=sampled}
+  if(o.type==='route'){const shape=R.routeShape(d,o,s.basis),{p,sampled,heads,line}=shape;s.outlines.set(o.id,{line:sampled,linePath:line,control:p,arrow:o.arrow,heads});for(const h of s.hits.filter(h=>h.id===o.id&&h.line))h.line=sampled}
  }
  if(d.curve){const events=[...d.curve.events].sort((a,b)=>R.eventX(d,a)-R.eventX(d,b)),p=events.map(e=>R.eventPoint(d,e));s.curveLine=sample(p,'monotone');s.curveEvents=events}
  return s};

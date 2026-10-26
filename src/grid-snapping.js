@@ -65,6 +65,12 @@ function gridResize2D(){
  }
  const original=JSON.parse(drag.before).documents.find(d=>d.id===current),source=original.objects.find(o=>o.id===drag.id),old=gridObjectBounds(original,source),now=gridObjectBounds(doc(),o);
  const axes=[0,1,2].filter(i=>Math.abs((old.max[i]-old.min[i])-(now.max[i]-now.min[i]))>1e-6);
+ if(drag.corner&&drag.proportional&&axes.length){
+  // Round the longest edited dimension, then apply one common factor so Shift
+  // preserves the original proportions even when they are off the grid.
+  const lengths=o.type==='hole'?[info.frame.r,info.frame.d].map(v=>Math.hypot(...v)):[1,1,1],extent=old.max.map((v,i)=>(v-old.min[i])*(lengths[i]||1)),axis=axes.reduce((a,b)=>extent[a]>=extent[b]?a:b),ratio=gridLength((now.max[axis]-now.min[axis])*(lengths[axis]||1))/extent[axis],v=M.sub(drag.start,M.project(sizeCornerAnchor(info,j),scene.basis));
+  editSize(M.add(drag.start,M.mul(v,ratio-1)));return;
+ }
  const center=info.world.reduce((a,b)=>M.add(a,M.mul(b,1/info.world.length)),[0,0,0]);
  const anchor=info.world.length===2?info.world[1-j]:info.world.length===4?info.world[(j+2)%4]:center;
  fitObjectToGrid(doc(),o,o.type==='hole'?axes.filter(i=>i<2):axes,anchor);
