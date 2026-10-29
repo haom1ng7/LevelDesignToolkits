@@ -12,7 +12,7 @@ function propertyOrientation(angles){return M.product(M.product(M.axisRotation([
 function propertyDimensions(o){const b=solidLocalBounds(o);return M.sub(b.max,b.min)}
 function transformFields(o){
  if(o.type==='hole')return '';
- const row=(label,keys,values,unit,titles)=>`<div class="transform-row" role="group" aria-label="${label}"><span class="transform-label">${label}<small>${unit}</small></span><div class="transform-values">${keys.map((key,i)=>`<label class="axis-field axis-${i}" data-property-scrub="${key}" title="${titles[i]} · 左右拖动调值，单击输入；Shift 精细调整，Ctrl 暂停网格"><span aria-hidden="true">${'XYZ'[i]}</span><input id="prop-${key}" data-scope="prop" data-key="${key}" type="number" step="any" ${key.startsWith('dimension')?'min="0.01"':''} value="${+values[i].toFixed(4)}" aria-label="${titles[i]}"></label>`).join('')}</div></div>`;
+ const row=(label,keys,values,unit,titles)=>`<div class="transform-row" role="group" aria-label="${label}"><span class="transform-label">${label}<small>${unit}</small></span><div class="transform-values">${keys.map((key,i)=>`<label class="axis-field axis-${i}" data-property-scrub="${key}" title="${titles[i]} · 左右拖动调值，单击输入；Shift 精细调整，数值不受网格吸附限制"><span aria-hidden="true">${'XYZ'[i]}</span><input id="prop-${key}" data-scope="prop" data-key="${key}" type="number" step="any" ${key.startsWith('dimension')?'min="0.01"':''} value="${+values[i].toFixed(4)}" aria-label="${titles[i]}"></label>`).join('')}</div></div>`;
  let html=row('位置',['px','py','pz'],o.position,'cm',['X 位置','Y 位置','Z 位置（相对楼层）']);
  if(solidTypes.includes(o.type))html+=row('旋转',['rx','ry','rz'],propertyRotation(o),'度',['X 旋转 / Roll','Y 旋转 / Pitch','Z 旋转 / Yaw'])+row('大小',['dimensionX','dimensionY','dimensionZ'],propertyDimensions(o),'cm',['本地 X 长度','本地 Y 宽度','本地 Z 高度']);
  return inspectorSection('transform','变换',html);
@@ -63,25 +63,25 @@ function syncPropertyInputs(active){
   else{delete input.dataset.mixed;input.removeAttribute('aria-description');if(input.placeholder==='多个值')input.placeholder='';const wrapper=input.closest('.mixed-color');if(wrapper)wrapper.replaceWith(input)}
  }
 }
-function resizeProperty(o,axis,value,e={}){
+function resizeProperty(o,axis,value){
  const extent=propertyDimensions(o),factors=[1,1,1];if(extent[axis]<1e-8)throw Error('当前组件无法调整此尺寸');
- const desired=gridEnabled(e)?gridLength(value):value;if(sameProperty(extent[axis],desired))return;
- factors[axis]=desired/extent[axis];
+ // Inspector values stay exact; grid snapping belongs to canvas gestures.
+ if(sameProperty(extent[axis],value))return;
+ factors[axis]=value/extent[axis];
  constrainSolidFactors(o,factors,[axis]);
  const labels=doc().objects.filter(t=>t.type==='text').map(t=>({t,position:[...t.position]}));
  scaleHost(o,worldAxes,factors,M.origin(doc(),o));if(['stairs','spiral'].includes(o.type))o.thickness*=factors[2];
  for(const {t,position} of labels)t.position=position;
 }
-function applyObjectProperty(o,scope,key,value,e={}){
+function applyObjectProperty(o,scope,key,value){
   const target=scope==='flight'?o.flights[flight]:o;
   if(scope==='prop'&&['px','py','pz'].includes(key)){const axis={px:0,py:1,pz:2}[key];o.position[axis]=value}
   else if(scope==='prop'&&['rx','ry','rz'].includes(key)){const angles=propertyRotation(o),axis={rx:0,ry:1,rz:2}[key];if(sameProperty(angles[axis],value))return;angles[axis]=value;const matrix=propertyOrientation(angles);if(matrix.every((v,i)=>sameProperty(v,o.orientation[i])))return;o.orientation=matrix}
-  else if(scope==='prop'&&key.startsWith('dimension'))resizeProperty(o,'XYZ'.indexOf(key.slice(-1)),value,e);
+  else if(scope==='prop'&&key.startsWith('dimension'))resizeProperty(o,'XYZ'.indexOf(key.slice(-1)),value);
   else if(key==='totalDegrees')o.turns=value/360;
   else if(key==='wallHeight'){o.wallPath.height=value;o.points=o.points.map(p=>[p[0],p[1]?value:0])}
   else if(key==='thickness'&&o.wallFootprint)scaleHost(o,[[0,1,0]],[value/o.thickness],M.origin(doc(),o));
   else{target[key]=key==='direction'?Number(value):value;if(['steps','rungs'].includes(key))o.countMode='manual'}
-  if(gridEnabled(e)&&['thickness','span','inner','outer','start','end','wallHeight'].includes(key))fitObjectToGrid(doc(),o);
   M.updateCounts(o);
 }
 function applyComponentProperty(scope,key,value){
@@ -124,7 +124,7 @@ document.addEventListener('pointermove',e=>{
  const previous=project;
  try{
   project=JSON.parse(a.before);
-  for(const o of propertyObjects())applyObjectProperty(o,'prop',a.key,clamp(a.values.get(o.id)+a.delta,a.min,a.max),e);
+  for(const o of propertyObjects())applyObjectProperty(o,'prop',a.key,clamp(a.values.get(o.id)+a.delta,a.min,a.max));
   if(!valid())throw Error('轮廓或空洞无效，保留上一次有效值');M.validate(project);a.changed=snapshot()!==a.before;
   status(`${$('#prop-'+a.key)?.getAttribute('aria-label')||'变换'} · ${a.delta>=0?'+':''}${+a.delta.toFixed(2)} · Esc 取消`);
  }catch(error){project=previous;status(error.message)}

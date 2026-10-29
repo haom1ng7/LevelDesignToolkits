@@ -9,28 +9,36 @@ function gridObjectBounds(d,o){
  }
  return null;
 }
-function gridReference(d,ids,id){
+function gridReferences(d,ids,id,floorId=null){
  const o=d.objects.find(o=>o.id===id&&ids.includes(o.id)&&o.type!=='hole')||d.objects.find(o=>ids.includes(o.id));
- return o?gridObjectReference(d,o):[0,0,0];
+ const points=o?gridObjectReferences(d,o):[[0,0,0]];
+ if(floorId){const height=d.floors.find(f=>f.id===floorId).height;for(const p of points)p[2]=height}
+ return points;
 }
-function gridObjectReference(d,o){
+function gridObjectReferences(d,o){
  const b=gridObjectBounds(d,o);
- if(b&&o.type!=='hole')return bounds3(Array.from({length:8},(_,n)=>M.world(d,o,[0,1,2].map(i=>(n>>i)&1?b.max[i]:b.min[i])))).min;
- if(o.type==='hole')return bounds3(M.controls(d,o,view.mode).map(c=>c.point)).min;
- return M.origin(d,o);
+ if(b&&o.type!=='hole')return Array.from({length:8},(_,n)=>M.world(d,o,[0,1,2].map(i=>(n>>i)&1?b.max[i]:b.min[i])));
+ if(o.type==='hole')return M.controls(d,o,view.mode).map(c=>c.point);
+ return [M.origin(d,o)];
 }
-function gridMoveDelta(raw,axes=null){
- if(!drag.gridReference){
-  const d=JSON.parse(drag.before).documents.find(d=>d.id===current);
-  drag.gridReference=gridReference(d,drag.sourceIds||drag.ids,drag.primary||primary);
-  if(drag.floor)drag.gridReference[2]=d.floors.find(f=>f.id===drag.floor).height;
- }
- const step=gridStep(),at=M.add(drag.gridReference,raw),out=[...raw];
- if(axes){for(const i of axes)out[i]=Math.round(at[i]/step)*step-drag.gridReference[i]}
- else for(const axis of [scene.basis.r,scene.basis.down]){
-  const n=M.dot(at,axis);for(let i=0;i<3;i++)out[i]+=axis[i]*(Math.round(n/step)*step-n);
+function gridObjectReference(d,o){return bounds3(gridObjectReferences(d,o)).min}
+function gridAlignedDelta(raw,points,axes){
+ const step=gridStep(),out=[...raw];
+ for(const axis of axes){
+  const values=points.map(p=>M.dot(M.add(p,raw),axis)),ends=[Math.min(...values),Math.max(...values)];
+  // Each side can reach the lattice even when the component spans fractional cells.
+  // Keep the minimum side on ties so whole-grid sizes remain stable.
+  const corrections=ends.map(n=>Math.round(n/step)*step-n),correction=Math.abs(corrections[1])<Math.abs(corrections[0])-1e-7?corrections[1]:corrections[0];
+  for(let i=0;i<3;i++)out[i]+=axis[i]*correction;
  }
  return out;
+}
+function gridMoveDelta(raw,axes=null){
+ if(!drag.gridReferences){
+  const d=JSON.parse(drag.before).documents.find(d=>d.id===current);
+  drag.gridReferences=gridReferences(d,drag.sourceIds||drag.ids,drag.primary||primary,drag.floor);
+ }
+ return gridAlignedDelta(raw,drag.gridReferences,axes?axes.map(i=>worldAxes[i]):[scene.basis.r,scene.basis.down]);
 }
 function fitObjectToGrid(d,o,axes=[0,1,2],anchor=null){
  const step=gridStep(d),b=gridObjectBounds(d,o);if(!b)return;

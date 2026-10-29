@@ -9,9 +9,9 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('n
   async function fresh(options={}){ids=await page.evaluate(options=>{
    const A=SpatialEditor,M=StudioModel;A.createDocument('space','拖动变换数值');A.project.documents.splice(0,A.project.documents.length-1);A.document.objects=[];
    const types=options.types||['plane'];const objects=types.map((type,i)=>M.createObject(A.document,type,[400+i*400,350,20]));
-   if(options.mixed&&objects[1]){objects[1].points=objects[1].points.map(p=>[p[0]*1.5,p[1]]);objects[1].orientation=M.axisRotation([0,0,1],Math.PI/6)}
+   if(options.mixed&&objects[1]){objects[1].points=objects[1].points.map(p=>[p[0]*(361.25/240),p[1]]);objects[1].orientation=M.axisRotation([0,0,1],Math.PI/6)}
    if(options.hole){const host=objects[0],h=Object.assign(M.createObject(A.document,'hole'),{host:host.id,floor:host.floor,points:[[-20,-20],[20,-20],[20,20],[-20,20]]});objects.push(h)}
-   A.document.objects.push(...objects);document.querySelector(`[data-view="${options.mode||'plan'}"]`).click();document.querySelector('#snap').checked=!!options.grid;
+   A.document.objects.push(...objects);document.querySelector(`[data-view="${options.mode||'plan'}"]`).click();document.querySelector('#snap').checked=options.grid!==false;
    A.select(objects[0].id,false,!!options.single);if(options.multi)A.select(objects[1].id,true,true);return objects.map(o=>o.id);
   },options);return ids}
   const read=()=>page.evaluate(()=>JSON.parse(JSON.stringify(SpatialEditor.document.objects))),count=()=>page.evaluate(()=>SpatialEditor.undoCount),near=(a,b,msg='value')=>assert(Math.abs(a-b)<1e-5,`${msg}: ${a} != ${b}`);
@@ -28,12 +28,12 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('n
    await fresh({mode});const value=+(await page.locator('#prop-'+key).inputValue());await scrub(key,12);near(+(await page.locator('#prop-'+key).inputValue()),value+12,mode+' '+key);
   }
   // Mixed fields add the same delta to each target, preserving their differences.
-  await fresh({types:['plane','plane'],mixed:true,multi:true});before=await read();undo=await count();await scrub('dimensionX',30);after=await read();after.forEach((o,i)=>near(o.points[1][0]-o.points[0][0],i?390:270));assert.equal(await page.locator('#prop-dimensionX').getAttribute('placeholder'),'多个值');assert.equal(await count(),Math.min(80,undo+1));
+  await fresh({types:['plane','plane'],mixed:true,multi:true});before=await read();undo=await count();await scrub('dimensionX',30);after=await read();after.forEach((o,i)=>near(o.points[1][0]-o.points[0][0],i?391.25:270));assert.equal(await page.locator('#prop-dimensionX').getAttribute('placeholder'),'多个值');assert.equal(await count(),Math.min(80,undo+1));
   await scrub('px',20);after=await read();after.forEach((o,i)=>near(o.position[0],before[i].position[0]+20));near(after[1].position[0]-after[0].position[0],400);
   await scrub('rz',10);after=await read();after.forEach((o,i)=>near(Math.atan2(o.orientation[3],o.orientation[0])*180/Math.PI,i?40:10));
   // Shift refines the increment; changing modifier mid-drag does not jump.
   await fresh();await scrub('px',30,['Shift']);near((await read())[0].position[0],403);p=await start('px');await move(p,20);await move(p,30,['Shift']);await page.mouse.up();near((await read())[0].position[0],424);
-  await fresh({grid:true});await scrub('dimensionX',30);near(+(await page.locator('#prop-dimensionX').inputValue()),300);await fresh({grid:true});await scrub('dimensionX',30,['Control']);near(+(await page.locator('#prop-dimensionX').inputValue()),270);
+  for(const grid of [false,true])for(const keys of [[],['Control'],['Meta'],['Shift']]){await fresh({grid});await scrub('dimensionX',30,keys);near(+(await page.locator('#prop-dimensionX').inputValue()),keys.includes('Shift')?243:270,'size scrub is independent of grid/Ctrl/Command')}
   // Minimum dimensions cannot invert; reversing immediately moves away from the limit.
   await fresh();p=await start('dimensionX');await move(p,-300);near(+(await page.locator('#prop-dimensionX').inputValue()),.01);await move(p,-290);await page.mouse.up();near(+(await page.locator('#prop-dimensionX').inputValue()),10.01);
   // Host bores follow once, and circular sizes retain their shared radial factor.
@@ -60,6 +60,6 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('n
   // The touch-width panel has the same drag target and behavior.
   await fresh();await page.setViewportSize({width:390,height:1000});await page.locator('[data-shell-pane="properties"]').click();await scrub('dimensionX',25);near(+(await page.locator('#prop-dimensionX').inputValue()),265);
   const out=path.join(__dirname,'../qa/property-scrub');fs.mkdirSync(out,{recursive:true});await page.screenshot({path:path.join(out,'390.png'),fullPage:true});assert.deepEqual(errors,[]);fs.writeFileSync(path.join(out,'report.json'),JSON.stringify({views:3,axes:9,cancellations:7,errors},null,2));
-  console.log('PASS Chrome property scrubbing: all nine values in three views, live preview/single history, mixed relative edits, Shift/Ctrl/grid, minimum/reverse, host/circular coupling, seven cancellation paths, invalid batch, click/typing/locks and narrow panel.');
+  console.log('PASS Chrome property scrubbing: grid-enabled exact sizes and all nine values in three views, live preview/single history, mixed fractional differences, Shift precision, grid/Ctrl/Command independence, minimum/reverse, host/circular coupling, seven cancellation paths, invalid batch, click/typing/locks and narrow panel.');
  }finally{await browser.close()}
 })().catch(e=>{console.error(e);process.exitCode=1});

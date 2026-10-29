@@ -70,5 +70,35 @@ try{
    A.command('undo');assert.equal(JSON.stringify(A.document.objects),original);A.command('redo');
   }
  }
- assert.deepEqual(errors,[]);console.log('PASS spatial update: creation exit/selection; cross-host holes, invalid holes and save; dependent outlines; visible layer picking, depth, reorder/undo; bidirectional snaps; defaults and legacy routes; route selection ring; solid click versus orbit; multi-selection click/drag/modifiers/groups/locks/cancel in three views.');
+ // Group commands share metadata and history across all views, including solid entities.
+ for(const mode of ['plan','elevation','solid']){
+  doc=blank();const host=add(doc,'plane',[200,200,0]),body=add(doc,'wall',[650,200,0]),label=add(doc,'text',[650,200,200]);
+  const hole=add(doc,'hole',[0,0,0],{host:host.id,points:[[-20,-20],[20,-20],[20,20],[-20,20]]});
+  const upper={id:M.uid(),name:'二层',height:300,visible:true};doc.floors.push(upper);add(doc,'plane',[200,200,0],{floor:upper.id});add(doc,'wall',[900,200,0],{visible:false});
+  d.querySelector(`[data-view="${mode}"]`).click();A.select(host.id);A.select(body.id,true);A.select(label.id,true);
+  const objects=()=>JSON.stringify(A.document.objects),before=objects(),undo=A.undoCount,ids=[host.id,body.id,label.id,hole.id];
+  d.querySelector('.selection-actions [data-action="group"]').click();
+  const group=A.document.objects.find(o=>o.id===host.id).group;assert(group,mode+' button groups geometry');
+  assert([host.id,body.id,label.id].every(id=>A.document.objects.find(o=>o.id===id).group===group));
+  assert(!A.document.objects.find(o=>o.id===hole.id).group,'hole remains attached through its host');
+  assert.equal(objects(),JSON.stringify(JSON.parse(before).map(o=>ids.includes(o.id)&&o.type!=='hole'?{...o,group}:o)),'only selected root group metadata changes');
+  assert.equal(A.undoCount,undo+1,'group is one undo');const grouped=objects();
+  A.command('undo');assert.equal(objects(),before);A.command('redo');assert.equal(objects(),grouped);
+  for(const view of ['plan','elevation','solid']){
+   d.querySelector(`[data-view="${view}"]`).click();A.select(host.id);assert.deepEqual([...A.selection.ids].sort(),[...ids].sort(),view+' expands group and host hole');assert.equal(objects(),grouped);
+  }
+  d.querySelector(`[data-view="${mode}"]`).click();A.select(host.id);
+  const restored=M.validate(JSON.parse(JSON.stringify(A.project))).documents.find(x=>x.id===A.document.id);assert.equal(JSON.stringify(restored.objects),grouped,'JSON preserves groups and host links');
+  const member=A.document.objects.find(o=>o.id===hole.id);member.locked=true;const lockedState=objects(),lockedUndo=A.undoCount;
+  A.command('group');A.command('ungroup');assert.equal(objects(),lockedState,'dependent lock rejects group changes');assert.equal(A.undoCount,lockedUndo);member.locked=false;
+  d.querySelector(`#layers [data-layer="${host.id}"]`).dispatchEvent(new w.MouseEvent('contextmenu',{bubbles:true,button:2,clientX:20,clientY:20}));
+  const ungroup=d.querySelector('#context-menu [data-action="ungroup"]');assert(!ungroup.disabled);ungroup.click();assert.equal(objects(),before,mode+' context menu ungroups without geometry changes');assert.equal(A.undoCount,undo+2);
+  A.command('undo');assert.equal(objects(),grouped);A.command('redo');assert.equal(objects(),before);
+  for(const mod of ['ctrlKey','metaKey']){
+   A.select(host.id);A.select(body.id,true);A.select(label.id,true);c.dispatchEvent(new w.KeyboardEvent('keydown',{key:'g',bubbles:true,[mod]:true}));assert(A.document.objects.find(o=>o.id===host.id).group,mode+' keyboard groups');
+   c.dispatchEvent(new w.KeyboardEvent('keydown',{key:'G',bubbles:true,shiftKey:true,[mod]:true}));assert.equal(objects(),before,mode+' keyboard ungroups');
+  }
+  A.select(body.id,false,true);const noOpUndo=A.undoCount;A.command('group');A.command('ungroup');assert.equal(objects(),before);assert.equal(A.undoCount,noOpUndo,'single ungrouped component creates no history');
+ }
+ assert.deepEqual(errors,[]);console.log('PASS spatial update: creation exit/selection; cross-host holes, invalid holes and save; dependent outlines; visible layer picking, depth, reorder/undo; bidirectional snaps; defaults and legacy routes; route selection ring; solid click versus orbit; multi-selection click/drag/modifiers/groups/locks/cancel; three-view grouping buttons/context/keyboard, atomic history, host locks, JSON and unchanged geometry.');
 }finally{w.close()}

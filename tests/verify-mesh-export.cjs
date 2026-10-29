@@ -34,6 +34,13 @@ async function main(){
   const before=JSON.stringify(d);model=E.build(d);assert.equal(model.meshes.length,8);assert.equal(JSON.stringify(d),before,'export leaves source model intact');
   for(const m of model.meshes){const o=d.objects.find(o=>o.id===m.id),points=M.geometry(d,o).flatMap(f=>f.points);bounds(m.vertices).forEach((v,i)=>near(v,bounds(points)[i],'world geometry bounds'))}check(model);
   fs.writeFileSync(path.join(out,'components.obj'),E.obj(model));fs.writeFileSync(path.join(out,'components.fbx'),Buffer.from(E.fbx(model)));
+  // A zero-step stair exports a closed inclined slab with its full footprint.
+  for(const descending of [false,true])for(const triangle of [false,true]){
+   const rampDoc=blank(),ramp=add(rampDoc,'stairs',[200,300,40],{countMode:'manual'}),f=ramp.flights[0];f.steps=0;if(descending)[f.start,f.end]=[f.end,f.start];if(triangle)f.points[1]=[...f.points[2]];
+   ramp.orientation=M.product(M.axisRotation([1,0,0],.3),M.axisRotation([0,0,1],.37));const model=E.build(rampDoc),mesh=model.meshes[0];
+   near(volume(mesh),Math.abs(M.profileArea(f.points))*ramp.thickness,'ramp slab volume');check(model);
+   const edges=new Map();for(const t of mesh.triangles)for(let i=0;i<3;i++){const a=t[i],b=t[(i+1)%3],key=[Math.min(a,b),Math.max(a,b)].join(',');edges.set(key,(edges.get(key)||0)+1)}assert([...edges.values()].every(n=>n===2),'ramp mesh is watertight');
+  }
   // The complete supplied two-storey project also imports through both readers.
   const house=M.validate(JSON.parse(fs.readFileSync(path.join(__dirname,'../data/two-storey-house.json'),'utf8'))).documents[0];check(E.build(house));
   assert.throws(()=>E.build(blank()),/没有可导出的实体/);assert.throws(()=>E.build(M.createDocument('curve')),/仅支持空间图/);

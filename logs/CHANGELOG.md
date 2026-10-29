@@ -618,3 +618,83 @@
 - 影响文件：src/app.js、src/ui-features.js、dist/index.html、dist/build-report.json、logs/CHANGELOG.md。
 - 验证：npm run build 成功，离线单页 6,991,077 字节；node tests/verify-property-inspector.cjs、node tests/verify-spatial-update.cjs、node tests/verify-cutting.cjs 均通过；node --check src/app.js 和 node --check src/ui-features.js 通过；一次性 Node.js 检查确认源码及构建网页不再含 regularize 或按钮文案；git diff --check 通过（仅既有 LF/CRLF 转换提示）。
 - 未运行：全套 npm test、真实浏览器交互、实际导出下载及 Windows 重新封装/桌面冒烟；本次仅移除单个属性操作，已运行相关三组回归，未改模型、导出或桌面实现。
+
+
+## 2026-10-26 · 修复立体图反转拖动复选框勾号异常
+
+- 变更：将立体图控制条的块级输入布局限定为方位/俯仰滑块，恢复“反转水平拖动”“反转垂直拖动”复选框的网格居中勾号，消除选中后变成黑色竖线的显示异常；点击标签、空格切换与偏好保存沿用原行为。
+- 影响文件：src/editor.css、dist/index.html、dist/build-report.json、logs/CHANGELOG.md。
+- 验证：修改前在真实 Chrome 复现截图中的黑色竖线；npm run build 成功，离线网页 6,991,089 字节；node tests/verify-min-pitch.cjs 通过，覆盖正常/反转右键拖动、俯仰范围、视角预设和工程不变。
+- 验证：一次性 Node.js/Playwright/Chrome 检查通过 1440px/390px 与深浅主题共 4 组，确认两个复选框的勾号布局、标签点击、空格切换、滑块原有布局、控制条无溢出、视图切换及刷新后偏好恢复，工程 JSON/撤销次数不变，无页面异常或在线请求。已查看桌面浅色和窄屏深色修复截图，证据在 qa/solid-view-controls/。本次修改文件的 git diff --check 通过。
+- 未运行：全套 npm test、实际导出下载、手机真机、Windows 重新封装/桌面 EXE 冒烟；本次仅修复局部 CSS，未改模型、交互逻辑或桌面代码。
+
+## 2026-10-26 · 修复网格移动只能吸附左边和上边
+
+- 变更：移动网格吸附由固定使用包围框最小坐标，改为比较主组件在每个移动方向上的两侧边界，选距网格更近的一侧对齐；非整格尺寸的组件现在左、右、上、下边均可吸附。沿当前视图投影比较边界，支持旋转组件、立面反向视角及立体图 XYZ 轴约束；方向键移动复用相同规则。保持组件尺寸、多选相对位置、宿主空洞、整层基准高度、Ctrl/Command 暂停、Esc 取消和一次操作一次撤销。同步内置与外部教程，并补充专项验证入口。
+- 影响文件：src/grid-snapping.js、src/app.js、src/help/content.json、tests/verify-grid-snapping.cjs、tests/verify-world-move.cjs、tests/browser-grid-boundaries.cjs、tests/browser-grid-snapping.cjs、.codex/rules/validation.md、docs/使用说明.md、docs/使用说明.html、dist/index.html、dist/build-report.json、logs/CHANGELOG.md。保留同期立体图复选框的 CSS 修复。
+- 验证：新增回归在修复前构建上复现右/下边界未对齐（平面图最大边为 560，预期 600）；npm run build 成功，离线网页 6,991,262 字节。node tests/verify-grid-snapping.cjs 通过新增 28 组两侧边界及 4 个方向键场景，覆盖三视图、XYZ 约束、负坐标、反向立面、旋转/75 cm 网格、尺寸保持和撤销重做；node tests/verify-world-move.cjs 通过；最终 npm test 全部 19 组回归通过。
+- 验证：node tests/browser-grid-boundaries.cjs 通过真实 Chrome 的 17 项检查，覆盖四边、正反立面、XYZ、负坐标、旋转组件、历史、编组/宿主空洞、拖动中按下/松开 Ctrl、无累计漂移及 Esc 回滚；已查看右边与下边对齐截图，证据在 qa/grid-boundaries/。node tests/browser-grid-snapping.cjs 通过网格设置、缩放、真实创建/移动/尺寸、历史与取消、JSON 和 390px 设置检查，证据在 qa/grid-snapping/。两项浏览器专项均无页面异常或在线请求。
+- 验证：使用本机 bundled Python 执行 tools/build-manual.py 成功，同步 8 节教程和 7 段离线媒体；Node.js 检查内置/外部帮助一致、正式种子为空工程及构建占位符移除通过；node --check 检查本次两个源码和四个测试脚本通过。本次调整了测试的 80 条历史上限预期、旋转边界临近网格的取点及 Chrome 自由拖动坐标精度；原有浏览器尺寸场景改为沿世界 X 轴拖动 150 单位，确保跨过网格取整阈值，保留尺寸变化断言。
+- 未运行：本次实际 PNG/SVG 下载、手机真机、Windows 重新封装及桌面 EXE 冒烟；本次交付源码、同步教程与离线网页，自动回归已检查导出隔离及 FBX/OBJ 文件读取。
+
+## 2026-10-26 · 修复楼梯角点合并后的扇形踏步
+
+- 变更：楼梯四个角点中的相邻两点重合、形成三角形时，依据保留的有效端边重新配对踏步插值。原来跨起止端合并后会把踏步线集中到一个角上，现在八种相邻合并方式均形成平行、等距的踏步，保持原有三角形占地；清理尖端重复顶点及零面积立面。普通四边形楼梯沿用原有划分，不改工程格式和已存角点索引。
+- 变更：方向箭头、自动踏步数量、立面角点高度、平面旋转和尺寸调整共用同一端点配对；重合角点在立面使用同一端高度，拖动时修改正确的起止高度，沿用一次操作一次撤销/重做及取消。同步内置和外部教程，补充模型/浏览器专项，将三角楼梯回归接入 npm test，并更新验证入口与组数。
+- 影响文件：src/model.js、src/geometry.js、src/interactions.js、src/view-features.js、src/app.js、src/help/content.json、package.json、tests/verify-stair-triangles.cjs、tests/browser-stair-triangles.cjs、.codex/project-context.md、.codex/rules/validation.md、docs/使用说明.md、docs/使用说明.html、dist/index.html、dist/build-report.json、logs/CHANGELOG.md。保留工作区已有网格吸附、复选框样式、教程及日志修改。
+- 验证：新增模型专项在修复前构建上复现踏步纵向跨度 200、预期约 16.6667 的失败；修复后 npm run build 成功，npm test 全部 20 组回归通过。同步教程后再次构建，最终离线网页 6,992,073 字节；最终 node tests/verify-stair-triangles.cjs 通过 32 组角点/旋转/正反高度组合及各自的 JSON、自动数量、平面旋转检查，兼查占地面积、非退化面、箭头位于轮廓内、三视图、重合角点高度与倾斜后的刚体旋转。
+- 验证：最终 node tests/browser-stair-triangles.cjs 通过真实 Chrome 的八种相邻角点拖动合并、一次撤销/重做、Esc 回滚、重合端立面高度编辑及 Z 尺寸调整的历史；检查三个视图，实际下载 PNG/SVG/OBJ/FBX，并使用独立 Three.js 读取两个模型文件，各为四个网格且坐标有效。无页面异常或在线请求；已查看平面四向对照、较高俯仰的立体图和实际导出的 PNG，右下角踏步与其余方向一致，证据在 qa/stair-triangles/。首轮浏览器脚本因布局动画尚未结束导致鼠标坐标过期、未实际拖动，等待字体和动画完成后重跑通过，未改变应用交互。
+- 验证：使用 bundled Python 执行 tools/build-manual.py 成功；Node.js 检查内置帮助、外部 Markdown/HTML 同步且正式种子为空工程通过。node --check 检查五个修改的源码和两个新增专项通过；本次源码、测试、帮助及协作入口的 git diff --check 通过（仅既有 LF/CRLF 转换提示）。
+- 未运行：Windows 重新封装与桌面 EXE 冒烟、手机真机；本次交付源码、同步教程和离线网页，未改桌面代码。
+
+## 2026-10-26 · 修复立体图编组与解组失效
+
+- 变更：移除立体图对 group、ungroup 命令的误拦截。选中实体或实体与文字等混合组件后，左侧“编组”“解组”、右键菜单及 Ctrl/Command＋G、Ctrl/Command＋Shift＋G 均可操作；沿用共享编组元数据、锁定保护和一次操作一次撤销。编组后可在立体图整体移动，宿主继续携带附属空洞；解组不改变几何、宿主关系或其他楼层、隐藏组件。同步内置与外部教程，说明三视图中的编组入口和快捷键。
+- 影响文件：src/app.js、src/help/content.json、tests/verify-spatial-update.cjs、tests/browser-grouping.cjs、docs/使用说明.md、docs/使用说明.html、dist/index.html、dist/build-report.json、logs/CHANGELOG.md。保留工作区已有网格吸附、三角楼梯、复选框样式及其他同期修改。
+- 验证：新增空间回归在修复前构建上复现“solid button groups geometry”失败，平面图和立面图的对应断言通过；修复后 npm run build 成功，离线单页 6,992,264 字节，node tests/verify-spatial-update.cjs 通过。新增断言覆盖三视图按钮、右键菜单、Ctrl/Command 快捷键、混合组件、宿主空洞与附属锁定、一次撤销重做、跨视图整组选择、JSON 和无效单选不产生历史。
+- 验证：node tests/browser-grouping.cjs 通过真实 Chrome 的 1440px/390px、深浅主题共 4 组检查，包含画布 Ctrl 多选、三种编组/解组入口、一次历史和撤销重做、编组后世界 X 轴真实拖动、空洞有效性与锁定、JSON 校验、自动暂存刷新后再次解组及无横向溢出；无页面异常或在线请求。已查看桌面浅色及窄屏深色截图，证据在 qa/grouping/。首轮浏览器脚本误将 Ctrl 作为 mouse.click 选项，导致未实际多选；改用真实键盘按下/松开后重跑通过，未调整应用选择逻辑或放宽断言。
+- 验证：使用 bundled Python 执行 tools/build-manual.py 成功，同步 8 节教程与 7 段自包含媒体；Node.js 检查内置及外部帮助一致、源码及嵌入正式种子仍为空、构建插入标记移除通过。node --check 检查本次应用入口和两个测试脚本通过；本次源码、测试和 Markdown 教程的 git diff --check 通过（仅既有 LF/CRLF 转换提示）。
+- 未运行：本次实际 PNG/SVG 下载、手机真机、Windows 重新封装与桌面 EXE 冒烟；本次更新源码、同步教程和离线网页，未改导出或桌面代码。
+
+- 验证：最终 npm test 全部 20 组回归通过，包含新增编组断言、空间交互、立体世界移动/旋转/尺寸、吸附、多选属性、组件列表、切割及独立 Three.js 读取的 FBX/OBJ 自动检查。本次源文件、测试、Markdown 教程和追加日志的 git diff --check 通过。
+
+## 2026-10-26 · 属性尺寸编辑取消整格限制
+
+- 变更：属性编辑器的单选、多选尺寸输入和三轴数值横向拖动不再受“网格吸附”取整限制，可设置小数及小于一格的有效尺寸，无需按住 Ctrl/Command；厚度、宽度、半径和起止高度等参数编辑也不再触发整件组件的整格缩放。多选直接输入仍统一设值，拖动仍保留各组件的数值差；保留尺寸下限、圆形约束、宿主空洞联动、锁定保护、失败回滚、一次操作一次撤销/重做与取消。画布中的创建、移动和尺寸手柄继续使用网格吸附。
+- 变更：更新三轴数值提示、内置与外部教程及项目上下文，明确属性数值与画布网格操作的行为；扩充属性回归和真实浏览器检查，调整网格专项的属性尺寸预期。
+- 影响文件：src/property-inspector.js、src/help/content.json、tests/verify-property-inspector.cjs、tests/verify-grid-snapping.cjs、tests/browser-property-inspector.cjs、tests/browser-property-scrub.cjs、.codex/project-context.md、docs/使用说明.md、docs/使用说明.html、dist/index.html、dist/build-report.json、logs/CHANGELOG.md。保留工作区其他同期修改。
+- 验证：新增属性回归在修改前构建上复现输入 300.375 被取整为约 300 的失败。修复后 node tests/verify-property-inspector.cjs 通过；同步教程后 npm run build 成功，最终离线网页 6,992,360 字节；最终 npm test 全部 20 组回归通过。新增检查覆盖五类旋转实体的 XYZ、75/100 cm 网格、单选/批量小数与小于一格尺寸、参数编辑不改变无关尺寸、宿主空洞、圆形联动、精细拖动保留差值、取消及撤销重做；网格专项同时确认画布尺寸吸附保留。
+- 验证：node tests/browser-property-inspector.cjs、node tests/browser-property-scrub.cjs、node tests/browser-grid-snapping.cjs 均通过真实 Chrome 操作；覆盖网格开启时的单选/多选输入与历史、三视图九项数值拖动、小数差值、Shift 精细、Ctrl/Command 与网格开关不影响属性尺寸、尺寸下限/反向拖动、宿主/圆形约束、七种取消、无效批量回滚、锁定、JSON、12 组宽窄屏/主题及实际画布创建/移动/尺寸吸附。无页面异常；输入及网格专项无在线请求。已查看桌面多选 337.25 cm 和 390px 数值拖动截图，证据在 qa/property-inspector/、qa/property-scrub/、qa/grid-snapping/。输入专项首轮因 37.250000000000014 与 37.25 的浮点严格相等断言失败，改用 1e-6 精度比较后重跑通过，未修改应用数值或网格行为。
+- 验证：使用 bundled Python 执行 tools/build-manual.py 成功；Node.js 检查三处更新说明在内置帮助及外部 Markdown/HTML 中一致、构建插入标记已移除且正式种子仍为空工程。node --check 检查属性源码与四个修改的专项脚本通过；本次文件 git diff --check 通过（仅既有 LF/CRLF 转换提示）。
+- 未运行：实际 PNG/SVG 下载、手机真机、Windows 重新封装及桌面 EXE 冒烟；本次交付源码、同步教程与离线网页，自动回归已验证 FBX/OBJ 文件读取与导出隔离。
+
+## 2026-10-26 · 同一楼层的实体默认使用相同颜色
+
+- 变更：平面（矩形、圆形）、墙壁、楼梯、爬梯和旋转楼梯的新建填充色及边线色按楼层统一，默认色保存在 floors[].componentColor。新增楼层从固定柔和色板分配颜色，12 色用完后复用，支持全部 30 层；改色、排序或清空组件后保留该层默认色。复制保留原色，文字、路线和标记沿用标注配色。
+- 变更：兼容已有工程及原 planeColors 配色记录，载入时保留已有组件外观，无默认色的楼层以该层首个实体的填充色初始化；校验新字段且不修改导入源数据。沿用创建操作的撤销、重做、取消和暂存流程，工程版本仍为 7。同步内置及外部教程，补充颜色专项与验证入口。
+- 影响文件：src/creation-colors.js、src/help/content.json、tests/verify-v9.cjs、tests/browser-floor-colors.cjs、.codex/rules/validation.md、docs/使用说明.md、docs/使用说明.html、dist/index.html、dist/build-report.json、logs/CHANGELOG.md。保留工作区已有网格、三角楼梯、编组、属性及其他同期修改。
+- 验证：新增断言在修改前构建上复现同层四个平面使用四种颜色、预期一种的失败；修复后 npm run build 成功，离线网页 6,992,646 字节。node tests/verify-v9.cjs 通过同层五类实体、30 层分配/复用、手动色与清空保持、旧工程原色与配色记录、非法字段、楼层新增/复制/删除、一次撤销重做和 JSON 检查；最终 npm test 全部 20 组回归通过。
+- 验证：node tests/browser-floor-colors.cjs 通过真实 Chrome 六种创建入口、两个楼层、三视图、属性改色、撤销重做、Esc 取消、JSON 与自动暂存刷新恢复检查，无页面异常或在线请求；已查看单层与双层立体图截图，证据在 qa/floor-colors/。首轮脚本因“新增楼层”选择器匹配两个入口中止，限定图稿设置内按钮后重跑通过，未调整应用行为。
+- 验证：使用 bundled Python 执行 tools/build-manual.py 成功；Node.js 检查全部帮助步骤在内置/外部说明中同步、正式种子为空及构建插入标记移除通过。本次源码与两个测试的 node --check、相关源码/测试/帮助/验证规则及日志的 git diff --check 通过（仅既有 LF/CRLF 转换提示）。
+- 未运行：本次实际 PNG/SVG 下载、手机真机、Windows 重新封装和桌面 EXE 冒烟；本次交付默认色逻辑、教程和离线网页，未改导出或桌面代码，自动回归已覆盖 SVG/模型导出及 FBX/OBJ 独立读取。
+## 2026-10-28 · 移除圆形与椭圆模板提示及转换按钮
+
+- 变更：选中圆形或椭圆时，属性面板不再显示“圆形／椭圆模板：大小工具调整宽高，顶点调整外接框。”提示及“转为多边形”按钮。
+- 影响文件：src/advanced-interactions.js、dist/index.html、dist/build-report.json、logs/CHANGELOG.md。
+- 验证：npm run build 成功；Node.js 检查源码与构建页面均不再包含上述提示和按钮文字，通过。未运行完整回归、真实浏览器和桌面封装，本次仅删除属性面板的一行界面输出。
+
+## 2026-10-28 · 楼梯零踏步生成倾斜平面
+
+- 变更：楼梯踏步数量允许设置为 0，此时沿现有轮廓、底端/顶端高度和梯板厚度生成连续斜面；兼容相邻角点合并后的三角轮廓、升降方向、等高端点和组件旋转。正数仍生成水平踏步，数量范围为 0–100；输入数量沿用手动模式、原子撤销重做及 JSON/暂存恢复，三视图和四种导出共用同一几何。未新增界面或教程说明文字，保留工作区原有其他改动。
+- 影响文件：src/model.js、src/app.js、tests/verify-stair-triangles.cjs、tests/verify-mesh-export.cjs、tests/browser-stair-ramp.cjs、dist/index.html、dist/build-report.json、logs/CHANGELOG.md。
+- 验证：npm run build 成功，离线单页 6,992,632 字节；楼梯回归通过原有 32 组三角踏步及新增 27 组零踏步斜面检查，覆盖端点、连续顶面、有效侧面、三视图、JSON、数量输入、一次撤销重做及非法数量。node tests/verify-mesh-export.cjs 通过，新增斜面体积、闭合网格及独立 Three.js FBX/OBJ 读取检查。
+- 验证：node tests/browser-stair-ramp.cjs 通过真实 Chrome 的数量输入、起止高度编辑、撤销重做、JSON 载入、刷新暂存恢复、三视图与 390px 窄屏输入；实际下载 PNG/SVG/OBJ/FBX，并独立读取两个模型文件，确认为 12 个三角面的连续梯板。无页面异常或在线请求；已查看立体图、窄屏截图及 PNG 成品，证据在 qa/stair-ramp/。初轮测试的属性 ID、撤销后选择状态及导出关闭按钮选择器有误，修正测试入口后重跑通过。
+- 验证：本次两个应用源码及三个测试脚本的 node --check 通过；src/model.js、src/app.js、tests/verify-mesh-export.cjs 的 git diff --check 通过，仅有既有 LF/CRLF 转换提示。
+- 未运行：Windows 重新封装与桌面 EXE 冒烟、手机真机；本次改动网页模型和属性数量下限，未改桌面代码。
+- 验证：最终 npm test 全部 20 组应用回归通过；本次源码、已跟踪测试及追加日志的 git diff --check 通过。
+
+## 2026-10-28 · 删除楼梯属性说明
+
+- 变更：删除楼梯属性面板中的“单段楼梯；同端高度联动，踏步保持水平。转角可组合独立楼梯和平面。”提示。
+- 影响文件：src/app.js、dist/index.html、dist/build-report.json、logs/CHANGELOG.md。
+- 验证：npm run build 成功；PowerShell 检查源码及构建页面均不再包含该提示，通过。未运行完整回归、真实浏览器及桌面封装，本次仅删除提示文字。

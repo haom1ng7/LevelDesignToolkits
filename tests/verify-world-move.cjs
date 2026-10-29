@@ -22,7 +22,7 @@ try{
  // A whole-floor move changes its base only; copy/cancel restores the selection.
  A.select(id);const floor=A.document.activeFloor;d.querySelector(`[data-floor="${floor}"]`).click();const base=A.document.floors.find(f=>f.id===floor).height;gesture('2',[0,0,35]);near(A.document.floors.find(f=>f.id===floor).height,base+35,'floor base');A.command('undo');tool('select').click();d.querySelector(`[data-floor="${floor}"]`).click();gesture('2',[0,0,35],{altKey:true},true);assert.equal(A.selection.floor,floor);near(A.document.floors.find(f=>f.id===floor).height,base,'cancel copied floor');
  id=blank();o=A.document.objects.find(o=>o.id===id);o.locked=true;A.select(id,false,true);assert(!d.querySelector('[data-world-gizmo]'));assert(tool('move').disabled);
- id=blank();d.querySelector('#snap').checked=true;gesture('0',[24,0,0]);near(A.document.objects.find(o=>o.id===id).position[0],520,'absolute grid bounds on constrained X only');
+ id=blank();d.querySelector('#snap').checked=true;gesture('0',[24,0,0]);near(A.document.objects.find(o=>o.id===id).position[0],480,'nearest maximum grid bound on constrained X only');
  // Screen-parallel degeneracies are deliberately non-interactive.
  A.view.azimuth=0;A.view.elevation=90;A.select(id,false,true);assert(!d.querySelector('[data-world-handle="2"]'));assert(!d.querySelector('[data-world-handle="02"]'));assert(!d.querySelector('[data-world-handle="12"]'));
  // Solid-view properties edit the shared model, retain history and obey locks.

@@ -16,7 +16,6 @@ function rowDoubleClick(b,e){if(e.ctrlKey||e.metaKey||e.shiftKey){rowStamp=null;
 function advancedInspector(o){let html='';if(o.type==='spiral')html+='<div class="paired-fields">'+field('总旋转角度 / 度','totalDegrees',+(o.turns*360).toFixed(4),'number','prop','min="0.1" max="2880" step="0.1"')+field('圈数 / 1 圈 = 360°','turns',+o.turns.toFixed(6),'number','prop','min="0.000277778" max="8" step="0.01"')+'</div>';
  if(o.wallPath)html+=field('墙壁高度','wallHeight',o.wallPath.height,'number','prop','min="1" max="10000"');
  if(o.wallPath||o.curves?.some(v=>Math.abs(v)>1e-6))html+='<small>旧版曲面保留原形，可移动、调整大小和旋转。</small>';
- if(o.shape==='ellipse')html+='<small>圆形／椭圆模板：大小工具调整宽高，顶点调整外接框。</small><button data-action="ellipse-to-contour">转为多边形</button>';
  return html}
 function objectPlane(o){const host=o.type==='hole'?doc().objects.find(x=>x.id===o.host):o;return {host,world:p=>M.world(doc(),host,o.cut?M.holePoint(o,p):host.type==='wall'?M.facePoint(host,p):[...p,0]),local:p=>o.cut?M.holeLocal(o,M.local(doc(),host,p)):M.faceLocal(host,M.local(doc(),host,p)),normal:o.cut?M.mat(host.orientation,M.unit(M.cross(o.cut.r,o.cut.d))):M.normal(host)}}
 function editBoxVertex(o,j,q){const ps=o.points,anchor=ps[(j+2)%4],u=M.unit([...M.sub(ps[1],ps[0]),0]).slice(0,2),v=M.unit([...M.sub(ps[3],ps[0]),0]).slice(0,2),ua=M.dot(anchor,u),va=M.dot(anchor,v),uq=M.dot(q,u),vq=M.dot(q,v),us=j===0||j===3?[Math.min(uq,ua-1),ua]:[ua,Math.max(uq,ua+1)],vs=j<2?[Math.min(vq,va-1),va]:[va,Math.max(vq,va+1)];o.points=[[0,0],[1,0],[1,1],[0,1]].map(([x,y])=>M.add(M.mul(u,us[x]),M.mul(v,vs[y])))}

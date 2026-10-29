@@ -22,7 +22,7 @@ try{
  before=JSON.stringify(A.document.objects);change('#prop-name','');assert(ids.every(id=>object(id).name===''),'empty common text is intentional');A.command('undo');choose(ids);
  // Each entity uses its local physical dimensions, with rotation and origin retained.
  for(const type of types)for(let axis=0;axis<3;axis++){
-  ids=fresh([type]);a=ids[0];const o=object(a);o.orientation=orientation(20,15,35);choose(ids);const original=dims(o),origin=[...o.position],matrix=[...o.orientation],value=original[axis]*1.25;
+  ids=fresh([type]);a=ids[0];$('#snap').checked=true;const o=object(a);o.orientation=orientation(20,15,35);choose(ids);const original=dims(o),origin=[...o.position],matrix=[...o.orientation],value=original[axis]*1.25+.375;
   count=A.undoCount;change('#prop-dimension'+'XYZ'[axis],value,'input');change('#prop-dimension'+'XYZ'[axis],value);assert.equal(A.undoCount,Math.min(80,count+1),'dimension input and native commit are one undo');const next=object(a);near(dims(next)[axis],value,type+' local dimension');vector(next.position,origin,'numeric size keeps origin');vector(next.orientation,matrix,'numeric size keeps rotation');
   for(let j=0;j<3;j++)if(j!==axis&&!(type==='spiral'&&axis<2&&j<2))near(dims(next)[j],original[j],type+' untouched size');M.validate(A.project);
  }
@@ -35,19 +35,35 @@ try{
  ids=fresh(['text','text']);object(ids[1]).text='另一个文本';choose(ids);mixed('#prop-text');change('#prop-text','共同文字','input');assert(ids.every(id=>object(id).text==='共同文字'));
  ids=fresh(['plane','text']);choose(ids);assert($('#prop-px'));assert(!$('#prop-rx'));assert(!$('#prop-dimensionX'));assert(!$('#prop-thickness'));assert(!$('#prop-fill'),'only common fields appear');
  ids=fresh();object(ids[1]).locked=true;choose(ids);before=JSON.stringify(A.document.objects);assert([...d.querySelectorAll('#properties input,#properties select')].every(i=>i.disabled));change('#prop-px',10);assert.equal(JSON.stringify(A.document.objects),before,'any locked component prevents the batch');
- // Grid sizes and circular coupling agree with the size handles.
- ids=fresh(['spiral']);a=ids[0];choose(ids);$('#snap').checked=true;change('#prop-dimensionX',337);vector(dims(object(a)).slice(0,2),[300,300],'grid and circular coupling');
+ // Numeric properties are exact even with snapping enabled, including sub-grid sizes.
+ for(const step of [75,100])for(const type of types)for(let axis=0;axis<3;axis++){
+  ids=fresh([type,type]);A.document.gridSize=step;$('#snap').checked=true;object(ids[1]).orientation=orientation(20,15,35);choose(ids);
+  before=JSON.stringify(A.document.objects);count=A.undoCount;const key='#prop-dimension'+'XYZ'[axis],value=axis===2?37.25:137.25;
+  change(key,value,'input');change(key,value);ids.forEach(id=>near(dims(object(id))[axis],value,type+' batch exact size on '+step+' grid'));
+  assert.equal(A.undoCount,Math.min(80,count+1));const after=JSON.stringify(A.document.objects);A.command('undo');assert.equal(JSON.stringify(A.document.objects),before);A.command('redo');assert.equal(JSON.stringify(A.document.objects),after);
+ }
+ // Parameter edits must not quantize the edited value or unrelated dimensions.
+ for(const [type,scope,key,value] of [['wall','prop','thickness',13.75],['stairs','prop','thickness',13.75],['ladder','prop','span',87.25],['ladder','prop','thickness',7.5],['spiral','prop','inner',31.25],['spiral','prop','outer',142.75],['spiral','prop','start',23.75],['spiral','prop','end',243.25],['stairs','flight','start',23.75],['stairs','flight','end',243.25]]){
+  ids=fresh([type,type]);choose(ids);const original=JSON.stringify(A.project);change('#'+scope+'-'+key,value);const expected=JSON.stringify(A.document.objects);
+  A.loadProject(JSON.parse(original));choose(ids);$('#snap').checked=true;change('#'+scope+'-'+key,value);assert.equal(JSON.stringify(A.document.objects),expected,type+' '+key+' independent of grid');
+ }
+ // Circular coupling and host holes still follow exact dimensions below one grid cell.
+ ids=fresh(['spiral']);a=ids[0];choose(ids);$('#snap').checked=true;change('#prop-dimensionX',37.25);vector(dims(object(a)).slice(0,2),[37.25,37.25],'exact circular coupling');
+ ids=fresh(['plane']);a=ids[0];hole=Object.assign(M.createObject(A.document,'hole'),{host:a,floor:object(a).floor,points:[[-20,-20],[20,-20],[20,20],[-20,20]]});A.document.objects.push(hole);choose(ids);$('#snap').checked=true;change('#prop-dimensionX',137.25);near(object(hole.id).points[1][0]-object(hole.id).points[0][0],40*137.25/240);assert(M.validHole(A.document,object(hole.id)));
  // Euler singularities remain finite and round trip without changing the matrix.
  for(const y of [-90,-89.999,0,89.999,90]){ids=fresh();a=ids[0];object(a).orientation=orientation(25,y,40);choose([a]);const original=[...object(a).orientation];change('#prop-ry',+$('#prop-ry').value);vector(object(a).orientation,original,'singular Euler round trip')}
  const json=JSON.stringify(A.project);A.loadProject(JSON.parse(json));assert.equal(JSON.stringify(A.project),json,'JSON retains physical transforms');
  for(const mode of ['plan','elevation','solid']){$(`[data-view="${mode}"]`).click();choose([a]);assert.equal(d.querySelectorAll('.transform-row').length,3);assert.equal(d.querySelectorAll('.transform-values input').length,9)}
  // Horizontal scrubbing previews all nine values and commits one atomic edit.
  for(const key of ['px','py','pz','rx','ry','rz','dimensionX','dimensionY','dimensionZ']){
-  ids=fresh(['plane']);a=ids[0];choose(ids);const initial=+$('#prop-'+key).value,original=JSON.stringify(A.document.objects);count=A.undoCount;
+  ids=fresh(['plane']);a=ids[0];choose(ids);$('#snap').checked=true;const initial=+$('#prop-'+key).value,original=JSON.stringify(A.document.objects);count=A.undoCount;
   propertyPointer('pointerdown',100,$('#prop-'+key));propertyPointer('pointermove',112);propertyPointer('pointermove',125);assert.equal(A.undoCount,count,'preview does not create history');near(+$('#prop-'+key).value,initial+25,key+' scrub');propertyPointer('pointerup',125);assert.equal(A.undoCount,Math.min(80,count+1),'one scrub is one undo');A.command('undo');assert.equal(JSON.stringify(A.document.objects),original,'scrub undo restores exact geometry');
  }
  ids=fresh();choose(ids);before=JSON.stringify(A.document.objects);count=A.undoCount;propertyPointer('pointerdown',100,$('#prop-px'));propertyPointer('pointermove',120,$('#properties'),{shiftKey:true});
  propertyPointer('pointercancel',120);assert.equal(JSON.stringify(A.document.objects),before);assert.equal(A.undoCount,count,'cancel does not create history');
  ids=fresh();choose(ids);propertyPointer('pointerdown',100,$('#prop-px'));propertyPointer('pointermove',120);propertyPointer('pointerup',120);ids.forEach((id,i)=>near(object(id).position[0],420+i*400,'mixed scrub preserves differences'));
- assert.deepEqual(errors,[]);console.log('PASS property inspector: per-axis mixed values independent of primary, all shared input kinds, absolute batch edits/history, five rotated local dimensions, grid/coupling, host holes, invalid batch rollback, locks, live dependent values, singular Euler, JSON/three views and all nine scrub values with atomic history/cancel and mixed offsets.');
+ ids=fresh();object(ids[1]).points=object(ids[1]).points.map(p=>[p[0]*1.5,p[1]]);choose(ids);$('#snap').checked=true;before=JSON.stringify(A.document.objects);count=A.undoCount;
+ propertyPointer('pointerdown',100,$('#prop-dimensionX'));propertyPointer('pointermove',125,$('#properties'),{shiftKey:true});ids.forEach((id,i)=>near(dims(object(id))[0],(i?360:240)+2.5,'fine size scrub preserves mixed differences with grid enabled'));propertyPointer('pointerup',125);assert.equal(A.undoCount,Math.min(80,count+1));A.command('undo');assert.equal(JSON.stringify(A.document.objects),before);
+ choose(ids);propertyPointer('pointerdown',100,$('#prop-dimensionX'));propertyPointer('pointermove',125);propertyPointer('pointercancel',125);assert.equal(JSON.stringify(A.document.objects),before,'cancel exact batch size');
+ assert.deepEqual(errors,[]);console.log('PASS property inspector: per-axis mixed values, shared input kinds, exact single/batch dimensions and parameters on 75/100 grids, five rotated entity types, atomic history, circular coupling, host holes, rollback, locks, Euler/JSON/three views, all nine scrub values and fine mixed size scrubbing with grid enabled.');
 }finally{dom.window.close()}
