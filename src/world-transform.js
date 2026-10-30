@@ -1,5 +1,5 @@
 // Solid rotation is rigid; size handles edit local dimensions around a fixed corner.
-const solidTypes=['plane','wall','stairs','ladder','spiral'];
+const solidTypes=['plane','wall','stairs','ladder','spiral','solid'];
 let solidCorner=null;
 function solidRoots(){return selected().filter(o=>solidTypes.includes(o.type))}
 function solidRotationAvailable(){return worldMovable()&&solidRoots().length>0}
@@ -7,11 +7,11 @@ function solidSizeAvailable(){return solidRotationAvailable()&&!floorSelection&&
 function bounds3(points){const min=[Infinity,Infinity,Infinity],max=[-Infinity,-Infinity,-Infinity];for(const p of points)for(let i=0;i<3;i++){min[i]=Math.min(min[i],p[i]);max[i]=Math.max(max[i],p[i])}return {min,max}}
 function solidCenter(){const b=bounds3(solidRoots().flatMap(o=>M.geometry(doc(),o).flatMap(f=>f.points)));return M.mul(M.add(b.min,b.max),.5)}
 function solidRing(axis,center=solidCenter(),basis=scene.basis,radius=pixel()*76){
- const u=worldAxes[(axis+1)%3],v=worldAxes[(axis+2)%3],p=M.project(center,basis),project=a=>[M.dot(a,basis.r),M.dot(a,basis.down)];
- return {axis,center,p,u,v,pu:project(u),pv:project(v),radius};
+ const u=worldAxes[(axis+1)%3],v=worldAxes[(axis+2)%3],p=M.project(center,basis),project=a=>M.projectVector(a,basis,center);
+ return {axis,center,p,u,v,pu:project(u),pv:project(v),radius,basis,worldRadius:basis.eye?radius*M.cameraDepth(center,basis)/basis.focal:radius};
 }
-function solidRingPoint(r,angle){return M.add(r.p,M.mul(M.add(M.mul(r.pu,Math.cos(angle)),M.mul(r.pv,Math.sin(angle))),r.radius))}
-function solidRingAngle(r,q){const d=M.sub(q,r.p),det=r.pu[0]*r.pv[1]-r.pu[1]*r.pv[0];return Math.abs(det)<.08?null:Math.atan2((r.pu[0]*d[1]-r.pu[1]*d[0])/det,(d[0]*r.pv[1]-d[1]*r.pv[0])/det)}
+function solidRingPoint(r,angle){if(r.basis.eye)return M.project(M.add(r.center,M.mul(M.add(M.mul(r.u,Math.cos(angle)),M.mul(r.v,Math.sin(angle))),r.worldRadius)),r.basis);return M.add(r.p,M.mul(M.add(M.mul(r.pu,Math.cos(angle)),M.mul(r.pv,Math.sin(angle))),r.radius))}
+function solidRingAngle(r,q){if(r.basis.eye){if(Math.abs(M.dot(worldAxes[r.axis],M.perspectiveRay(q,r.basis)))<1e-4)return null;const v=M.sub(M.unproject(q,r.basis,r.center,worldAxes[r.axis]),r.center);return Math.atan2(M.dot(v,r.v),M.dot(v,r.u))}const d=M.sub(q,r.p),det=r.pu[0]*r.pv[1]-r.pu[1]*r.pv[0];return Math.abs(det)<.08?null:Math.atan2((r.pu[0]*d[1]-r.pu[1]*d[0])/det,(d[0]*r.pv[1]-d[1]*r.pv[0])/det)}
 function solidLocalBounds(o,d=doc()){
  const b=bounds3(M.geometry(d,o).flatMap(f=>f.points.map(p=>M.local(d,o,p))));
  // Parametric stairs keep their start/end levels even as automatic step counts change.
@@ -22,7 +22,7 @@ function solidLocalBounds(o,d=doc()){
 function solidResizeInfo(){
  if(!solidSizeAvailable())return null;const o=solidRoots()[0],b=solidLocalBounds(o),axes=worldAxes.map(a=>M.mat(o.orientation,a)),vectors=axes.map(a=>[M.dot(a,scene.basis.r),M.dot(a,scene.basis.down)]),corners=Array.from({length:8},(_,n)=>[0,1,2].map(i=>(n>>i)&1?b.max[i]:b.min[i]));
  const index=solidCorner?.id===o.id?solidCorner.index:7;
- return {id:o.id,b,axes,vectors,corners,index,world:corners.map(p=>M.world(doc(),o,p))};
+ return {id:o.id,b,axes,vectors:axes.map(a=>M.projectVector(a,scene.basis,M.world(doc(),o,corners[index]))),corners,index,world:corners.map(p=>M.world(doc(),o,p))};
 }
 function solidPair(vectors){let axes=[0,1],best=0;for(const pair of [[0,1],[0,2],[1,2]]){const [a,b]=pair.map(i=>vectors[i]),det=Math.abs(a[0]*b[1]-a[1]*b[0]);if(det>best){best=det;axes=pair}}return axes}
 function solidSizeDelta(axes,delta,vectors){
@@ -32,7 +32,7 @@ function solidSizeDelta(axes,delta,vectors){
 function solidTransformMarkup(){
  const k=pixel();let s='';
  if(tool==='rotate'&&solidRotationAvailable()){
-  const center=drag?.kind==='solid-rotate'?drag.center:solidCenter();s='<g class="world-gizmo" data-solid-transform="rotate">';
+  const center=drag?.kind==='solid-rotate'?drag.center:solidCenter();if(scene.basis.eye&&M.cameraDepth(center,scene.basis)<scene.basis.near)return '';s='<g class="world-gizmo" data-solid-transform="rotate">';
   for(let i=0;i<3;i++){const r=solidRing(i,center),points=Array.from({length:97},(_,j)=>solidRingPoint(r,j*Math.PI/48)),path=R.path(points),active=drag?.kind==='solid-rotate'&&drag.axis===i;
    s+=`<g data-world-rotate="${i}" role="button" aria-label="绕 ${worldNames[i]} 轴旋转" class="${active?'active':''}" style="--gizmo-color:${worldColors[i]};cursor:grab"><title>拖动绕 ${worldNames[i]} 轴旋转；Shift 每次 15°，Ctrl 暂停吸附</title><path d="${path}" fill="none" stroke="white" stroke-width="${k*5}" pointer-events="none"/><path class="gizmo-axis" d="${path}" fill="none" stroke-width="${k*2.5}"/><path class="gizmo-ring-hit" d="${path}" fill="none" stroke="transparent" stroke-width="${k*12}"/></g>`;
    const p=solidRingPoint(r,Math.PI*.22+i*.7);s+=`<text x="${p[0]+k*6}" y="${p[1]-k*6}" fill="${worldColors[i]}" stroke="white" stroke-width="${k*3}" paint-order="stroke" font-size="${k*12}" pointer-events="none">${worldNames[i]}</text>`;
@@ -40,7 +40,7 @@ function solidTransformMarkup(){
   if(drag?.kind==='solid-rotate')s+=`<text x="${M.project(center,scene.basis)[0]}" y="${M.project(center,scene.basis)[1]+k*18}" text-anchor="middle" fill="${R.contrast(doc().background)}" font-size="${k*13}" pointer-events="none">${(drag.angle*180/Math.PI).toFixed(1)}°</text>`;
   return s+'</g>';
  }
- if(tool!=='size')return '';const info=solidResizeInfo();if(!info)return '';const {world,index,vectors}=info,points=world.map(p=>M.project(p,scene.basis)),active=points[index];
+ if(tool!=='size')return '';const info=solidResizeInfo();if(!info)return '';const {world,index,vectors}=info;if(scene.basis.eye&&M.cameraDepth(world[index],scene.basis)<scene.basis.near)return '';const points=world.map(p=>M.project(p,scene.basis)),active=points[index];
  s='<g class="world-gizmo" data-solid-transform="size">';
  for(let n=0;n<8;n++)for(let i=0;i<3;i++)if(!(n&(1<<i)))s+=`<path d="${R.path([points[n],points[n|(1<<i)]])}" fill="none" stroke="${R.contrast(doc().background)}" stroke-opacity=".55" stroke-width="${k}" stroke-dasharray="${k*4} ${k*3}" pointer-events="none"/>`;
  for(let i=0;i<3;i++){
@@ -49,7 +49,7 @@ function solidTransformMarkup(){
  }
  // Paint nearer corners last so a top/front view still has reachable handles.
  const order=Array.from({length:8},(_,i)=>i).sort((a,b)=>M.dot(world[a],scene.basis.n)-M.dot(world[b],scene.basis.n));
- for(const n of order){const p=points[n];s+=`<g data-solid-corner="${n}" role="button" aria-label="拖动角点 ${n+1} 调整尺寸，对角点固定" style="cursor:crosshair"><title>拖动调整长宽高，对角点固定；旁边的 X/Y/Z 手柄可只改一个尺寸</title><circle cx="${p[0]}" cy="${p[1]}" r="${k*10}" fill="transparent"/><circle cx="${p[0]}" cy="${p[1]}" r="${k*(n===index?5:4)}" fill="${n===index?'#f2c94c':'white'}" stroke="#333333" stroke-width="${k*1.5}" pointer-events="none"/></g>`}
+ for(const n of order){if(scene.basis.eye&&M.cameraDepth(world[n],scene.basis)<scene.basis.near)continue;const p=points[n];s+=`<g data-solid-corner="${n}" role="button" aria-label="拖动角点 ${n+1} 调整尺寸，对角点固定" style="cursor:crosshair"><title>拖动调整长宽高，对角点固定；旁边的 X/Y/Z 手柄可只改一个尺寸</title><circle cx="${p[0]}" cy="${p[1]}" r="${k*10}" fill="transparent"/><circle cx="${p[0]}" cy="${p[1]}" r="${k*(n===index?5:4)}" fill="${n===index?'#f2c94c':'white'}" stroke="#333333" stroke-width="${k*1.5}" pointer-events="none"/></g>`}
  return s+'</g>';
 }
 function beginSolidTransform(e,q){
@@ -60,9 +60,9 @@ function beginSolidTransform(e,q){
   drag={kind:'solid-rotate',before:snapshot(),selection:[...selection],primary,axis,center:r.center,ring:r,start:q,last:q,lastAngle:startAngle,rawAngle:0,angle:0,tangent,snapped:null,changed:false};canvas.style.cursor='grabbing';capture(e);drawHandles();return true;
  }
  const cornerTarget=e.target.closest('[data-solid-corner]'),axisTarget=e.target.closest('[data-solid-size-axis]');if(!cornerTarget&&!axisTarget||tool!=='size')return false;const info=solidResizeInfo();if(!info)return false;
- if(cornerTarget){info.index=+cornerTarget.dataset.solidCorner;solidCorner={id:info.id,index:info.index}}
+ if(cornerTarget){info.index=+cornerTarget.dataset.solidCorner;solidCorner={id:info.id,index:info.index};info.vectors=info.axes.map(a=>M.projectVector(a,scene.basis,info.world[info.index]))}
  const axes=axisTarget?[+axisTarget.dataset.solidSizeAxis]:solidPair(info.vectors);if(!solidSizeDelta(axes,[0,0],info.vectors))return false;
- const anchor=info.world[info.index^7];drag={kind:'solid-size',before:snapshot(),selection:[...selection],primary,id:info.id,info,axes,anchor,start:q,last:q,changed:false};canvas.style.cursor='crosshair';capture(e);drawHandles();return true;
+ const anchor=info.world[info.index^7];drag={kind:'solid-size',before:snapshot(),selection:[...selection],primary,id:info.id,info,axes,anchor,basis:M.clone(scene.basis),start:q,last:q,changed:false};canvas.style.cursor='crosshair';capture(e);drawHandles();return true;
 }
 function solidRigidRotation(angle){
  const matrix=M.axisRotation(worldAxes[drag.axis],angle);for(const o of selected().filter(o=>o.type!=='hole')){const p=M.add(drag.center,M.mat(matrix,M.sub(M.origin(doc(),o),drag.center)));o.position=M.sub(p,[0,0,M.floor(doc(),o)?.height||0]);o.orientation=M.product(matrix,o.orientation);if(o.type==='text')o.textAngle+=angle*180/Math.PI}
@@ -91,7 +91,7 @@ function moveSolidTransform(q,e){
   else{const angle=solidRingAngle(drag.ring,q);if(angle===null||Math.hypot(...M.sub(q,drag.ring.p))<pixel()*3)return;drag.rawAngle+=Math.atan2(Math.sin(angle-drag.lastAngle),Math.cos(angle-drag.lastAngle));drag.lastAngle=angle}
   const angle=snappedAngle(drag.rawAngle,e);project=JSON.parse(drag.before);solidRigidRotation(angle);drag.angle=angle;status(`旋转 ${worldNames[drag.axis]} · ${(angle*180/Math.PI).toFixed(1)}° · Esc 取消`);
  }else{
-  const delta=solidSizeDelta(drag.axes,M.sub(q,drag.start),drag.info.vectors);if(!delta)return;
+  let delta;if(drag.basis.eye){const values=M.dragAxes(q,drag.start,drag.info.world[drag.info.index],drag.axes.map(i=>drag.info.axes[i]),drag.basis);if(!values)return;delta=[0,0,0];drag.axes.forEach((axis,j)=>delta[axis]=values[j])}else delta=solidSizeDelta(drag.axes,M.sub(q,drag.start),drag.info.vectors);if(!delta)return;
   if(gridEnabled(e)){const extent=M.sub(drag.info.b.max,drag.info.b.min);for(const i of drag.axes){const sign=(drag.info.index>>i)&1?1:-1;delta[i]=(gridLength(extent[i]+delta[i]*sign)-extent[i])*sign}}
   project=JSON.parse(drag.before);const dimensions=resizeSolidFromCorner(delta,gridEnabled(e));status(`长 / 宽 / 高：${dimensions.map(n=>n.toFixed(1)).join(' / ')} · 对角点固定 · Esc 取消`);
  }

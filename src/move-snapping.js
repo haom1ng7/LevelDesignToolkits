@@ -6,6 +6,7 @@ const MoveSnapping=(()=>{
   const edges=[],world=p=>M.world(d,o,p),edge=(a,b,kind='boundary')=>edges.push({a:world(a),b:world(b),kind,owner:o});
   const ring=(ps,kind)=>ps.forEach((p,i)=>edge(p,ps[(i+1)%ps.length],kind));
   if(o.type==='plane')ring(M.contour(o).map(p=>[...p,0]));
+  if(o.type==='solid')for(const [a,b] of M.boundaryEdges(M.geometry(d,o)))edges.push({a,b,kind:'boundary',owner:o});
   if(o.type==='wall'){const ps=M.wallFootprint(o),[lo,hi]=M.wallLevels(o);ring(ps.map(p=>[...p,lo]));ring(ps.map(p=>[...p,hi]));ps.forEach(p=>edge([...p,lo],[...p,hi]))}
   if(o.type==='stairs'){const f=o.flights[0];edge([...f.points[0],f.start],[...f.points[1],f.start],'end');edge([...f.points[3],f.end],[...f.points[2],f.end],'end');edge([...f.points[0],f.start],[...f.points[3],f.end],'side');edge([...f.points[1],f.start],[...f.points[2],f.end],'side')}
   if(o.type==='hole'){const host=d.objects.find(x=>x.id===o.host);if(host){const ps=M.contour(o).map(p=>M.world(d,host,o.cut?M.holePoint(o,p):M.facePoint(host,p)));ps.forEach((p,i)=>edges.push({a:p,b:ps[(i+1)%ps.length],kind:'boundary',owner:o}))}}
@@ -17,11 +18,11 @@ const MoveSnapping=(()=>{
   return edges;
  }
  function prepare(d,ids,basis,view,ghost){
-  const excluded=new Set(ids),sources=d.objects.filter(o=>excluded.has(o.id)&&['plane','wall','stairs','ladder','spiral'].includes(o.type)).flatMap(o=>{const fs=features(d,o),zs=fs.flatMap(e=>[e.a[2],e.b[2]]),height=[Math.min(...zs),Math.max(...zs)],ds=fs.flatMap(e=>[M.dot(e.a,basis.n),M.dot(e.b,basis.n)]),depth=[Math.min(...ds),Math.max(...ds)];return fs.map(e=>({...e,height,depth}))}),targets=[];
+  const excluded=new Set(ids),sources=d.objects.filter(o=>excluded.has(o.id)&&['plane','wall','stairs','ladder','spiral','solid'].includes(o.type)).flatMap(o=>{const fs=features(d,o),zs=fs.flatMap(e=>[e.a[2],e.b[2]]),height=[Math.min(...zs),Math.max(...zs)],ds=fs.flatMap(e=>[M.dot(e.a,basis.n),M.dot(e.b,basis.n)]),depth=[Math.min(...ds),Math.max(...ds)];return fs.map(e=>({...e,height,depth}))}),targets=[];
   const range=ps=>[Math.min(...ps.map(p=>M.dot(p,basis.n))),Math.max(...ps.map(p=>M.dot(p,basis.n)))];
   const add=(e,id,depth)=>{const a=M.project(e.a,basis),b=M.project(e.b,basis);targets.push({...e,id,a2:a,b2:b,depth:depth||range([e.a,e.b]),box:[Math.min(a[0],b[0]),Math.min(a[1],b[1]),Math.max(a[0],b[0]),Math.max(a[1],b[1])]})};
   for(const o of d.objects){
-   if(excluded.has(o.id)||o.visible===false||M.floor(d,o)?.visible===false||!['plane','wall','stairs','ladder','spiral'].includes(o.type))continue;
+   if(excluded.has(o.id)||o.visible===false||M.floor(d,o)?.visible===false||!['plane','wall','stairs','ladder','spiral','solid'].includes(o.type))continue;
    if(view.mode==='plan'&&!ghost&&o.floor!==d.activeFloor)continue;
    if(view.mode==='elevation'&&(view.scope==='floor'&&o.floor!==d.activeFloor||view.scope==='selection'&&!view.focusIds?.includes(o.id)))continue;
    const fs=features(d,o),depth=range(fs.flatMap(e=>[e.a,e.b])),zs=fs.flatMap(e=>[e.a[2],e.b[2]]),height=[Math.min(...zs),Math.max(...zs)];fs.forEach((e,i)=>add({...e,height},o.id+':'+i,o.type==='wall'?depth:null));
@@ -36,7 +37,7 @@ const MoveSnapping=(()=>{
  function compatible(s,t,c){
   const a=s.owner,b=t.owner;if(a.type==='cursor')return true;
   if((s.kind==='side'&&a.type==='stairs'||t.kind==='side'&&b.type==='stairs')&&c.mode!=='plan')return false;
-  if(c.transform&&['hole','text'].includes(a.type))return ['plane','wall','stairs','ladder','spiral'].includes(b.type);
+  if(c.transform&&['hole','text'].includes(a.type))return ['plane','wall','stairs','ladder','spiral','solid'].includes(b.type);
   if(['stairs','spiral'].includes(a.type))return ['plane','wall'].includes(b.type);
   if(['stairs','spiral'].includes(b.type))return ['plane','wall'].includes(a.type)&&(t.kind==='end'||c.mode==='plan'&&t.kind==='side');
   const ladder=a.type==='ladder'?a:b.type==='ladder'?b:null,other=ladder===a?b:a,feature=ladder===a?s:t;

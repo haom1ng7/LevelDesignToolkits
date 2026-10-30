@@ -11,7 +11,7 @@
 | 方式 | 使用方法 |
 | --- | --- |
 | 离线网页 | 下载并解压项目，使用桌面版 Chrome 或 Edge 打开 `dist/index.html`，无需安装开发依赖。 |
-| Windows 便携版 | 若仓库 Releases 已提供发行附件，下载 `LevelDesignToolkits-1.1.0-Windows-x64.exe` 后双击运行。适用于 Windows 10／11 x64，无需安装，首次启动会解包到临时目录。目录版 ZIP 则需完整解压后运行。 |
+| Windows 便携版 | 若仓库 Releases 已提供发行附件，下载 `LevelDesignToolkits-1.2.0-Windows-x64.exe` 后双击运行。适用于 Windows 10／11 x64，无需安装，首次启动会解包到临时目录。目录版 ZIP 则需完整解压后运行。 |
 | 在线网页 | 若维护者已部署网站，从仓库 About 或 Settings → Pages 获取实际网址，在浏览器中打开。 |
 
 第一次使用可以按以下步骤开始：
@@ -94,7 +94,7 @@ npm test
 
 `build` 将 `src/` 源码和资源拼装为 `dist/index.html`，可直接离线打开，也可作为静态网站部署，无需后端。`test` 运行 15 组自动回归，多数检查读取构建产物，因此修改源码后应先构建再测试。
 
-网页使用原生 JavaScript、HTML、CSS 和 SVG，无前端框架或第三方运行时脚本。npm 依赖用于构建、测试和 Electron 桌面封装。首次安装依赖、下载桌面构建工具需要联网。
+网页使用 JavaScript、HTML、CSS 和 SVG；透视立体图使用 Three.js 0.180.0 / WebGL 加速，模型网格缓存并合批绘制。导航键自动进入透视模式，也可在立体图下方切换正交/透视投影。Three.js 及许可随单页嵌入，使用时不依赖网络。其余 npm 依赖用于构建、测试和 Electron 桌面封装。首次安装依赖、下载桌面构建工具需要联网。
 
 ### 目录导航
 

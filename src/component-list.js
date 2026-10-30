@@ -3,7 +3,7 @@ let layerAnchor=null,layerOrderDrag=null,layerClickSuppressed=false;
 function componentListRows(){
  const d=doc(),filter=$('#layer-filter').value;if(!d)return [];
  const inFloor=o=>!d.floors||o.floor===d.activeFloor;
- if(filter==='hole')return d.objects.filter(o=>o.type==='hole'&&inFloor(o));
+
  return [...d.objects].reverse().filter(o=>o.type!=='hole'&&inFloor(o)&&(filter==='all'||o.type===filter)).flatMap(o=>filter==='all'?[o,...d.objects.filter(h=>h.type==='hole'&&h.host===o.id)]:[o]);
 }
 function chooseLayer(id,e){

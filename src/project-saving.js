@@ -1,5 +1,5 @@
 // File destinations belong to this open project, never to its undo history or JSON.
-const projectDefaultName='关卡设计工具箱_工程_v1.1.json';
+const projectDefaultName='关卡设计工具箱_工程_v1.2.json';
 let projectFileHandle=null,projectFileRevision=0,projectSaveTask=null;
 function resetProjectFile(){projectFileHandle=null;projectFileRevision++;const button=$('[data-action="project"]');button.title='保存工程（Ctrl+S）'}
 function saveProject(){

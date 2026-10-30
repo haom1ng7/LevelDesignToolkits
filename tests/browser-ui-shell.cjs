@@ -1,3 +1,4 @@
+const {openToolMenu,selectTool}=require('./tool-menu.cjs');
 // Real-browser UI acceptance. Run after npm run build; uses Chrome or STUDIO_BROWSER.
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
@@ -47,7 +48,7 @@ const url=pathToFileURL(path.join(__dirname,'../dist/index.html')).href;
   for(const width of [360,430,768,1024,1440]){await page.setViewportSize({width,height:1000});await bounds(page,'space '+width)}
   await page.setViewportSize({width:390,height:844});
   await page.locator('[data-shell-pane="tools"]').click();
-  await page.locator('[data-tool="plane"]').click();
+  await selectTool(page,'plane');
   assert.equal(await page.locator('[data-shell-pane="canvas"]').getAttribute('aria-pressed'),'true','choosing a tool returns to canvas');
   assert(await page.locator('#workspace-tools').evaluate(el=>el.inert),'hidden pane cannot capture keyboard focus');
   const before=await page.evaluate(()=>({count:SpatialEditor.document.objects.length,undo:SpatialEditor.undoCount}));
@@ -97,7 +98,7 @@ const url=pathToFileURL(path.join(__dirname,'../dist/index.html')).href;
   await toolbar.evaluate(el=>el.scrollLeft=el.scrollWidth);
   await phone.locator('[data-action="fit"]').tap();await bounds(phone,'touch toolbar');
   assert(await phone.locator('[data-action="fit"]').evaluate(el=>{const a=el.getBoundingClientRect(),b=el.closest('.canvas-top').getBoundingClientRect();return a.left>=b.left&&a.right<=b.right}),'touch toolbar reaches final actions');
-  await phone.locator('[data-shell-pane="tools"]').tap();await phone.locator('[data-tool="plane"]').tap();stage=await phone.locator('#stage').boundingBox();assert(stage.height>200,'touch creation controls preserve drawing space');
+  await phone.locator('[data-shell-pane="tools"]').tap();await phone.locator('[data-tool-group="shapes"]').tap();await phone.locator('[data-tool="plane"]').tap();stage=await phone.locator('#stage').boundingBox();assert(stage.height>200,'touch creation controls preserve drawing space');
   await phone.waitForTimeout(220);await phone.screenshot({path:path.join(out,'touch-space.png')});
   await phone.setViewportSize({width:844,height:390});await bounds(phone,'touch landscape');stage=await phone.locator('#stage').boundingBox();assert(stage.height>100,'landscape preserves drawing space');await phone.screenshot({path:path.join(out,'touch-landscape.png')});await touch.close();
   assert.deepEqual(network,[],'no online resources');assert.deepEqual(errors,[],'no browser or CSP errors');

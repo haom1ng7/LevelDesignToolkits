@@ -1,3 +1,4 @@
+const {openToolMenu,selectTool}=require('./tool-menu.cjs');
 // Floor defaults through real creation tools, property edits and autosave.
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),{pathToFileURL}=require('node:url'),{chromium}=require('playwright-core');
 (async()=>{
@@ -11,7 +12,7 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('n
   const screen=p=>page.evaluate(p=>{const q=new DOMPoint(...p).matrixTransform(document.querySelector('#canvas').getScreenCTM());return {x:q.x,y:q.y}},p);
   const state=()=>page.evaluate(()=>JSON.parse(JSON.stringify(SpatialEditor.document)));
   const create=async(tool,from,to)=>{
-   await page.locator(`[data-tool="${tool}"]`).click();const a=await screen(from);await page.mouse.move(a.x,a.y);
+   await selectTool(page,tool);const a=await screen(from);await page.mouse.move(a.x,a.y);
    if(to){const b=await screen(to);await page.mouse.down();await page.mouse.move(b.x,b.y,{steps:8});await page.mouse.up()}else await page.mouse.click(a.x,a.y);
    return (await state()).objects.at(-1);
   };
@@ -30,7 +31,7 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('n
   assert.equal((await state()).objects.find(o=>o.id===second[0].id).fill,'#123456');
   const extra=await create('plane',[500,500],[650,600]);assert.equal(extra.fill,second[0].fill);await page.keyboard.press('Escape');
   await page.keyboard.press('Control+z');assert(!(await state()).objects.some(o=>o.id===extra.id));await page.keyboard.press('Control+Shift+z');assert.equal((await state()).objects.find(o=>o.id===extra.id).fill,second[0].fill);checks.push('manual color remains independent and creation undo/redo is atomic');
-  await page.locator('[data-tool="plane"]').click();const a=await screen([500,680]),b=await screen([650,730]),beforeCancel=JSON.stringify(await state());await page.mouse.move(a.x,a.y);await page.mouse.down();await page.mouse.move(b.x,b.y,{steps:8});await page.keyboard.press('Escape');await page.mouse.up();assert.equal(JSON.stringify(await state()),beforeCancel);checks.push('cancelled creation preserves colors and objects');
+  await selectTool(page,'plane');const a=await screen([500,680]),b=await screen([650,730]),beforeCancel=JSON.stringify(await state());await page.mouse.move(a.x,a.y);await page.mouse.down();await page.mouse.move(b.x,b.y,{steps:8});await page.keyboard.press('Escape');await page.mouse.up();assert.equal(JSON.stringify(await state()),beforeCancel);checks.push('cancelled creation preserves colors and objects');
   await page.evaluate(()=>{StudioModel.validate(JSON.parse(JSON.stringify(SpatialEditor.project)));SpatialEditor.command('autosave')});const saved=await state();await page.reload();assert.deepEqual(await state(),saved);
   const afterReload=await create('wall',[180,680],[400,710]);assert.equal(afterReload.fill,second[0].fill);assert.equal((await state()).objects.find(o=>o.id===second[0].id).fill,'#123456');checks.push('JSON/autosave restores default and custom colors');
   await page.keyboard.press('Escape');await page.locator('[data-view="solid"]').click();await page.locator('[data-action="fit"]').click();await page.screenshot({path:path.join(out,'two-floors-solid.png'),fullPage:true});

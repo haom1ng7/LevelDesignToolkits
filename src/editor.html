@@ -7,7 +7,9 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
 <!--UI_FONT_LICENSE-->
-<title>关卡设计工具箱 v1.1</title>
+<!--THREE_LICENSE-->
+<title>关卡设计工具箱 v1.2</title>
+<link rel="icon" type="image/svg+xml" sizes="any" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2036%2036%22%3E%3Cpath%20fill%3D%22none%22%20stroke%3D%22%23fffa00%22%20stroke-width%3D%221.5%22%20d%3D%22m18%203%2014%208-14%208L4%2011%2018%203Z%20M4%2018l14%208%2014-8%20M4%2025l14%208%2014-8%20M18%2019v14%22%2F%3E%3C%2Fsvg%3E">
 <script>try{const t=localStorage.getItem('level-toolkits-ui-theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t}catch{}</script>
 <style>/*EDITOR_CSS*/</style>
 </head>
@@ -16,7 +18,7 @@
 <header class="command-bar">
   <div class="brand">
     <svg class="brand-icon" viewBox="0 0 36 36" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="m18 3 14 8-14 8L4 11 18 3Z M4 18l14 8 14-8 M4 25l14 8 14-8 M18 19v14"/></svg>
-    <div><small>LEVEL DESIGN TOOLKITS</small><b>关卡设计工具箱<span class="version">v1.1</span></b></div>
+    <div><small>LEVEL DESIGN TOOLKITS</small><b>关卡设计工具箱<span class="version">v1.2</span></b></div>
   </div>
   <div class="header-divider"></div>
   <div class="history" role="group" aria-label="编辑历史"><button data-action="undo" aria-label="撤销" title="Ctrl+Z 撤销上一步"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m8 5-5 5 5 5M3 10h11a6 6 0 0 1 6 6v3"/></svg></button><button data-action="redo" aria-label="重做" title="Ctrl+Shift+Z"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m16 5 5 5-5 5m5-5H10a6 6 0 0 0-6 6v3"/></svg></button></div>
@@ -33,24 +35,47 @@
   <div id="floor-panel" hidden><div class="section-heading"><h2 class="ui-pair"><span class="ui-eyebrow">FLOORS</span><span>楼层</span></h2><button data-action="add-floor" title="新增楼层" aria-label="新增楼层">＋</button></div><div id="floors"></div><label class="check"><input id="ghost" type="checkbox" checked>显示其他楼层参考</label></div>
   <div class="section-heading tool-heading"><h2 class="ui-pair"><span class="ui-eyebrow">TOOLS</span><span>绘图工具</span></h2></div>
   <div class="tool-grid" role="toolbar" aria-label="绘图工具">
-    <button data-tool="select"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 3 14 9-7 1-3 7Z"/></svg>选择<kbd>Q</kbd></button>
-    <button data-tool="move"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v20M2 12h20M8 6l4-4 4 4M8 18l4 4 4-4M6 8l-4 4 4 4m12-8 4 4-4 4"/></svg>移动组件<kbd>W</kbd></button>
+    <button data-tool="select"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 3 14 9-7 1-3 7Z"/></svg>选择</button>
+    <button data-tool="move"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v20M2 12h20M8 6l4-4 4 4M8 18l4 4 4-4M6 8l-4 4 4 4m12-8 4 4-4 4"/></svg>移动<kbd>W</kbd></button>
     <button data-tool="rotate"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8a8 8 0 1 1-1 7M4 3v6h6"/></svg>旋转<kbd>E</kbd></button>
     <button data-tool="size"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3H3v6m0-6 7 7m5 11h6v-6m0 6-7-7M15 3h6v6M3 15v6h6"/></svg>大小<kbd>R</kbd></button>
     <button data-tool="vertex"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m8 5 11 3-4 11L5 15Zm-5-2h5v5H3Zm14 2h5v5h-5Zm-4 12h5v5h-5ZM2 13h5v5H2Z"/></svg>顶点<kbd>V</kbd></button>
-    <button data-tool="plane"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18v14H3Z"/></svg>矩形<kbd>P</kbd></button>
-    <button data-tool="ellipse"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/></svg>圆形<kbd>C</kbd></button>
+    <div class="tool-group">
+      <button id="tool-shapes" data-tool-group="shapes" aria-haspopup="menu" aria-expanded="false" aria-controls="tool-shapes-menu"><svg class="ui-icon group-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h13v13H3Z"/><circle cx="16" cy="16" r="6"/></svg>平面<span class="tool-group-arrow" aria-hidden="true">›</span></button>
+      <div id="tool-shapes-menu" class="tool-menu" role="menu" aria-labelledby="tool-shapes" popover="manual" hidden>
+        <button data-tool="plane" role="menuitemradio" aria-checked="false" tabindex="-1"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18v14H3Z"/></svg>矩形<kbd>P</kbd></button>
+        <button data-tool="ellipse" role="menuitemradio" aria-checked="false" tabindex="-1"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/></svg>圆形<kbd>C</kbd></button>
+        <button data-tool="polygon" role="menuitemradio" aria-checked="false" tabindex="-1"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m4 5 12-2 5 11-9 7-9-8Z"/><circle cx="4" cy="5" r="2"/></svg>多边形</button>
+      </div>
+    </div>
     <button data-tool="wall"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6 21 3v15L3 21Zm6-1v15m6-16v15M3 13l18-3"/></svg>墙壁</button>
     <button data-tool="cut"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="5" r="3"/><circle cx="5" cy="19" r="3"/><path d="m7 7 14 14M7 17 21 3"/></svg>切割<kbd>O</kbd></button>
-    <button data-tool="stairs"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 21h5v-6h5V9h5V3h5M2 21h20V3"/></svg>楼梯</button>
-    <button data-tool="ladder"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2v20M18 2v20M6 5h12M6 10h12M6 15h12M6 20h12"/></svg>爬梯</button>
-    <button data-tool="spiral"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v20m0-18c12 0 12 8 0 8s-12 8 0 8M6 6l12 4M6 14l12 4"/></svg>旋转楼梯</button>
-    <button data-tool="route"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 17V7h14v8m-4-4 4 4 4-4M3 17h4v4H3Z"/></svg>路线<kbd>L</kbd></button>
-    <button data-tool="text"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7V3h16v4M12 3v18m-5 0h10"/></svg>文字<kbd>T</kbd></button>
-    <button data-tool="marker"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s8-8 8-13a8 8 0 0 0-16 0c0 5 8 13 8 13Z"/><circle cx="12" cy="9" r="3"/></svg>标记<kbd>M</kbd></button>
-    <button data-tool="pan"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 12V5a2 2 0 0 1 4 0v7-9a2 2 0 0 1 4 0v9-6a2 2 0 0 1 4 0v9c0 4-2 7-6 7h-1c-3 0-5-1-7-4l-3-5a2 2 0 0 1 3-2l2 2"/></svg>平移视图<kbd>H</kbd></button>
+    <div class="tool-group">
+      <button id="tool-sets" data-tool-group="sets" aria-haspopup="menu" aria-expanded="false" aria-controls="tool-sets-menu"><svg class="ui-icon group-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="12" r="7"/><circle cx="15" cy="12" r="7"/></svg>集合<span class="tool-group-arrow" aria-hidden="true">›</span></button>
+      <div id="tool-sets-menu" class="tool-menu" role="menu" aria-labelledby="tool-sets" popover="manual" hidden>
+        <button data-tool="intersect" role="menuitem" tabindex="-1"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="12" r="7"/><circle cx="15" cy="12" r="7"/><path d="M12 5.7a7 7 0 0 1 0 12.6 7 7 0 0 1 0-12.6Z" fill="currentColor" stroke="none"/></svg>交集</button>
+        <button data-tool="difference" role="menuitem" tabindex="-1"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5.7a7 7 0 1 0 0 12.6 7 7 0 0 1 0-12.6Zm0 0a7 7 0 1 1 0 12.6 7 7 0 0 0 0-12.6Z" fill="currentColor" fill-opacity=".35"/><circle cx="9" cy="12" r="7"/><circle cx="15" cy="12" r="7"/></svg>差集</button>
+      </div>
+    </div>
+    <div class="tool-group">
+      <button id="tool-ladders" data-tool-group="ladders" aria-haspopup="menu" aria-expanded="false" aria-controls="tool-ladders-menu"><svg class="ui-icon group-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2v20M18 2v20M6 5h12M6 10h12M6 15h12M6 20h12"/></svg>梯子<span class="tool-group-arrow" aria-hidden="true">›</span></button>
+      <div id="tool-ladders-menu" class="tool-menu" role="menu" aria-labelledby="tool-ladders" popover="manual" hidden>
+        <button data-tool="stairs" role="menuitemradio" aria-checked="false" tabindex="-1"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 21h5v-6h5V9h5V3h5M2 21h20V3"/></svg>楼梯</button>
+        <button data-tool="ladder" role="menuitemradio" aria-checked="false" tabindex="-1"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2v20M18 2v20M6 5h12M6 10h12M6 15h12M6 20h12"/></svg>爬梯</button>
+        <button data-tool="spiral" role="menuitemradio" aria-checked="false" tabindex="-1"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v20m0-18c12 0 12 8 0 8s-12 8 0 8M6 6l12 4M6 14l12 4"/></svg>旋转楼梯</button>
+      </div>
+    </div>
+    <div class="tool-group">
+      <button id="tool-annotations" data-tool-group="annotations" aria-haspopup="menu" aria-expanded="false" aria-controls="tool-annotations-menu"><svg class="ui-icon group-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7V3h16v4M12 3v18m-5 0h10"/></svg>标注<span class="tool-group-arrow" aria-hidden="true">›</span></button>
+      <div id="tool-annotations-menu" class="tool-menu" role="menu" aria-labelledby="tool-annotations" popover="manual" hidden>
+        <button data-tool="text" role="menuitemradio" aria-checked="false" tabindex="-1"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7V3h16v4M12 3v18m-5 0h10"/></svg>文字<kbd>T</kbd></button>
+        <button data-tool="marker" role="menuitemradio" aria-checked="false" tabindex="-1"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s8-8 8-13a8 8 0 0 0-16 0c0 5 8 13 8 13Z"/><circle cx="12" cy="9" r="3"/></svg>标记<kbd>M</kbd></button>
+        <button data-tool="route" role="menuitemradio" aria-checked="false" tabindex="-1"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 17V7h14v8m-4-4 4 4 4-4M3 17h4v4H3Z"/></svg>路线<kbd>L</kbd></button>
+      </div>
+    </div>
+    <button data-tool="pan"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 12V5a2 2 0 0 1 4 0v7-9a2 2 0 0 1 4 0v9-6a2 2 0 0 1 4 0v9c0 4-2 7-6 7h-1c-3 0-5-1-7-4l-3-5a2 2 0 0 1 3-2l2 2"/></svg>平移<kbd>H</kbd></button>
   </div>
-  <div class="section-heading component-heading"><h2 class="ui-pair"><span class="ui-eyebrow">COMPONENTS</span><span>组件</span></h2><select id="layer-filter" aria-label="筛选组件"><option value="all">全部</option><option value="plane">平面</option><option value="wall">墙壁</option><option value="hole">空洞</option><option value="stairs">楼梯</option><option value="text">文字</option><option value="route">路线</option></select></div>
+  <div class="section-heading component-heading"><h2 class="ui-pair"><span class="ui-eyebrow">COMPONENTS</span><span>组件</span></h2><select id="layer-filter" aria-label="筛选组件"><option value="all">全部</option><option value="plane">平面</option><option value="wall">墙壁</option><option value="solid">集合实体</option><option value="stairs">楼梯</option><option value="ladder">爬梯</option><option value="spiral">旋转楼梯</option><option value="text">文字</option><option value="marker">标记</option><option value="route">路线</option></select></div>
   <div id="layers"></div>
   <div class="selection-actions"><button data-action="group">编组</button><button data-action="ungroup">解组</button></div>
 </aside>
@@ -73,7 +98,7 @@
       </div>
     </div>
     <div id="drawing-hint" hidden><span id="drawing-label"></span><button data-action="finish" class="primary">完成绘制</button><button data-action="cancel">取消</button></div>
-    <div id="view-controls" hidden><label>方位<input id="azimuth" type="range" min="0" max="360" value="35"></label><label>俯仰<input id="elevation" type="range" min="0.5" max="90" step="0.5" title="俯仰角范围：0.5°–90°" value="35"></label><button data-action="observe-front">正面</button><button data-action="observe-left">左侧</button><button data-action="observe-right">右侧</button><button data-action="edit-elevation">立面编辑所选</button><button data-action="reset-view">重置</button><label class="check"><input id="reverse-horizontal" type="checkbox">反转水平拖动</label><label class="check"><input id="reverse-vertical" type="checkbox">反转垂直拖动</label></div>
+    <div id="view-controls" hidden><select id="solid-projection" aria-label="立体图投影" title="立体图投影"><option value="orthographic">正交</option><option value="perspective">透视</option></select><label>方位<input id="azimuth" type="range" min="0" max="360" value="35"></label><label>俯仰<input id="elevation" type="range" min="0.5" max="90" step="0.5" title="俯仰角范围：0.5°–90°" value="35"></label><button data-action="observe-front">正面</button><button data-action="observe-left">左侧</button><button data-action="observe-right">右侧</button><button data-action="edit-elevation">立面编辑所选</button><button data-action="reset-view">重置</button><label class="check"><input id="reverse-horizontal" type="checkbox">反转水平拖动</label><label class="check"><input id="reverse-vertical" type="checkbox">反转垂直拖动</label></div>
     <div id="inline-edit-shell" hidden><div id="inline-editor" contenteditable="true" role="textbox" aria-label="直接编辑文字" spellcheck="false" hidden></div><label class="inline-size-control" title="调整当前文字字号；跟随分组的文字会同步调整同组字号"><span>字号</span><input id="inline-font-size" type="number" min="8" max="200" step="1" aria-label="编辑文字字号"></label></div>
   </div>
   <div class="canvas-bottom"><span id="selection-info">新建图稿开始编辑</span><div class="zoom"><button data-action="zoom-out" aria-label="缩小">−</button><span id="zoom-label">100%</span><button data-action="zoom-in" aria-label="放大">＋</button></div></div>
@@ -87,7 +112,7 @@
 <div id="export-popover" class="popover menu" hidden><button data-action="svg">导出 SVG<span>几何为矢量 / 自动对比文字含图像遮罩</span></button><button data-action="png">导出 PNG<span>2× 清晰度 / 当前视图与背景</span></button></div>
 <dialog id="new-dialog" aria-labelledby="new-title"><div class="dialog-heading"><div><span class="ui-eyebrow">// NEW DRAWING</span><h2 id="new-title">新建图稿</h2></div><button data-action="close-new" aria-label="关闭">×</button></div><label class="field">图稿名称<input id="new-name" maxlength="100" placeholder="未命名图稿"></label><div class="new-types"><button data-template="space"><span aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24"><path d="M7 5h15l-5 14H2Z"/></svg></span><b>空间图</b><small>一个平面与可编辑文字</small></button><button data-template="curve"><span aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24"><path d="M3 3v18h18M3 17l6-6 5 3 7-9"/></svg></span><b>曲线图</b><small>三个阶段与三个事件</small></button></div></dialog>
 <dialog id="help-dialog" aria-labelledby="help-title"><div class="dialog-heading"><div><span class="ui-eyebrow">// USER GUIDE</span><h2 id="help-title">使用说明</h2></div><button data-action="close-help" aria-label="关闭使用说明">×</button></div><!--HELP_CONTENT--></dialog>
-<dialog id="export-dialog" aria-labelledby="export-title"><div class="dialog-heading"><div><span class="ui-eyebrow">// EXPORT DRAWING</span><h2 id="export-title">导出图稿 / 预览</h2></div><button data-action="export-close" aria-label="关闭导出预览">×</button></div><div class="export-layout"><section class="export-visual" aria-label="导出预览"><div class="preview-bar"><button data-action="preview-fit">适应全图</button><button data-action="preview-100">100%</button><span id="export-zoom">100%</span><small>滚轮缩放 / 拖动查看</small></div><div id="export-preview-content"></div></section><aside class="export-settings"><label class="field">文件名<input id="export-name"></label><label class="field">文件格式<select id="export-format"><option value="png">PNG</option><option value="svg">SVG</option><option value="fbx">FBX</option><option value="obj">OBJ</option></select></label><label class="field" data-export-image>PNG 倍率<select id="export-scale"><option value="1">1×</option><option value="2" selected>2×</option><option value="4">4×</option></select></label><label class="field" data-export-image>输出范围<select id="export-range"><option value="full">完整图稿</option><option value="current">当前视野</option></select></label><div id="export-reference-options"><label class="check"><input id="export-references" type="checkbox">高度参考线</label><label class="check"><input id="export-arrows" type="checkbox">楼梯方向箭头</label></div><p id="export-model-note" hidden>导出所有可见楼层的实体与宿主空洞，保持世界坐标 1:1；不包含文字、路线和标记。</p><p id="export-ready" role="status">正在生成预览…</p><button id="export-download" data-action="export-download" class="primary" disabled>导出文件</button><button data-action="export-close">取消</button></aside></div></dialog>
+<dialog id="export-dialog" aria-labelledby="export-title"><div class="dialog-heading"><div><span class="ui-eyebrow">// EXPORT DRAWING</span><h2 id="export-title">导出图稿 / 预览</h2></div><button data-action="export-close" aria-label="关闭导出预览">×</button></div><div class="export-layout"><section class="export-visual" aria-label="导出预览"><div class="preview-bar"><button data-action="preview-fit">适应全图</button><button data-action="preview-100">100%</button><span id="export-zoom">100%</span><small>滚轮缩放 / 拖动查看</small></div><div id="export-preview-content"></div></section><aside class="export-settings"><label class="field">文件名<input id="export-name"></label><label class="field">文件格式<select id="export-format"><option value="png">PNG</option><option value="svg">SVG</option><option value="fbx">FBX</option><option value="obj">OBJ</option></select></label><label class="field" data-export-image>PNG 倍率<select id="export-scale"><option value="1">1×</option><option value="2" selected>2×</option><option value="4">4×</option></select></label><label class="field" data-export-image>输出范围<select id="export-range"><option value="full">完整图稿</option><option value="current">当前视野</option></select></label><div id="export-reference-options"><label class="check"><input id="export-references" type="checkbox">高度参考线</label><label class="check"><input id="export-arrows" type="checkbox">楼梯方向箭头</label></div><p id="export-model-note" hidden>导出所有可见实体，世界坐标 1:1，不包含标注</p><p id="export-ready" role="status">正在生成预览…</p><button id="export-download" data-action="export-download" class="primary" disabled>导出文件</button><button data-action="export-close">取消</button></aside></div></dialog>
 <input id="file-input" type="file" accept=".json,application/json" hidden>
-<script id="editor-seed" type="application/json">SEED_JSON</script><script>/*EDITOR_JS*/</script>
+<script id="editor-seed" type="application/json">SEED_JSON</script><script>/*THREE_JS*/</script><script>/*EDITOR_JS*/</script>
 </body></html>

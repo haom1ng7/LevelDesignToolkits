@@ -1,3 +1,4 @@
+const {openToolMenu,selectTool}=require('./tool-menu.cjs');
 // State-driven composition, short screens, real edits and representative artwork.
 // A fresh browser context suppresses every project save write and deletion.
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
@@ -34,7 +35,7 @@ const out=path.join(__dirname,'../qa/endfield-ui');
    await capture(`entry-${width}x${height}`);
   }
   await page.setViewportSize({width:1440,height:1000});await page.locator('#welcome [data-template="space"]').click();
-  await page.locator('[data-tool="plane"]').click();await page.locator('#snap').uncheck();
+  await selectTool(page,'plane');await page.locator('#snap').uncheck();
   const stage=await page.locator('#stage').boundingBox(),before=await page.evaluate(()=>({count:SpatialEditor.document.objects.length,history:SpatialEditor.undoCount}));
   await page.mouse.move(stage.x+stage.width*.12,stage.y+stage.height*.18);await page.mouse.down();
   await page.mouse.move(stage.x+stage.width*.36,stage.y+stage.height*.4,{steps:8});await page.mouse.up();

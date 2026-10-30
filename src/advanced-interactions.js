@@ -1,5 +1,5 @@
 let creationSelection=[],creationSnapCache=null,lastCreated=null,rowRename=null,rowStamp=null,previewState=null,previewCamera=null,previewVersion=0,previewDrag=null;
-const creationTools=['plane','ellipse','wall','hole','text','route','marker','stairs','ladder','spiral'],shapeChoices={hole:'rectangle',wall:'straight'};
+const creationTools=['plane','ellipse','polygon','wall','hole','text','route','marker','stairs','ladder','spiral'],shapeChoices={hole:'rectangle',wall:'straight'};
 function finishRectangle(a){moveSnapGuides=[];if(!a.dragged){tool='select';drawing=null;placementGhost=null;canvas.style.cursor='default';if(a.clickId&&doc().objects.some(o=>o.id===a.clickId))choose(a.clickId);else restoreCreationSelection();status('已切换到选择 · 可直接拖动组件');return}if(a.type==='hole'&&!a.host){status('请从可见且未锁定的平面或墙壁内开始拖动');drawCanvas();return}return finishBaseRectangle(a)}
 function restoreCreationSelection(){const ids=lastCreated?.doc===current?[lastCreated.id]:creationSelection;selection=ids.filter(id=>doc().objects.some(o=>o.id===id));primary=selection[0]||null;eventId=null;floorSelection=null;render()}
 function creationPreview(a){return a.shape==='ellipse'?R.path(M.contour({shape:'ellipse',points:a.points}),true):R.path(a.points,true)}

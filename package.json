@@ -1,10 +1,10 @@
 {
   "name": "level-design-toolkits",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "private": true,
   "scripts": {
     "build": "node tools/build.mjs",
-    "test": "node tests/verify-v7.cjs && node tests/verify-v8.cjs && node tests/verify-v9.cjs && node tests/verify-v10.cjs && node tests/verify-events.cjs && node tests/verify-horizon.cjs && node tests/verify-min-pitch.cjs && node tests/verify-spatial-update.cjs && node tests/verify-stair-triangles.cjs && node tests/verify-ladder-snapping.cjs && node tests/verify-world-move.cjs && node tests/verify-solid-transform.cjs && node tests/verify-transform-snapping.cjs && node tests/verify-orthographic-size.cjs && node tests/verify-grid-snapping.cjs && node tests/verify-property-inspector.cjs && node tests/verify-component-list.cjs && node tests/verify-release.cjs && node tests/verify-mesh-export.cjs && node tests/verify-cutting.cjs",
+    "test": "node tests/verify-v7.cjs && node tests/verify-v8.cjs && node tests/verify-v9.cjs && node tests/verify-v10.cjs && node tests/verify-events.cjs && node tests/verify-horizon.cjs && node tests/verify-min-pitch.cjs && node tests/verify-spatial-update.cjs && node tests/verify-stair-triangles.cjs && node tests/verify-ladder-snapping.cjs && node tests/verify-world-move.cjs && node tests/verify-camera-navigation.cjs && node tests/verify-solid-transform.cjs && node tests/verify-transform-snapping.cjs && node tests/verify-orthographic-size.cjs && node tests/verify-grid-snapping.cjs && node tests/verify-property-inspector.cjs && node tests/verify-component-list.cjs && node tests/verify-release.cjs && node tests/verify-mesh-export.cjs && node tests/verify-cutting.cjs && node tests/verify-sets.cjs && node tests/verify-polygon.cjs",
     "qa": "node tools/make-qa.mjs",
     "desktop": "electron desktop",
     "package:win": "node tools/package-desktop.mjs",

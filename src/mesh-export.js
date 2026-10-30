@@ -1,7 +1,7 @@
 // View-independent triangle meshes. Reuse the editor's sampled, cut geometry.
 window.StudioMeshExport=(()=>{
 'use strict';
-const M=window.StudioModel,solidTypes=new Set(['plane','wall','stairs','ladder','spiral']);
+const M=window.StudioModel,solidTypes=new Set(['plane','wall','stairs','ladder','spiral','solid']);
 const area=ring=>ring.reduce((s,p,i)=>{const q=ring[(i+1)%ring.length];return s+p[0]*q[1]-q[0]*p[1]},0)/2;
 function clean(ring){
  let p=ring.filter((v,i)=>Math.hypot(...M.sub(v,ring[(i+ring.length-1)%ring.length]))>1e-7),changed=true;
@@ -80,5 +80,5 @@ function binary(roots){
  roots.forEach(write);at+=13;bytes.set([0xfa,0xbc,0xab,0x09,0xd0,0xc8,0xd4,0x66,0xb1,0x76,0xfb,0x83,0x1c,0xf7,0x26,0x7e],at);at+=16;at+=((16-at%16)%16);u32(7400);at+=120;bytes.set([0xf8,0x5a,0x8c,0x6a,0xde,0xf5,0xd9,0x7e,0xec,0xe9,0x0c,0xe3,0x75,0x8f,0x29,0x0b],at);
  return bytes;
 }
-return {build,obj,fbx,solidTypes};
+return {build,obj,fbx,solidTypes,faceTriangles};
 })();

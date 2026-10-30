@@ -1,6 +1,6 @@
 // Orthographic world-axis constraints; only the selected axes may change.
 const worldAxes=[[1,0,0],[0,1,0],[0,0,1]],worldNames=['X','Y','Z'],worldColors=['#c53b35','#258342','#2566c5'];
-function worldProjection(basis){return worldAxes.map(a=>[M.dot(a,basis.r),M.dot(a,basis.down)])}
+function worldProjection(basis,anchor=basis.origin){return worldAxes.map(a=>M.projectVector(a,basis,anchor))}
 function worldConstraint(axes,delta,basis){
  const p=worldProjection(basis),out=[0,0,0];
  if(axes.length===1){const i=axes[0],v=p[i],length=M.dot(v,v);if(length<.035)return null;out[i]=M.dot(delta,v)/length}
@@ -20,7 +20,7 @@ function worldGizmoInfo(){
   if(!points.length)return null;const candidates=points.map(p=>({world:p,screen:M.project(p,scene.basis)})),b=bounds2(candidates.map(p=>p.screen)),corner=[b.min[0],b.max[1]];
   anchor=candidates.reduce((best,p)=>Math.hypot(...M.sub(p.screen,corner))<Math.hypot(...M.sub(best.screen,corner))?p:best).world;
  }
- return {anchor,p:M.project(anchor,scene.basis),vectors:worldProjection(scene.basis)};
+ if(scene.basis.eye&&M.cameraDepth(anchor,scene.basis)<scene.basis.near)return null;return {anchor,p:M.project(anchor,scene.basis),vectors:worldProjection(scene.basis,anchor)};
 }
 function worldGizmoMarkup(){
  const info=worldGizmoInfo();if(!info)return '';const k=pixel(),{p,vectors}=info,at=(axis,n)=>M.add(p,M.mul(vectors[axis],n*k));
@@ -43,7 +43,7 @@ function beginWorldMove(e,q){
  canvas.style.cursor='grabbing';capture(e);drawHandles();return true;
 }
 function moveInWorld(q,e){
- let desired=worldConstraint(drag.axes,M.sub(q,drag.start),drag.basis);if(!desired)return;
+ let desired;if(drag.basis.eye){const values=M.dragAxes(q,drag.start,drag.gizmoAnchor,drag.axes.map(i=>worldAxes[i]),drag.basis);if(!values)return;desired=[0,0,0];drag.axes.forEach((axis,j)=>desired[axis]=values[j])}else desired=worldConstraint(drag.axes,M.sub(q,drag.start),drag.basis);if(!desired)return;
  if(gridEnabled(e))desired=gridMoveDelta(desired,drag.axes);
  if(!drag.changed&&Math.hypot(...M.sub(q,drag.start))<pixel()*3||!drag.changed&&Math.hypot(...desired)<1e-7)return;
  if(drag.copy&&!drag.copied){drag.ids=M.duplicate(doc(),drag.ids);drag.copied=true;selection=[...drag.ids];primary=selection.find(id=>doc().objects.find(o=>o.id===id)?.type===doc().objects.find(o=>o.id===drag.primary)?.type)||selection[0];floorSelection=null;drag.floor=null}

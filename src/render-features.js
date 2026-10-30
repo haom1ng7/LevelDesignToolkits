@@ -6,6 +6,7 @@ function distance(p,line){let min=Infinity;for(let i=0;i<line.length-1;i++){cons
 function grid(d,view,basis,camera){
  const r=camera||{x:0,y:0,w:d.width,h:d.height},step=d.gridSize??100,line=(a,b)=>`<path d="${R.path([a,b])}" stroke="#98a6b6" stroke-width="${r.w/1200*.6}" opacity=".28"/>`;
  let s='<g data-viewport-grid="true" pointer-events="none">';
+ if(basis.eye){const radius=Math.min(step*180,Math.max(d.width,d.height,Math.abs(basis.eye[2])*3,basis.focal*3)),center=basis.eye.slice(0,2).map(v=>Math.round(v/step)*step),count=Math.ceil(radius/step);for(let axis=0;axis<2;axis++)for(let j=-count;j<=count;j++){const a=[center[0],center[1],0],b=[...a];a[axis]+=j*step;b[axis]+=j*step;a[1-axis]-=radius;b[1-axis]+=radius;const segment=M.clipSegment(a,b,basis,r);if(segment.length)s+=line(...segment.map(p=>M.project(p,basis)))}return s+'</g>'}
  if(view.mode!=='solid'){const base=M.project([0,0,0],basis);for(let i=0;i<2;i++){const min=i?r.y:r.x,size=i?r.h:r.w;if(size/step>2000)continue;for(let n=Math.floor((min-base[i])/step);base[i]+n*step<min+size+step;n++){const at=base[i]+n*step;s+=i?line([r.x,at],[r.x+r.w,at]):line([at,r.y],[at,r.y+r.h])}}return s+'</g>'}
  // Work in the projected viewport: inverse ground projection diverges at 0 degrees.
  // Each line family has at most 1001 lines, regardless of pitch, zoom or aspect.
@@ -21,9 +22,10 @@ function grid(d,view,basis,camera){
 }
 R.scene=(d,view,options={})=>{const show=d.gridVisible;let s;d.gridVisible=false;try{s=oldScene(d,view,options)}finally{d.gridVisible=show}s.outlines=new Map();s.tolerance=options.tolerance||10;if(show&&d.type==='space')s.geom=grid(d,view,s.basis,options.camera)+s.geom;
  for(const o of d.objects){if(!o.visible||M.floor(d,o)?.visible===false)continue;const ghost=view.mode==='plan'&&o.floor&&o.floor!==d.activeFloor;if(ghost&&!options.ghost)continue;
-  if(['plane','wall','stairs','ladder','spiral'].includes(o.type)){let p=M.geometry(d,o).flatMap(f=>f.points).map(p=>M.project(p,s.basis)),outline=M.hull(p);if(o.type==='plane'&&Math.abs(M.dot(M.normal(o),s.basis.n))>.999)outline=o.points.map(p=>M.project(M.world(d,o,[...p,0]),s.basis));s.outlines.set(o.id,{poly:outline});if(!ghost&&o.type==='ladder')s.hits.push({id:o.id,poly:outline,depth:0,body:true})}
-  if(o.type==='hole'){const p=M.controls(d,o,view.mode).map(c=>M.project(c.point,s.basis));s.outlines.set(o.id,{poly:p});if(o.cut&&!ghost)s.holeHits.push({id:o.id,host:o.host,poly:p})}
+  if(['plane','wall','stairs','ladder','spiral','solid'].includes(o.type)){let p=s.basis.eye?s.faces.filter(f=>f.owner.id===o.id).flatMap(f=>f.poly):M.geometry(d,o).flatMap(f=>f.points).map(p=>M.project(p,s.basis));if(!p.length)continue;let outline=M.hull(p);if(!s.basis.eye&&o.type==='plane'&&Math.abs(M.dot(M.normal(o),s.basis.n))>.999)outline=o.points.map(p=>M.project(M.world(d,o,[...p,0]),s.basis));s.outlines.set(o.id,{poly:outline});if(!ghost&&o.type==='ladder')s.hits.push({id:o.id,poly:outline,depth:0,body:true})}
+  if(o.type==='hole'){const p=M.clipPolygon(M.controls(d,o,view.mode).map(c=>c.point),s.basis).map(p=>M.project(p,s.basis));if(p.length<3)continue;s.outlines.set(o.id,{poly:p});if(o.cut&&!ghost)s.holeHits.push({id:o.id,host:o.host,poly:p})}
   if(o.type==='text'&&s.textBoxes.has(o.id))s.outlines.set(o.id,{poly:s.textBoxes.get(o.id).corners});
+  if(s.basis.eye&&['marker','route'].includes(o.type)&&(o.type==='route'?o.points.map(p=>M.world(d,o,p)):[M.origin(d,o)]).some(p=>M.cameraDepth(p,s.basis)<s.basis.near))continue;
   if(o.type==='marker')s.outlines.set(o.id,{circle:{p:M.project(M.origin(d,o),s.basis),r:o.r}});
   if(o.type==='route'){const shape=R.routeShape(d,o,s.basis),{p,sampled,heads,line}=shape;s.outlines.set(o.id,{line:sampled,linePath:line,control:p,arrow:o.arrow,heads});for(const h of s.hits.filter(h=>h.id===o.id&&h.line))h.line=sampled}
  }

@@ -1,3 +1,4 @@
+const {openToolMenu,selectTool}=require('./tool-menu.cjs');
 // Visual shell acceptance. Independent context; QA project writes/deletions are suppressed.
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
@@ -29,8 +30,8 @@ const contrast=(a,b)=>{a=luminance(a);b=luminance(b);return (Math.max(a,b)+.05)/
   await page.goto(pathToFileURL(path.join(__dirname,'../dist/index.html')).href);
   const settle=()=>page.evaluate(async()=>{await document.fonts.ready;await Promise.allSettled(document.getAnimations().map(a=>a.finished))});
   const capture=async name=>{await settle();await page.screenshot({path:path.join(out,name+'.png')})};
-  assert.equal(await page.title(),'关卡设计工具箱 v1.1');
-  assert.equal(await page.locator('.version').innerText(),'v1.1');
+  assert.equal(await page.title(),'关卡设计工具箱 v1.2');
+  assert.equal(await page.locator('.version').innerText(),'v1.2');
   assert.equal(await page.locator('html').getAttribute('data-ark-theme'),'endfield');
   assert.equal(await page.locator('html').getAttribute('data-ark-depth'),'maximal');
   assert.equal(await page.locator('.workbench-rail,.workbench-status,[data-shell-section],#shell-context').count(),0,'removed shell regions are absent');
@@ -87,7 +88,7 @@ const contrast=(a,b)=>{a=luminance(a);b=luminance(b);return (Math.max(a,b)+.05)/
   await page.setViewportSize({width:390,height:844});
   await page.locator('[data-shell-pane="tools"]').click();
   assert(await page.locator('#workspace-canvas').evaluate(el=>el.inert));
-  await page.locator('[data-tool="plane"]').click();
+  await selectTool(page,'plane');
   assert.equal(await page.locator('body').getAttribute('data-pane'),'canvas');
   assert(await page.locator('#workspace-tools').evaluate(el=>el.inert));
   await page.evaluate(()=>SpatialEditor.setTool('select'));

@@ -13,7 +13,7 @@ const start=async()=>{
 };
 (async()=>{
  let {a,p}=await start();app=a;
- assert.equal(await p.title(),'关卡设计工具箱 v1.1');
+ assert.equal(await p.title(),'关卡设计工具箱 v1.2');
  assert.equal(await p.evaluate(()=>typeof require),'undefined');
  assert(await p.evaluate(()=>window.SpatialEditor.project.documents.length===0));results.checks.push('real EXE starts offline, empty seed, Node unavailable');
  const preferences=await a.evaluate(({BrowserWindow})=>{const w=BrowserWindow.getAllWindows()[0];return w.webContents.getLastWebPreferences()});

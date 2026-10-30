@@ -4,7 +4,7 @@
 const palette=['#dce8df','#eedbdf','#f0d2bc','#e6daed','#c5dfd6','#e4cbc4','#d4bfce','#e1e6c5','#bcd4d2','#ccc8dd','#c9dac9','#efd0d8'];
 const rgb=c=>[1,3,5].map(i=>parseInt(c.slice(i,i+2),16)),near=(a,b)=>Math.hypot(...M.sub(rgb(a),rgb(b)))<12;
 const border=c=>'#'+rgb(c).map(n=>Math.round(n*.62).toString(16).padStart(2,'0')).join('');
-const solids=['plane','wall','stairs','ladder','spiral'],color=c=>typeof c==='string'&&/^#[0-9a-f]{6}$/i.test(c);
+const solids=['plane','wall','stairs','ladder','spiral','solid'],color=c=>typeof c==='string'&&/^#[0-9a-f]{6}$/i.test(c);
 function defaults(d){
  if(d.type!=='space')return;
  // Persist the default on the floor so editing, reordering or deleting objects

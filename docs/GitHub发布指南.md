@@ -21,7 +21,7 @@
 
 ## 给别人下载 Windows 版
 
-1. 在仓库 Releases → Draft a new release，新建标签 `v1.1.0`。
+1. 在仓库 Releases → Draft a new release，新建标签 `v1.2.0`。
 2. 将“发布附件”中的单文件 EXE、Windows ZIP、离线 HTML、源码 ZIP 和 SHA256SUMS.txt 拖入附件区。
 3. 填写版本说明并发布。EXE 和 Windows ZIP 不要提交到代码仓库，它们可能超过 GitHub 单文件限制。
 4. 普通用户优先下载便携 EXE；ZIP 完整解压后也可运行目录版 EXE，不要从目录版单独拿走 EXE。
