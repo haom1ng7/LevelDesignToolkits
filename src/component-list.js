@@ -4,7 +4,8 @@ function componentListRows(){
  const d=doc(),filter=$('#layer-filter').value;if(!d)return [];
  const inFloor=o=>!d.floors||o.floor===d.activeFloor;
 
- return [...d.objects].reverse().filter(o=>o.type!=='hole'&&inFloor(o)&&(filter==='all'||o.type===filter)).flatMap(o=>filter==='all'?[o,...d.objects.filter(h=>h.type==='hole'&&h.host===o.id)]:[o]);
+ const holes=new Map();if(filter==='all')for(const h of d.objects)if(h.type==='hole'){if(!holes.has(h.host))holes.set(h.host,[]);holes.get(h.host).push(h)}
+ return [...d.objects].reverse().filter(o=>o.type!=='hole'&&inFloor(o)&&(filter==='all'||o.type===filter)).flatMap(o=>filter==='all'?[o,...holes.get(o.id)||[]]:[o]);
 }
 function chooseLayer(id,e){
  finishPropertyScrub(true);

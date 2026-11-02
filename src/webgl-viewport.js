@@ -1,10 +1,10 @@
 // The GPU owns perspective depth/occlusion. SVG retains annotations and edit handles.
-let gpuViewport=null,gpuUnavailable=false;
+let gpuViewport=null,gpuUnavailable=false,perspectivePickKey=null;
 function createGPUViewport(){
  if(gpuUnavailable||!window.WebGL2RenderingContext)return null;
  try{const T=window.StudioThree,element=document.createElement('canvas');element.id='solid-webgl';element.setAttribute('aria-hidden','true');stage.prepend(element);
   const renderer=new T.WebGLRenderer({canvas:element,antialias:true,alpha:false,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.5));renderer.outputColorSpace=T.SRGBColorSpace;
-  const g={T,element,renderer,world:new T.Scene(),camera:new T.PerspectiveCamera(),group:new T.Group(),cache:new Map(),materials:new Map(),edgeMaterial:new T.LineBasicMaterial({vertexColors:true}),doc:null,signature:null,grid:null,width:0,height:0,stats:{backend:'webgl',frames:0,geometryBuilds:0,sceneBuilds:0,objects:0,drawCalls:0,triangles:0}};g.world.add(g.group);
+  const g={T,element,renderer,world:new T.Scene(),camera:new T.PerspectiveCamera(),group:new T.Group(),cache:new Map(),materials:new Map(),edgeMaterial:new T.LineBasicMaterial({vertexColors:true}),doc:null,signature:null,grid:null,width:0,height:0,stats:{backend:'webgl',frames:0,geometryBuilds:0,sceneBuilds:0,pickingBuilds:0,overlayObjects:0,transparentSorts:0,objects:0,drawCalls:0,triangles:0}};g.world.add(g.group);
   element.addEventListener('webglcontextlost',e=>{e.preventDefault();gpuUnavailable=true;drawCanvas()});element.addEventListener('webglcontextrestored',()=>{gpuUnavailable=false;g.signature=null;drawCanvas()});return g;
  }catch{gpuUnavailable=true;$('#solid-webgl')?.remove();return null}
 }
@@ -14,26 +14,34 @@ function gpuObjectData(d,o,g){
  const {T}=g,positions=[],colors=[],edges=[],edgeColors=[],faces=M.geometry(d,o),edge=new T.Color(o.stroke||'#777777');
  for(const face of faces){const color=new T.Color(R.shade(o.fill||'#cccccc',face.side??1));for(const triangle of window.StudioMeshExport.faceTriangles(face))for(const p of triangle){positions.push(...p);colors.push(color.r,color.g,color.b)}}
  if(o.width!==0)for(const segment of M.boundaryEdges(faces))for(const p of segment){edges.push(...p);edgeColors.push(edge.r,edge.g,edge.b)}
- const data={signature,positions,colors,edges,edgeColors,opacity:o.opacity??1};g.cache.set(o.id,data);g.stats.geometryBuilds++;return data;
+ const min=[Infinity,Infinity,Infinity],max=[-Infinity,-Infinity,-Infinity];for(let i=0;i<positions.length;i+=3)for(let j=0;j<3;j++){min[j]=Math.min(min[j],positions[i+j]);max[j]=Math.max(max[j],positions[i+j])}
+ const data={signature,positions,colors,edges,edgeColors,min,max,center:min.map((v,i)=>(v+max[i])/2),opacity:o.opacity??1};g.cache.set(o.id,data);g.stats.geometryBuilds++;return data;
 }
 function syncGPUGeometry(d,g){
  if((cameraKeys.size||drag?.kind==='orbit')&&g.doc===d.id&&g.signature)return;
  const signature=JSON.stringify(d);if(g.doc===d.id&&g.signature===signature)return;
  if(g.doc!==d.id)g.cache.clear();g.doc=d.id;g.signature=signature;
  for(const child of [...g.group.children]){g.group.remove(child);child.geometry.dispose()}
- const {T}=g,batches=new Map(),edgePositions=[],edgeColors=[],ids=new Set();let objects=0,min=[Infinity,Infinity],max=[-Infinity,-Infinity];
+ const {T}=g,batches=new Map(),edgePositions=[],edgeColors=[],ids=new Set();g.transparent=null;let objects=0,min=[Infinity,Infinity],max=[-Infinity,-Infinity];
  for(const o of d.objects){if(!window.StudioMeshExport.solidTypes.has(o.type)||o.visible===false||M.floor(d,o)?.visible===false)continue;ids.add(o.id);const data=gpuObjectData(d,o,g);if(!data.positions.length)continue;objects++;
-  const key=data.opacity>=1?'opaque':o.id,batch=batches.get(key)||{positions:[],colors:[],opacity:data.opacity};for(const v of data.positions)batch.positions.push(v);for(const v of data.colors)batch.colors.push(v);batches.set(key,batch);
+  const transparent=data.opacity<1,key=transparent?'transparent':'opaque',batch=batches.get(key)||{positions:[],colors:[],transparent,spans:[]};batch.spans.push({start:batch.positions.length/3,count:data.positions.length/3,center:data.center,order:batch.spans.length});for(const v of data.positions)batch.positions.push(v);
+  for(let i=0;i<data.colors.length;i+=3){batch.colors.push(data.colors[i],data.colors[i+1],data.colors[i+2]);if(transparent)batch.colors.push(data.opacity)}batches.set(key,batch);
   for(let i=0;i<data.positions.length;i+=3)for(let j=0;j<2;j++){min[j]=Math.min(min[j],data.positions[i+j]);max[j]=Math.max(max[j],data.positions[i+j])}
   if(data.opacity>=1){for(const v of data.edges)edgePositions.push(v);for(const v of data.edgeColors)edgeColors.push(v)}
  }
  for(const id of g.cache.keys())if(!ids.has(id))g.cache.delete(id);
- const geometry=(positions,colors)=>{const mesh=new T.BufferGeometry();mesh.setAttribute('position',new T.Float32BufferAttribute(positions,3));mesh.setAttribute('color',new T.Float32BufferAttribute(colors,3));mesh.computeBoundingSphere();return mesh};
+ const geometry=(positions,colors,colorSize=3)=>{const mesh=new T.BufferGeometry();mesh.setAttribute('position',new T.Float32BufferAttribute(positions,3));mesh.setAttribute('color',new T.Float32BufferAttribute(colors,colorSize));mesh.computeBoundingSphere();return mesh};
  // The legacy horizontal projection reverses winding; BackSide restores outward-face culling.
- for(const batch of batches.values()){let material=g.materials.get(batch.opacity);if(!material){material=new T.MeshBasicMaterial({vertexColors:true,side:T.BackSide,transparent:batch.opacity<1,opacity:batch.opacity,depthWrite:batch.opacity>=1,polygonOffset:true,polygonOffsetFactor:1,polygonOffsetUnits:1});g.materials.set(batch.opacity,material)}g.group.add(new T.Mesh(geometry(batch.positions,batch.colors),material))}
- const used=new Set([...batches.values()].map(batch=>batch.opacity));for(const [opacity,material]of g.materials)if(!used.has(opacity)){material.dispose();g.materials.delete(opacity)}
+ for(const batch of batches.values()){let material=g.materials.get(batch.transparent);if(!material){material=new T.MeshBasicMaterial({vertexColors:true,side:T.BackSide,transparent:batch.transparent,depthWrite:!batch.transparent,polygonOffset:true,polygonOffsetFactor:1,polygonOffsetUnits:1});g.materials.set(batch.transparent,material)}const mesh=geometry(batch.positions,batch.colors,batch.transparent?4:3);if(batch.transparent){const index=new T.BufferAttribute(new Uint32Array(batch.positions.length/3),1).setUsage(T.DynamicDrawUsage);mesh.setIndex(index);g.transparent={spans:batch.spans,index,normal:null}}g.group.add(new T.Mesh(mesh,material))}
+ const used=new Set([...batches.values()].map(batch=>batch.transparent));for(const [key,material]of g.materials)if(!used.has(key)){material.dispose();g.materials.delete(key)}
  if(edgePositions.length)g.group.add(new T.LineSegments(geometry(edgePositions,edgeColors),g.edgeMaterial));
- g.bounds=objects?{min,max}:{min:[0,0],max:[d.width,d.height]};g.stats.objects=objects;g.stats.sceneBuilds++;
+ g.bounds=objects?{min,max}:{min:[0,0],max:[d.width,d.height]};g.annotations=d.objects.filter(o=>['text','marker','route'].includes(o.type));g.stats.objects=objects;g.stats.sceneBuilds++;
+}
+function sortGPUTransparency(g,b){
+ const t=g.transparent;if(!t||t.normal?.every((v,i)=>v===b.n[i]))return;t.normal=[...b.n];
+ // Preserve per-object back-to-front blending, including different opacities,
+ // with one RGBA batch. Translation leaves the relative depth order unchanged.
+ t.spans.sort((a,c)=>M.dot(a.center,b.n)-M.dot(c.center,b.n)||a.order-c.order);let at=0,changed=false;for(const span of t.spans)for(let i=0;i<span.count;i++){const index=span.start+i;if(t.index.array[at]!==index){t.index.array[at]=index;changed=true}at++}if(changed)t.index.needsUpdate=true;g.stats.transparentSorts++;
 }
 function syncGPUGrid(d,g,b){
  const step=d.gridSize||100,radius=Math.max(d.width,d.height,b.focal*3),count=Math.min(360,Math.max(20,Math.ceil(radius*2/step))),signature=JSON.stringify([d.gridVisible,step,count]);
@@ -51,13 +59,28 @@ function drawGPUViewport(){
  const d=doc(),b=M.viewBasis(d,view),{T,renderer}=g,r=stage.getBoundingClientRect(),width=Math.max(1,Math.round(r.width)),height=Math.max(1,Math.round(r.height));syncGPUGeometry(d,g);syncGPUGrid(d,g,b);
  if(g.width!==width||g.height!==height){renderer.setSize(width,height,false);g.width=width;g.height=height}
  g.element.hidden=false;g.world.background=new T.Color(d.background);g.camera.position.fromArray(b.eye);g.camera.up.fromArray(M.mul(b.down,-1));g.camera.lookAt(new T.Vector3().fromArray(M.sub(b.eye,b.n)));
- const near=b.near,far=1e7;g.camera.projectionMatrix.makePerspective((camera.x-b.offset[0])/b.focal*near,(camera.x+camera.w-b.offset[0])/b.focal*near,(b.offset[1]-camera.y)/b.focal*near,(b.offset[1]-camera.y-camera.h)/b.focal*near,near,far);
+ sortGPUTransparency(g,b);const near=b.near,far=1e7;g.camera.projectionMatrix.makePerspective((camera.x-b.offset[0])/b.focal*near,(camera.x+camera.w-b.offset[0])/b.focal*near,(b.offset[1]-camera.y)/b.focal*near,(b.offset[1]-camera.y-camera.h)/b.focal*near,near,far);
  // Match the legacy SVG horizontal handedness so handles and picking share coordinates.
- g.camera.projectionMatrix.elements[0]*=-1;g.camera.projectionMatrixInverse.copy(g.camera.projectionMatrix).invert();renderer.render(g.world,g.camera);g.stats.frames++;g.stats.drawCalls=renderer.info.render.calls;g.stats.triangles=renderer.info.render.triangles;
- const options={selection,ghost:false,camera,tolerance:pixel()*8,interactive:true},annotations={...d,objects:d.objects.filter(o=>['text','marker','route'].includes(o.type)),gridVisible:false,heightReferences:false};
- const overlay=R.scene(annotations,view,options);scene=selection.length||drawing?R.scene(d,view,options):overlay;
+ g.camera.projectionMatrix.elements[0]*=-1;g.camera.projectionMatrixInverse.copy(g.camera.projectionMatrix).invert();renderer.render(g.world,g.camera);g.stats.frames++;g.stats.drawCalls=renderer.info.render.calls;g.stats.triangles=renderer.info.render.triangles;g.stats.geometries=renderer.info.memory.geometries;g.stats.cachedObjects=g.cache.size;
+ const options={selection,ghost:false,camera,tolerance:pixel()*8,interactive:true},annotations={...d,objects:g.annotations,gridVisible:false,heightReferences:false};
+ const overlay=R.scene(annotations,view,options);scene=overlay;
+ if(drawing||creationTools.includes(tool)||routeVertexEditable())scene=buildScene();
+ else if(selection.length){
+  const ids=new Set(selection);for(const o of d.objects)if(ids.has(o.id)&&o.host)ids.add(o.host);
+  const objects=d.objects.filter(o=>ids.has(o.id)||ids.has(o.host)),handles=R.scene({...annotations,objects},view,options);
+  scene={...overlay,faces:handles.faces,holeHits:handles.holeHits,outlines:new Map([...overlay.outlines,...handles.outlines])};
+ }
+ perspectivePickKey=null;g.stats.overlayObjects=g.annotations.length+selection.length;
  canvas.setAttribute('viewBox',`${camera.x} ${camera.y} ${camera.w} ${camera.h}`);canvas.setAttribute('preserveAspectRatio','none');clearTimeout(atlasTimer);++renderVersion;atlas=null;
  $('#scene').innerHTML=overlay.geom+overlay.normalText+`<g fill="${R.contrast(d.background)}">${overlay.masks.replaceAll('fill="white"','')}</g>`+drawGPUReferences(d,g,b);drawHandles();$('#zoom-label').textContent='透视';return true;
 }
-function refreshPerspectivePicking(){if(view.mode==='solid'&&view.fly&&gpuViewport&&!gpuViewport.element.hidden)scene=buildScene()}
+function gpuPickDocument(d,g,q){
+ const b=M.viewBasis(d,view),ray=M.perspectiveRay(q,b),ids=new Set(selection);
+ // Conservative world AABBs include openings and ladder silhouettes. Only the
+ // few ray candidates need exact clipping, projected polygons and hole tests.
+ for(const [id,data]of g.cache){let lo=b.near/(-M.dot(ray,b.n)),hi=Infinity;for(let i=0;i<3&&lo<=hi;i++){if(Math.abs(ray[i])<1e-12){if(b.eye[i]<data.min[i]||b.eye[i]>data.max[i])hi=-Infinity}else{const a=(data.min[i]-b.eye[i])/ray[i],c=(data.max[i]-b.eye[i])/ray[i];lo=Math.max(lo,Math.min(a,c));hi=Math.min(hi,Math.max(a,c))}}if(lo<=hi)ids.add(id)}
+ for(const o of d.objects)if(ids.has(o.id)&&o.host)ids.add(o.host);
+ return {...d,objects:d.objects.filter(o=>ids.has(o.id)||ids.has(o.host)||['text','marker','route'].includes(o.type)),gridVisible:false,heightReferences:false};
+}
+function refreshPerspectivePicking(q=null){if(view.mode==='solid'&&view.fly&&gpuViewport&&!gpuViewport.element.hidden){const key=JSON.stringify([doc(),view,camera,selection,$('#ghost').checked,q]);if(perspectivePickKey!==key){scene=q?buildScene(true,gpuPickDocument(doc(),gpuViewport,q)):buildScene();perspectivePickKey=key;gpuViewport.stats.pickingBuilds++}}}
 window.addEventListener('beforeunload',()=>{if(!gpuViewport)return;for(const o of gpuViewport.group.children)o.geometry.dispose();for(const material of gpuViewport.materials.values())material.dispose();gpuViewport.edgeMaterial.dispose();if(gpuViewport.grid)disposeGPUObject(gpuViewport.grid);gpuViewport.renderer.dispose()});
