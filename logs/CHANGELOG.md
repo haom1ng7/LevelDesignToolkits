@@ -887,3 +887,14 @@
 - 验证：npm run build 成功；使用 bundled Python 执行 tools/build-manual.py 成功；最终 npm test 全部 24 组通过。新增默认透视、入口移除、取景/预设/立面切换、SVG 透视回退及平面/立面缩放检查；原世界移动、尺寸和网格测试改用已知世界端点生成透视指针轨迹，保留原有坐标、固定角点、吸附及历史断言，并将尺寸轴退化用例的相机对准实际角点。初轮保留旧正交固定屏幕位移、0.5° 下限与拖动行程的测试预期失败，更新测试驱动和预期后整套复跑通过。
 - 验证：node tests/browser-camera-navigation.cjs、node tests/browser-perspective.cjs 通过独立临时配置的真实 Chrome，覆盖默认透视、六向导航、选中状态右键导航/工具优先级、停止保护、平面/立面缩放、真实移动/旋转/尺寸及撤销、近裁剪、PNG/SVG 实际下载和 400 实体缓存导航；无页面异常或在线请求。已查看移除下拉框后的界面截图和导出 PNG，证据在 qa/camera-navigation/、qa/perspective/。Chrome 沙箱内首次启动 EPERM，获准独立启动后通过。临时 Node.js 检查帮助三处同步、生成页无投影下拉框、空种子和构建占位符通过；本次 14 份脚本的 node --check 与相关文件 git diff --check 通过，仅有既有 LF/CRLF 转换提示。
 - 未运行：Windows 重新封装/桌面 EXE 冒烟、手机真机、独立透视缓存像素对照和大型场景长时压力测试；本次交付源码、教程与离线网页，已运行完整自动回归及相关真实浏览器交互和导出检查。
+
+
+## 2026-11-02 · 修复完全包裹组件的差集挖空
+
+- 变更：差集不再跳过完全被其他组件包裹的运算对象。所选组件始终用原始体积相互扣除：删除被包裹的小组件，同时从大组件中移除对应材料，形成内部空腔、表面凹槽或贯穿孔；交换组件顺序、整体旋转、多层包裹及与局部重叠混合时保持一致。保留来源 ID、楼层、颜色和一次撤销/重做语义，保存后可继续参与集合运算。同步工具提示、内置与外部教程，重建离线网页，保留工作区同期透视视图改动。
+- 影响文件：src/set-geometry.js、src/usage-help.js、src/help/content.json、tests/verify-sets.cjs、tests/browser-sets.cjs、docs/使用说明.md、docs/使用说明.html、dist/index.html、dist/build-report.json、logs/CHANGELOG.md；浏览器截图、实际导出及报告在 qa/sets/。
+- 验证：新增包裹用例在旧构建上复现失败；npm run build 成功；使用 bundled Python 执行 tools/build-manual.py 成功。node tests/verify-sets.cjs 通过，新增四种内部/共面切除形态 × 正反顺序 × 整体旋转、嵌套/混合三组件、JSON 重载后重新求交为空，以及三视图差集、单次撤销/重做和选择检查。
+- 验证：npm test 初轮前 10 组通过，在世界轴移动的旧透视指针测试驱动处中断；工作区同期更新驱动后，本次单独 node tests/verify-world-move.cjs 复跑通过，再以 PowerShell foreach 顺序执行余下 13 个 tests/verify-*.cjs 均通过，本次最终覆盖全部 24 组回归。分段结果见 qa/sets/remaining-regressions.json；未将初轮 npm test 记录为整套成功。
+- 验证：node tests/browser-sets.cjs 在独立临时配置的真实无头 Chrome 中通过，覆盖真实组件列表 Ctrl 多选与集合菜单、撤销/重做/暂存重载、8 种视口与主题，以及部分重叠、内部空腔、贯穿孔三种场景各 PNG/SVG/OBJ/FBX 共 12 个实际下载。Three.js 独立读取器确认 OBJ/FBX 体积、空腔六向内壁位置和朝向空腔的法线、贯穿方向没有残留表面及外部材料保留；无页面异常或在线请求。已查看贯穿孔的立体界面截图及实际导出 PNG。Chrome 首次沙箱启动 EPERM，获准独立启动后通过。
+- 验证：临时 Node.js 检查教程三处同步、正式种子为空及 12 个导出文件存在通过；本次源码/测试的 node --check 和相关文件 git diff --check 通过，仅有既有 LF/CRLF 提示。
+- 未运行：Windows 重新封装及桌面 EXE 冒烟、手机真机与大型复杂集合性能压力；本次交付修复源码、回归、同步教程和离线网页。
