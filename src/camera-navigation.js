@@ -11,7 +11,8 @@ function enablePerspectiveCamera(frame=false){
 }
 function changeCameraProjection(value){stopCameraNavigation();if(value==='perspective'){enablePerspectiveCamera(true);drawCanvas()}else{delete view.fly;view.elevation=Math.max(.5,view.elevation);syncPerspectiveControls();fit()}canvasFocus()}
 function cameraKey(e){const physical=/^Key([WASDQE])$/.exec(e.code||'');return physical?physical[1].toLowerCase():!e.code&&/^[wasdqe]$/i.test(e.key||'')?e.key.toLowerCase():null}
-function cameraNavigationAvailable(){return doc()?.type==='space'&&view.mode==='solid'&&!selection.length&&!editing&&!rowRename&&!drawing&&!space&&(!drag||drag.kind==='orbit')&&!document.querySelector('dialog[open]')&&!textInput(document.activeElement)}
+function cameraLookActive(){return view.mode==='solid'&&!!view.fly&&drag?.kind==='orbit'}
+function cameraNavigationAvailable(){return doc()?.type==='space'&&view.mode==='solid'&&(!selection.length||cameraLookActive())&&!editing&&!rowRename&&!drawing&&!space&&(!drag||drag.kind==='orbit')&&!document.querySelector('dialog[open]')&&!textInput(document.activeElement)}
 function stopCameraNavigation(){cameraKeys.clear();if(cameraFrame!==null)cancelAnimationFrame(cameraFrame);cameraFrame=null;cameraTickAt=0}
 function moveCameraFrame(now){
  cameraFrame=null;if(!cameraKeys.size||!cameraNavigationAvailable()){stopCameraNavigation();return}
@@ -22,7 +23,7 @@ function moveCameraFrame(now){
 }
 function beginCameraNavigation(e){
  const k=cameraKey(e);if(!k||e.ctrlKey||e.metaKey||e.altKey||textInput(e.target)||composingKey(e)||!cameraNavigationAvailable())return false;
- e.preventDefault();if(!e.repeat){const entering=!view.fly;enablePerspectiveCamera();if(entering)drawCanvas();cameraKeys.add(k);if(cameraFrame===null){cameraTickAt=performance.now();cameraFrame=requestAnimationFrame(moveCameraFrame)}}return true;
+ e.preventDefault();if(!e.repeat){const entering=!view.fly;enablePerspectiveCamera();if(entering)drawCanvas();if(drag?.kind==='orbit')drag.navigated=true;cameraKeys.add(k);if(cameraFrame===null){cameraTickAt=performance.now();cameraFrame=requestAnimationFrame(moveCameraFrame)}}return true;
 }
 function adjustCameraMoveSpeed(e){
  if(doc()?.type!=='space'||view.mode!=='solid'||!(e.buttons&2)&&drag?.kind!=='orbit')return false;
@@ -37,3 +38,4 @@ document.addEventListener('focusin',e=>{if(e.target!==canvas)stopCameraNavigatio
 document.addEventListener('visibilitychange',()=>{if(document.hidden)stopCameraNavigation()});
 window.addEventListener('blur',stopCameraNavigation);
 canvas.addEventListener('pointercancel',stopCameraNavigation);
+canvas.addEventListener('lostpointercapture',()=>{if(drag?.kind==='orbit'){stopCameraNavigation();endDrag(true)}});

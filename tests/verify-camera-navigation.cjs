@@ -49,7 +49,21 @@ try{
  still(()=>{key('keydown','Process',c,{code:'KeyW',isComposing:true,keyCode:229});key('keyup','w')},'IME is protected');
  const input=d.querySelector('#layer-filter');key('keydown','d');tick();input.focus();still(()=>{key('keydown','d',input);key('keyup','d',input)},'focus and text input stop');c.focus();
  d.querySelector('#help-dialog').showModal();still(()=>{key('keydown','d');key('keyup','d')},'dialog protects keys');d.querySelector('#help-dialog').close();
- A.select(id,false,true);start=camera();key('keydown','w');assert.equal(A.tool,'move');key('keyup','w');key('keydown','e');assert.equal(A.tool,'rotate');key('keyup','e');key('keydown','q');assert.equal(A.tool,'rotate','Q never selects');key('keyup','q');tick();same(camera(),start,'selected component keeps transform keys');A.select(id,true,true);A.setTool('select');
+ A.select(id,false,true);start=camera();for(const [k,t]of [['w','move'],['e','rotate'],['r','size']]){key('keydown',k);assert.equal(A.tool,t);key('keyup',k)}key('keydown','q');assert.equal(A.tool,'size','Q never selects');key('keyup','q');tick();same(camera(),start,'selected component keeps transform keys without right button');
+ // A selection only yields transform keys to navigation while right look is held.
+ for(const tool of ['move','rotate','size']){
+  A.setTool(tool);pointer('pointerdown');
+  const basis=M.viewBasis(A.document,A.view),vectors={w:M.mul(basis.n,-1),s:basis.n,a:M.mul(basis.r,-1),d:basis.r,q:[0,0,-1],e:[0,0,1]};
+  for(const [k,v]of Object.entries(vectors)){const delta=travel([k]);for(const [i,axis]of [basis.r,basis.down,basis.n].entries())near(delta[i],M.dot(v,axis)*30,`selected ${tool} + right + ${k}`);assert.equal(A.tool,tool,'camera keys preserve transform tool');same(A.selection.ids,[id],'camera keys preserve selection')}
+  key('keydown','r');key('keyup','r');assert.equal(A.tool,tool,'R does not switch tools during right look');near(travel(['d'])[0],30,'R preserves right look');
+  pointer('pointerup');assert(d.querySelector('#context-menu').hidden,'navigation suppresses right-click menu without mouse motion');
+ }
+ for(const k of ['w','d','e']){pointer('pointerdown');key('keydown',k);tick();pointer('pointerup');still(()=>key('keydown',k,c,{repeat:true}),'right release stops selected navigation while key stays down');assert.equal(A.tool,'size','held-key repeat does not switch tools after right release');key('keyup',k)}
+ for(const type of ['pointercancel','lostpointercapture']){pointer('pointerdown');key('keydown','d');tick();pointer(type);still(()=>key('keydown','d',c,{repeat:true}),type+' stops selected right navigation');key('keyup','d');still(()=>{key('keydown','d');key('keyup','d')},type+' clears right look')}
+ pointer('pointerdown');key('keydown','d');tick();w.dispatchEvent(new w.Event('blur'));still(()=>{key('keydown','d');key('keyup','d')},'blur clears selected right look');
+ pointer('pointerdown');key('keydown','d');tick();key('keydown','Escape',c,{code:'Escape'});still(()=>{key('keydown','d');key('keyup','d')},'Escape clears selected right look');
+ for(const [k,t]of [['w','move'],['e','rotate'],['r','size']]){still(()=>{key('keydown',k);key('keyup',k)},'transform keys restore after right look');assert.equal(A.tool,t)}
+ A.select(id,true,true);A.setTool('select');
  // Tuning speed consumes wheel input and does not turn a right click into a menu.
  start=camera();pointer('pointerdown');wheel(-100,{buttons:2});pointer('pointerup');same(camera(),start,'rate wheel never zooms');assert(d.querySelector('#context-menu').hidden,'rate wheel suppresses menu');assert(d.querySelector('#status').textContent.includes('750 cm/s'));
  near(travel(['d'])[0],37.5,'accelerated rate');pointer('pointerdown');wheel(100,{buttons:2});pointer('pointerup');near(travel(['d'])[0],30,'decelerated rate');
@@ -59,5 +73,5 @@ try{
  pointer('pointerdown');wheel(100,{buttons:2});wheel(-6.25,{buttons:2,deltaMode:1});pointer('pointerup');near(travel(['d'])[0],37.5,'line-mode wheel detent');pointer('pointerdown');wheel(6.25,{buttons:2,deltaMode:1});wheel(-.125,{buttons:2,deltaMode:2});pointer('pointerup');near(travel(['d'])[0],37.5,'page-mode wheel detent');
  pointer('pointerdown');for(let i=0;i<100;i++)wheel(-1e9,{buttons:2});assert(d.querySelector('#status').textContent.includes('100000 cm/s'),'upper rate bound');for(let i=0;i<100;i++)wheel(1e9,{buttons:2});pointer('pointerup');assert(d.querySelector('#status').textContent.includes('10 cm/s'),'lower rate bound');near(travel(['d'])[0],.5,'minimum rate remains usable');
  same(A.project,JSON.parse(initial),'navigation leaves project untouched');assert.equal(A.undoCount,undo,'navigation adds no undo history');A.view.azimuth=35;A.view.elevation=35;d.querySelector('#solid-projection').value='orthographic';d.querySelector('#solid-projection').dispatchEvent(new w.Event('change',{bubbles:true}));same(exportGeometry(),exportBefore,'export geometry and full drawing bounds are unchanged');assert.deepEqual(errors,[]);
- console.log('PASS perspective camera navigation: 180 eye-position heading/pitch/key cases, normalized chords, elapsed time, release/repeat/cancel/focus/IME/modifiers/dialogs/selection/view guards, transform keys, Q removal, right-wheel rate without zoom/menu, in-place look, disabled perspective zoom and retained orthographic zoom, project/history/export isolation.');
+ console.log('PASS perspective camera navigation: 180 eye-position heading/pitch/key cases, selected right-look six-axis travel across W/E/R tools, release/repeat/cancel/capture/blur/Escape guards, transform-key restoration and selection preservation, normalized chords, elapsed time, focus/IME/modifiers/dialogs/view guards, Q removal, right-wheel rate without zoom/menu, in-place look, disabled perspective zoom and retained orthographic zoom, project/history/export isolation.');
 }finally{w.close()}

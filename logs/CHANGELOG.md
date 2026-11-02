@@ -872,3 +872,10 @@
 - 验证：node tests/browser-perspective-caching.cjs 通过 17 次真实点击与完整场景拾取的对照；四个方位、四种透明度与原有逐对象 Three.js 画面比对，内部通道差不超过 2，最坏只有 26 个通道在抗锯齿边缘相差 3–5；12 次位置/可见性/透明度重建后 GPU 缓冲与可见对象缓存数量有界。像素检查初次使用所有通道差不超过 2 的阈值失败，经逐像素复核定位为抗锯齿边缘后，保留内部阈值并约束边缘误差及数量，重跑通过。
 - 验证：node tests/browser-perspective.cjs、node tests/browser-camera-navigation.cjs、node tests/browser-component-list.cjs 均通过真实 Chrome 交互，覆盖透视世界移动/旋转/尺寸、单次撤销、近裁剪、六向导航和键盘保护、列表排序/取消/宿主空洞/暂存/窄屏/主题，及 PNG/SVG 实际下载；已查看 3000 件混合场景、透明场景及透视导出 PNG 证据。改动 JS 和新增测试的 node --check、本次 git diff --check 通过，仅有既有 LF/CRLF 提示。Chrome 使用独立临时配置，沙箱启动 EPERM 后获准独立启动。
 - 未运行：Windows 重新封装/桌面 EXE 冒烟、其他显卡/手机、数千组件全选轮廓及长时间连续几何拖动、数千标注或更多图稿驻留的内存上限。本次复用现有 Three.js，无新增依赖，交付源码、测试、性能报告与重建离线网页。
+
+## 2026-11-02 · 透视图选中组件时支持右键摄像机导航
+
+- 变更：立体透视图选中组件后，按住右键可用 WASDQE 正常移动摄像机，保持当前选择及移动、旋转或大小工具；右键按住期间 W/E/R 不切换组件工具。松开右键立即停止选中状态下的导航，继续按住方向键产生的重复事件不会误切工具；松键后重新按 W/E/R 分别切换移动、旋转和调整大小。指针取消、丢失捕获、Esc 和窗口失焦会停止导航；鼠标移出画布后松开右键也能停止。右键导航后松开不弹菜单，普通右键单击仍可打开菜单。同步内置/外部教程并重建离线网页。
+- 影响文件：src/camera-navigation.js、src/app.js、src/help/content.json、tests/verify-camera-navigation.cjs、tests/browser-camera-navigation.cjs、docs/使用说明.md、docs/使用说明.html、dist/index.html、logs/CHANGELOG.md；本地浏览器证据在 qa/camera-navigation/。
+- 验证：npm run build 成功；使用 bundled Python 执行 tools/build-manual.py 成功。node tests/verify-camera-navigation.cjs 通过，新增三种组件工具下六向移动、选择/工具保持、右键松开及按键重复、指针取消/捕获丢失/失焦/Esc 停止和 W/E/R 恢复检查；npm test 全部 24 组通过。node tests/browser-camera-navigation.cjs 在独立临时配置的真实 Chrome 中通过，覆盖三种工具下右键六向导航、无鼠标位移时不弹菜单、保持方向键松开右键、画布外释放右键、W/E/R 恢复及原有导航/调速/缩放/输入保护，工程与历史不变且无页面异常或在线请求；首次沙箱内启动 EPERM，获准独立启动后通过。临时 Node.js 检查内置、Markdown、HTML 教程同步及正式空工程通过；本次应用/测试脚本 node --check 和 git diff --check 通过，仅有既有 LF/CRLF 提示。
+- 未运行：实际浏览器导出下载、Windows 重新封装和桌面 EXE 冒烟；本次调整摄像机与组件快捷键优先级，已运行完整自动回归和真实浏览器交互验证。
