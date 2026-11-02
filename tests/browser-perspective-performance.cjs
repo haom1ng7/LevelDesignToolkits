@@ -9,7 +9,7 @@ const label=process.env.STUDIO_PERF_LABEL||'latest',counts=(process.env.STUDIO_P
   const page=await browser.newPage({viewport:{width:1600,height:1000}}),cdp=await page.context().newCDPSession(page);
   page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>{if(/^https?:/.test(r.url()))network.push(r.url())});
   await page.goto(pathToFileURL(path.resolve(__dirname,process.env.STUDIO_PERF_HTML||'../dist/index.html')).href);await page.evaluate(()=>document.fonts.ready);
-  await page.evaluate(()=>SpatialEditor.createDocument('space','透视压力测试'));await page.locator('[data-view="solid"]').click();await page.locator('#solid-projection').selectOption('perspective');
+  await page.evaluate(()=>SpatialEditor.createDocument('space','透视压力测试'));await page.locator('[data-view="solid"]').click();assert(await page.evaluate(()=>!!SpatialEditor.view.fly),'solid defaults to perspective');
   environment.webgl=await page.evaluate(()=>{const gl=document.querySelector('#solid-webgl').getContext('webgl2'),info=gl.getExtension('WEBGL_debug_renderer_info');return {vendor:info?gl.getParameter(info.UNMASKED_VENDOR_WEBGL):gl.getParameter(gl.VENDOR),renderer:info?gl.getParameter(info.UNMASKED_RENDERER_WEBGL):gl.getParameter(gl.RENDERER)}});
   for(const kind of kinds)for(const count of counts){
    const setup=await page.evaluate(({count,kind})=>{

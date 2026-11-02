@@ -1,7 +1,7 @@
-// Navigation uses a real perspective camera; orthographic views remain available.
+// Solid views always use a perspective camera; plan/elevation retain drafting projection.
 const cameraKeys=new Set();
 let cameraFrame=null,cameraTickAt=0,cameraMoveSpeed=600;
-function syncPerspectiveControls(){const active=view.mode==='solid'&&!!view.fly;$('#solid-projection').value=active?'perspective':'orthographic';document.querySelectorAll('[data-action="zoom-in"],[data-action="zoom-out"]').forEach(b=>b.disabled=active||!doc());$('#elevation').min=active?'-90':'0.5';$('#elevation').title=active?'透视俯仰角范围：-90°–90°':'俯仰角范围：0.5°–90°'}
+function syncPerspectiveControls(){document.querySelectorAll('[data-action="zoom-in"],[data-action="zoom-out"]').forEach(b=>b.disabled=view.mode==='solid'||!doc())}
 function enablePerspectiveCamera(frame=false){
  if(view.fly||view.mode!=='solid'||doc()?.type!=='space')return;
  const b=M.viewBasis(doc(),view),center=[camera.x+camera.w/2,camera.y+camera.h/2],target=M.unproject(center,b,b.origin),focal=camera.w*.9;
@@ -9,7 +9,6 @@ function enablePerspectiveCamera(frame=false){
  if(frame){const points=doc().objects.filter(o=>o.visible!==false&&M.floor(doc(),o)?.visible!==false&&o.type!=='hole').flatMap(o=>['route','text','marker'].includes(o.type)?[M.origin(doc(),o)]:M.geometry(doc(),o).flatMap(f=>f.points));for(const p of points){const v=M.sub(p,target);distance=Math.max(distance,M.dot(v,b.n)+Math.max(Math.abs(M.dot(v,b.r))*focal/(camera.w*.44),Math.abs(M.dot(v,b.down))*focal/(camera.h*.44))+1)}}
  view.fly={eye:M.add(target,M.mul(b.n,distance)),center,focal};syncPerspectiveControls();
 }
-function changeCameraProjection(value){stopCameraNavigation();if(value==='perspective'){enablePerspectiveCamera(true);drawCanvas()}else{delete view.fly;view.elevation=Math.max(.5,view.elevation);syncPerspectiveControls();fit()}canvasFocus()}
 function cameraKey(e){const physical=/^Key([WASDQE])$/.exec(e.code||'');return physical?physical[1].toLowerCase():!e.code&&/^[wasdqe]$/i.test(e.key||'')?e.key.toLowerCase():null}
 function cameraLookActive(){return view.mode==='solid'&&!!view.fly&&drag?.kind==='orbit'}
 function cameraNavigationAvailable(){return doc()?.type==='space'&&view.mode==='solid'&&(!selection.length||cameraLookActive())&&!editing&&!rowRename&&!drawing&&!space&&(!drag||drag.kind==='orbit')&&!document.querySelector('dialog[open]')&&!textInput(document.activeElement)}
@@ -23,7 +22,7 @@ function moveCameraFrame(now){
 }
 function beginCameraNavigation(e){
  const k=cameraKey(e);if(!k||e.ctrlKey||e.metaKey||e.altKey||textInput(e.target)||composingKey(e)||!cameraNavigationAvailable())return false;
- e.preventDefault();if(!e.repeat){const entering=!view.fly;enablePerspectiveCamera();if(entering)drawCanvas();if(drag?.kind==='orbit')drag.navigated=true;cameraKeys.add(k);if(cameraFrame===null){cameraTickAt=performance.now();cameraFrame=requestAnimationFrame(moveCameraFrame)}}return true;
+ e.preventDefault();if(!e.repeat){if(drag?.kind==='orbit')drag.navigated=true;cameraKeys.add(k);if(cameraFrame===null){cameraTickAt=performance.now();cameraFrame=requestAnimationFrame(moveCameraFrame)}}return true;
 }
 function adjustCameraMoveSpeed(e){
  if(doc()?.type!=='space'||view.mode!=='solid'||!(e.buttons&2)&&drag?.kind!=='orbit')return false;

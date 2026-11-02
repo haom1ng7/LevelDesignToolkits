@@ -26,20 +26,37 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('n
   await page.keyboard.press('Control+z');await page.locator('[data-tool="size"]').click();const handle=page.locator('[data-size-corner="2"]');assert(await handle.isVisible());const p=await handle.boundingBox();await page.mouse.move(p.x+p.width/2,p.y+p.height/2);await page.mouse.down();await page.mouse.move(p.x+p.width/2+40,p.y+p.height/2+25,{steps:6});await page.mouse.up();assert(+await page.locator('#prop-dimensionX').inputValue()>200);await page.keyboard.press('Control+z');
   await click([250,250]);await page.locator('[data-view="solid"]').click();await page.locator('[data-tool="rotate"]').click();assert(await page.locator('[data-world-rotate="2"]').isVisible());await page.locator('[data-tool="size"]').click();assert.equal(await page.locator('[data-solid-corner]').count(),8);await page.screenshot({path:path.join(out,'difference-solid.png')});
   checks.push('actual numeric size and corner resize with undo, solid rotation and size handles');
-  // Export the difference and independently ray-test both model formats.
+  // Export differences and independently ray-test both model formats.
+  const exportResult=async(prefix,expectedCount,expectedVolume,checkRays)=>{
   await page.locator('[data-tool="select"]').click();await page.locator('[data-action="export-menu"]').click();
   for(const format of ['fbx','obj','svg','png']){
    await page.locator('#export-format').selectOption(format);if(format==='png')await page.locator('#export-scale').selectOption('1');await page.waitForFunction(f=>SpatialEditor.exportPreview?.ready&&SpatialEditor.exportPreview.format===f&&!document.querySelector('#export-download').disabled,format);
-   const pending=page.waitForEvent('download');await page.locator('#export-download').click();const download=await pending,target=path.join(out,'difference.'+format);await download.saveAs(target);const bytes=fs.readFileSync(target);
+   const pending=page.waitForEvent('download');await page.locator('#export-download').click();const download=await pending,target=path.join(out,prefix+'.'+format);await download.saveAs(target);const bytes=fs.readFileSync(target);
    if(format==='svg'){assert(bytes.toString().includes('<svg'));assert(!/data-world-(handle|rotate)|data-solid-corner/.test(bytes.toString()))}
    else if(format==='png')assert.equal(bytes.toString('ascii',1,4),'PNG');
    else{
     const scene=format==='fbx'?new FBXLoader().parse(bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength),''):new OBJLoader().parse(bytes.toString());let volume=0,count=0;
-    scene.updateMatrixWorld(true);scene.traverse(o=>{if(!o.isMesh)return;count++;o.material.side=THREE.DoubleSide;const p=o.geometry.getAttribute('position');let signed=0;for(let i=0;i<p.count;i+=3){const a=new THREE.Vector3().fromBufferAttribute(p,i),b=new THREE.Vector3().fromBufferAttribute(p,i+1),c=new THREE.Vector3().fromBufferAttribute(p,i+2);signed+=a.dot(b.cross(c))/6}volume+=Math.abs(signed)});assert.equal(count,2);assert(Math.abs(volume-12000000)<1);
-    for(const [x,expected] of [[250,true],[500,false],[750,true]])assert.equal(new THREE.Raycaster(new THREE.Vector3(x,300,200),new THREE.Vector3(0,0,-1)).intersectObject(scene,true).length>0,expected,format+' overlap removed');
+    scene.updateMatrixWorld(true);scene.traverse(o=>{if(!o.isMesh)return;count++;o.material.side=THREE.DoubleSide;const p=o.geometry.getAttribute('position');let signed=0;for(let i=0;i<p.count;i+=3){const a=new THREE.Vector3().fromBufferAttribute(p,i),b=new THREE.Vector3().fromBufferAttribute(p,i+1),c=new THREE.Vector3().fromBufferAttribute(p,i+2);signed+=a.dot(b.cross(c))/6}volume+=Math.abs(signed)});assert.equal(count,expectedCount);assert(Math.abs(volume-expectedVolume)<1,format+' '+prefix+' volume');checkRays(scene,format);
    }
   }
-  await page.locator('[data-action="export-close"]').first().click();checks.push('actual PNG/SVG/OBJ/FBX downloads; independent Three.js volume and rays through retained/removed material');
+  await page.locator('[data-action="export-close"]').first().click();
+  };
+  await exportResult('difference',2,12000000,(scene,format)=>{for(const [x,expected] of [[250,true],[500,false],[750,true]])assert.equal(new THREE.Raycaster(new THREE.Vector3(x,300,200),new THREE.Vector3(0,0,-1)).intersectObject(scene,true).length>0,expected,format+' overlap removed')});
+  checks.push('actual PNG/SVG/OBJ/FBX downloads; independent Three.js volume and rays through retained/removed material');
+  // Completely enclosed cutters form a cavity or a through-hole, with atomic history.
+  for(const through of [false,true]){
+   await page.locator('[data-view="plan"]').click();const ids=await page.evaluate(through=>{const M=StudioModel,d=M.createDocument('space','包裹差集验证');d.objects=[];for(const [x,y,z,width,length,height] of [[200,200,0,400,300,100],[300,300,through?0:-20,100,100,through?100:60]]){const o=Object.assign(M.createObject(d,'plane',[x,y,z]),{points:[[0,0],[width,0],[width,length],[0,length]],thickness:height,opacity:1});d.objects.push(o)}if(through)d.objects.reverse();SpatialEditor.loadProject({format:'level-spatial-editor',version:7,documents:[d],activeDocument:d.id});return d.objects.map(o=>o.id)},through);
+   await page.locator(`#layers [data-layer="${ids[0]}"]`).click();await page.locator(`#layers [data-layer="${ids[1]}"]`).click({modifiers:['Control']});assert.equal(await page.evaluate(()=>SpatialEditor.selection.ids.length),2);
+   const original=await state(),history=await page.evaluate(()=>SpatialEditor.undoCount);await operation('difference');assert.equal(await page.evaluate(()=>SpatialEditor.document.objects.length),1);assert.equal(await page.evaluate(()=>SpatialEditor.document.objects[0].type),'solid');assert.equal(await page.evaluate(()=>SpatialEditor.undoCount),history+1);assert.equal(await page.evaluate(()=>SpatialEditor.selection.ids.length),1);
+   const result=await state();await page.keyboard.press('Control+z');assert.equal(await state(),original);await page.keyboard.press('Control+Shift+z');assert.equal(await state(),result);await page.evaluate(()=>SpatialEditor.command('autosave'));await page.reload();assert.equal(await state(),result,'enclosed cut survives reload');
+   const prefix=through?'contained-through':'contained-cavity';await page.screenshot({path:path.join(out,prefix+'-plan.png')});await page.locator('[data-view="solid"]').click();await page.locator('[data-action="fit"]').click();await page.screenshot({path:path.join(out,prefix+'-solid.png')});
+   await exportResult(prefix,1,through?11000000:11400000,(scene,format)=>{
+    const ray=(origin,direction)=>new THREE.Raycaster(new THREE.Vector3(...origin),new THREE.Vector3(...direction)).intersectObject(scene,true);
+    for(let axis=0;axis<3;axis++)for(const sign of [-1,1]){const direction=[0,0,0];direction[axis]=sign;const hits=ray([350,350,-50],direction);if(through&&axis===2)assert.equal(hits.length,0,format+' through-hole is open');else{assert(hits.length>0,format+' cavity wall exists');assert(Math.abs(hits[0].distance-(axis===2?30:50))<1e-5,format+' cavity wall location');assert(hits[0].face.normal.dot(new THREE.Vector3(...direction))<-.99,format+' cavity normal points into empty space')}}
+    assert(ray([250,250,200],[0,0,-1]).length>0,format+' outer material remains');if(through)assert.equal(ray([350,350,200],[0,0,-1]).length,0,format+' removed column is empty');
+   });
+  }
+  checks.push('enclosed cavity and coplanar through-hole: real list multi-selection/menu, undo/redo/reload, four downloads each, independent volume and six-direction inner-wall locations/normals');
   // Keyboard-only actions and responsive menu hit testing use the existing flyout.
   await page.locator('[data-view="plan"]').click();await seed();await choose();await page.locator('[data-tool-group="sets"]').focus();await page.keyboard.press('ArrowDown');assert(await page.locator('[data-tool="intersect"]').evaluate(el=>el===document.activeElement));await page.keyboard.press('ArrowDown');assert(await page.locator('[data-tool="difference"]').evaluate(el=>el===document.activeElement));await page.keyboard.press('Enter');assert.equal(await page.evaluate(()=>SpatialEditor.document.objects.filter(o=>o.type==='solid').length),2);
   for(const width of [1440,990,390,360])for(const theme of ['light','dark']){

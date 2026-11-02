@@ -5,8 +5,9 @@ const w=dom.window,d=w.document,A=w.SpatialEditor,M=w.StudioModel,c=d.querySelec
 function add(doc,type,pos,props={}){const o=Object.assign(M.createObject(doc,type,pos),props);doc.objects.push(o);return o}
 function blank(type='plane'){A.createDocument('space');const doc=A.document;doc.objects=[];const o=add(doc,type,[450,350,20]);d.querySelector('[data-view="solid"]').click();A.select(o.id,false,true);d.querySelector('#snap').checked=false;return o.id}
 function pointer(kind,p,target=c,props={}){const a=A.camera;target.dispatchEvent(new w.MouseEvent(kind,{bubbles:true,button:0,clientX:(p[0]-a.x)/a.w*1000,clientY:(p[1]-a.y)/a.h*700,...props}))}
+const worldMovePoints=require('./fixtures/world-move-points.cjs');
 function handlePoint(name){const g=d.querySelector(`[data-world-handle="${name}"]`);assert(g,`handle ${name}`);const nums=g.querySelector(name.length===1?'.gizmo-axis':'.gizmo-plane').getAttribute('d').match(/-?\d+(?:\.\d+)?(?:e[+-]?\d+)?/gi).map(Number);if(name.length===1)return {g,p:[nums[0]*.3+nums[2]*.7,nums[1]*.3+nums[3]*.7]};return {g,p:[(nums[0]+nums[2]+nums[4]+nums[6])/4,(nums[1]+nums[3]+nums[5]+nums[7])/4]}}
-function gesture(name,delta,props={},cancel=false){const {g,p}=handlePoint(name),v=M.sub(M.project(delta,A.scene.basis),M.project([0,0,0],A.scene.basis)),q=M.add(p,v);pointer('pointerdown',p,g,props);pointer('pointermove',q,c,props);pointer(cancel?'pointercancel':'pointerup',q,c,props)}
+function gesture(name,delta,props={},cancel=false){const {g}=handlePoint(name),{start:p,end:q}=worldMovePoints(M,A,d,delta);pointer('pointerdown',p,g,props);pointer('pointermove',q,c,props);pointer(cancel?'pointercancel':'pointerup',q,c,props)}
 function change(selector,value,event='change'){const input=d.querySelector(selector);assert(input&&!input.disabled,selector+' is editable in solid view');input.value=String(value);input.dispatchEvent(new w.Event(event,{bubbles:true}))}
 try{
  for(const type of ['plane','wall','stairs','ladder','spiral','marker'])for(const name of ['0','1','2','01','02','12']){

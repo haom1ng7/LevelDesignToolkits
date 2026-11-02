@@ -4,7 +4,7 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('n
  try{
   const page=await browser.newPage({viewport:{width:1600,height:1000}}),errors=[],network=[],out=path.join(__dirname,'../qa/perspective-caching');fs.mkdirSync(out,{recursive:true});page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>{if(/^https?:/.test(r.url()))network.push(r.url())});
   await page.goto(pathToFileURL(path.join(__dirname,'../dist/index.html')).href);await page.evaluate(()=>{const A=SpatialEditor,M=StudioModel;A.createDocument('space','缓存与精确拾取');const d=A.document;d.gridVisible=false;d.heightReferences=false;d.objects=['plane','wall','stairs','ladder','spiral','text','marker','route'].map((type,i)=>M.createObject(d,type,[(i%4)*360,Math.floor(i/4)*400,0]));const h=Object.assign(M.createObject(d,'hole'),{host:d.objects[0].id,floor:d.activeFloor,points:[[-35,-35],[35,-35],[35,35],[-35,35]]});d.objects.push(h);A.setTool('select')});
-  await page.locator('[data-view="solid"]').click();await page.locator('#solid-projection').selectOption('perspective');await page.evaluate(()=>document.fonts.ready);
+  await page.locator('[data-view="solid"]').click();assert(await page.evaluate(()=>!!SpatialEditor.view.fly),'solid defaults to perspective');await page.evaluate(()=>document.fonts.ready);
   const checks=[],picks=[];
   // Exact picking remains the SVG/model authority; the GPU AABB pass may only discard misses.
   for(const offset of [0,35,110,200]){

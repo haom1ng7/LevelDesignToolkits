@@ -20,8 +20,15 @@ try{
  doc=fresh();box(doc);box(doc,0,0,100);apply(doc,'intersect');assert.equal(doc.objects.length,0,'projection overlap is not volume');
  doc=fresh();box(doc);box(doc,200);const disjoint=JSON.stringify(doc);apply(doc,'difference');assert.equal(JSON.stringify(doc),disjoint);
  doc=fresh();box(doc,0,0,0,.02,.02,.02);box(doc,.01,0,0,.02,.02,.02);apply(doc,'intersect');assert.equal(doc.objects.length,1,'small valid volumes survive');near(volume(doc),.000004);
- // Enclosed inner pieces disappear while the complete outer source survives.
- for(const reverse of [false,true]){doc=fresh();const outer=box(doc,0,0,0,100,100,100),inner=box(doc,20,20,-20,20,20,20),before=JSON.stringify(outer);if(reverse)doc.objects.reverse();apply(doc,'difference');assert.equal(doc.objects.length,1);assert.equal(doc.objects[0].id,outer.id);assert.equal(JSON.stringify(doc.objects[0]),before);near(volume(doc),1000000)}
+ // Enclosed cutters remove their volume from the outer solid, including shared faces.
+ for(const cutter of [[20,20,-20,20,20,20],[20,20,0,20,20,100],[20,20,0,20,20,20],[0,0,0,100,100,20]])for(const reverse of [false,true])for(const rotated of [false,true]){
+  doc=fresh();const outer=box(doc,0,0,0,100,100,100),inner=box(doc,...cutter),removed=cutter[3]*cutter[4]*cutter[5];
+  if(rotated)M.rotate(doc,[outer.id,inner.id],[0,1,0],.7,[0,0,0]);if(reverse)doc.objects.reverse();apply(doc,'difference');
+  assert.equal(doc.objects.length,1);assert.equal(doc.objects[0].id,outer.id);assert.equal(doc.objects[0].type,'solid');assert.equal(doc.objects[0].fill,outer.fill);assert.equal(doc.objects[0].floor,outer.floor);near(volume(doc),1000000-removed,'enclosed cutter removes material');assert(M.validGeometry(doc));
+  doc=M.validate(JSON.parse(JSON.stringify(project(doc)))).documents[0];near(volume(doc),1000000-removed,'cavity survives JSON');doc.objects.push(inner);apply(doc,'intersect');assert.equal(doc.objects.length,0,'subsequent intersection finds no material inside the cut');
+ }
+ for(const reverse of [false,true]){doc=fresh();const outer=box(doc,0,0,0,100,100,100);box(doc,20,20,-20,60,60,60);box(doc,30,30,-30,20,20,20);if(reverse)doc.objects.reverse();apply(doc,'difference');assert.equal(doc.objects.length,1);assert.equal(doc.objects[0].id,outer.id);near(volume(doc),784000,'nested cutters remove the union of their volumes')}
+ doc=fresh();box(doc,0,0,0,100,100,100);box(doc,20,20,-20,20,20,20);box(doc,90,0,0,30,100,100);apply(doc,'difference');near(volume(doc),1092000,'enclosed cutter still subtracts alongside partial overlap');
  doc=fresh();box(doc);box(doc);apply(doc,'difference');assert.equal(doc.objects.length,0,'identical solids cancel');
  doc=fresh();box(doc);box(doc);apply(doc,'intersect');near(volume(doc),200000);
  // Multi-selection intersection uses all operands; difference removes all pair overlaps.
@@ -31,8 +38,8 @@ try{
  // Independent interval arithmetic checks clipping with non-integer coordinates.
  let randomState=2749;const rand=()=>((randomState=(randomState*1664525+1013904223)>>>0)/4294967296);
  for(let sample=0;sample<12;sample++){
-  const lo=[0,1,2].map(()=>rand()*100-50),hi=lo.map(v=>v+10+rand()*80),otherLo=lo.map(v=>v-20+rand()*60),otherHi=otherLo.map(v=>v+10+rand()*80),size=(a,b)=>a.reduce((s,v,i)=>s*(b[i]-v),1),va=size(lo,hi),vb=size(otherLo,otherHi),iv=lo.reduce((s,v,i)=>s*Math.max(0,Math.min(hi[i],otherHi[i])-Math.max(v,otherLo[i])),1),insideA=lo.every((v,i)=>v>=otherLo[i]&&hi[i]<=otherHi[i]),insideB=otherLo.every((v,i)=>v>=lo[i]&&otherHi[i]<=hi[i]);
-  for(const mode of ['intersect','difference']){doc=fresh();for(const [a,b] of [[lo,hi],[otherLo,otherHi]])box(doc,a[0],a[1],b[2],b[0]-a[0],b[1]-a[1],b[2]-a[2]);apply(doc,mode);near(volume(doc),mode==='intersect'?iv:insideA?vb:insideB?va:va+vb-2*iv,'interval oracle '+sample+'/'+mode)}
+  const lo=[0,1,2].map(()=>rand()*100-50),hi=lo.map(v=>v+10+rand()*80),otherLo=lo.map(v=>v-20+rand()*60),otherHi=otherLo.map(v=>v+10+rand()*80),size=(a,b)=>a.reduce((s,v,i)=>s*(b[i]-v),1),va=size(lo,hi),vb=size(otherLo,otherHi),iv=lo.reduce((s,v,i)=>s*Math.max(0,Math.min(hi[i],otherHi[i])-Math.max(v,otherLo[i])),1);
+  for(const mode of ['intersect','difference']){doc=fresh();for(const [a,b] of [[lo,hi],[otherLo,otherHi]])box(doc,a[0],a[1],b[2],b[0]-a[0],b[1]-a[1],b[2]-a[2]);apply(doc,mode);near(volume(doc),mode==='intersect'?iv:va+vb-2*iv,'interval oracle '+sample+'/'+mode)}
  }
  // A central cutter can split one result into disconnected volumes.
  doc=fresh();box(doc,0,0,0,300,100,20);box(doc,100,-50,10,100,200,40);apply(doc,'difference');near(volume(doc),1000000);assert(M.validGeometry(doc));
@@ -47,6 +54,7 @@ try{
  for(const type of ['stairs','ladder','spiral']){doc=fresh();const o=M.createObject(doc,type,[0,0,0]);o.countMode='manual';if(type==='stairs')o.flights[0].steps=4;if(type==='spiral')o.steps=8;doc.objects.push(o);const expected=volume(doc);box(doc,-500,-500,500,1000,1000,1000);apply(doc,'intersect');near(volume(doc),expected,type);assert.equal(doc.objects.length,1);assert(M.validGeometry(doc))}
  // Commands are immediate and atomic in every view, and selection follows survivors.
  for(const mode of ['plan','elevation','solid']){doc=fresh();box(doc);box(doc,50);load(doc);d.querySelector(`[data-view="${mode}"]`).click();assert(!d.querySelector('[data-tool-group="sets"]').disabled);assert(!d.querySelector('[data-tool="intersect"]').disabled);const before=JSON.stringify(A.project),n=A.undoCount;d.querySelector('[data-tool="intersect"]').click();near(volume(A.document),100000);assert.equal(A.undoCount,n+1);assert.equal(A.selection.ids.length,1);assert.equal(A.tool,'select');assert(d.querySelector('[data-tool-group="sets"]').disabled);const after=JSON.stringify(A.project);A.command('undo');assert.equal(JSON.stringify(A.project),before);A.command('redo');assert.equal(JSON.stringify(A.project),after);assert(A.renderSVG().includes('data-object='))}
+ for(const mode of ['plan','elevation','solid']){doc=fresh();const outer=box(doc,0,0,0,100,100,100);box(doc,20,20,-20,20,20,20);load(doc);d.querySelector(`[data-view="${mode}"]`).click();const before=JSON.stringify(A.project),n=A.undoCount;d.querySelector('[data-tool="difference"]').click();near(volume(A.document),992000,'enclosed difference in '+mode);assert.equal(A.undoCount,n+1);assert.deepEqual(Array.from(A.selection.ids),[outer.id]);const after=JSON.stringify(A.project);A.command('undo');assert.equal(JSON.stringify(A.project),before);A.command('redo');assert.equal(JSON.stringify(A.project),after)}
  doc=fresh();box(doc);box(doc,50);load(doc);A.command('difference');near(volume(A.document),200000);assert.equal(A.selection.ids.length,2);
  // Set solids remain editable through real inspector fields and rigid operations.
  A.select(A.selection.ids[0],false,true);const id=A.selection.id,v=volume({...A.document,objects:[A.document.objects.find(o=>o.id===id)]}),input=d.querySelector('#prop-dimensionX'),old=+input.value;input.value=old*2;input.dispatchEvent(new w.Event('change',{bubbles:true}));near(volume({...A.document,objects:[A.document.objects.find(o=>o.id===id)]}),v*2);A.command('undo');

@@ -89,17 +89,14 @@ function setComponents(d,ids,mode){
   let out=meshes[0];for(const p of meshes.slice(1)){out=operation(out,p,'intersect');if(!occupied(out)){out=[];break}}
   roots.forEach(o=>replacements.set(o.id,null));if(out.length)replacements.set(roots[0].id,resultObject(d,roots[0],out,label));
  }else{
-  // Fully enclosed components disappear without boring a cavity in the host.
-  // All pair decisions use the original selection, independent of its order.
-  const enclosed=roots.map(()=>false),overlaps=roots.map(()=>roots.map(()=>false));
+  // Every original operand cuts every overlapping operand, including its host.
+  // Keep cutters even when their own result is empty so selection order is irrelevant.
+  const overlaps=roots.map(()=>roots.map(()=>false));
   for(let i=0;i<roots.length;i++)for(let j=i+1;j<roots.length;j++){
    const overlap=operation(meshes[i],meshes[j],'intersect');if(!occupied(overlap))continue;overlaps[i][j]=overlaps[j][i]=true;
-   if(!occupied(operation(meshes[i],meshes[j],'subtract')))enclosed[i]=true;
-   if(!occupied(operation(meshes[j],meshes[i],'subtract')))enclosed[j]=true;
   }
   roots.forEach((o,i)=>{
-   if(enclosed[i]){replacements.set(o.id,null);return}
-   let out=meshes[i],changed=false;for(let j=0;j<roots.length;j++)if(j!==i&&!enclosed[j]&&overlaps[i][j]){out=operation(out,meshes[j],'subtract');changed=true;if(!occupied(out)){out=[];break}}
+   let out=meshes[i],changed=false;for(let j=0;j<roots.length;j++)if(j!==i&&overlaps[i][j]){out=operation(out,meshes[j],'subtract');changed=true;if(!occupied(out)){out=[];break}}
    if(changed)replacements.set(o.id,out.length?resultObject(d,o,out,label):null);
   });
  }

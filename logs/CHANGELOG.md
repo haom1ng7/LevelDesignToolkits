@@ -879,3 +879,11 @@
 - 影响文件：src/camera-navigation.js、src/app.js、src/help/content.json、tests/verify-camera-navigation.cjs、tests/browser-camera-navigation.cjs、docs/使用说明.md、docs/使用说明.html、dist/index.html、logs/CHANGELOG.md；本地浏览器证据在 qa/camera-navigation/。
 - 验证：npm run build 成功；使用 bundled Python 执行 tools/build-manual.py 成功。node tests/verify-camera-navigation.cjs 通过，新增三种组件工具下六向移动、选择/工具保持、右键松开及按键重复、指针取消/捕获丢失/失焦/Esc 停止和 W/E/R 恢复检查；npm test 全部 24 组通过。node tests/browser-camera-navigation.cjs 在独立临时配置的真实 Chrome 中通过，覆盖三种工具下右键六向导航、无鼠标位移时不弹菜单、保持方向键松开右键、画布外释放右键、W/E/R 恢复及原有导航/调速/缩放/输入保护，工程与历史不变且无页面异常或在线请求；首次沙箱内启动 EPERM，获准独立启动后通过。临时 Node.js 检查内置、Markdown、HTML 教程同步及正式空工程通过；本次应用/测试脚本 node --check 和 git diff --check 通过，仅有既有 LF/CRLF 提示。
 - 未运行：实际浏览器导出下载、Windows 重新封装和桌面 EXE 冒烟；本次调整摄像机与组件快捷键优先级，已运行完整自动回归和真实浏览器交互验证。
+
+## 2026-11-02 · 移除立体图正交投影，固定使用透视
+
+- 变更：删除立体图下方的正交/透视下拉框、切换事件与专用样式；进入立体图即启用透视，适应全图、聚焦所选、正面/左右观察、重置及从立面编辑返回均保持透视。俯仰统一为 -90°–90°，立体图普通滚轮和加减缩放继续禁用，保留 WASDQE、右键转头/调速及选中组件后的右键导航。平面图和立面图保留原有正交制图和滚轮缩放。同步内置/外部教程及 README，重建离线网页，保留工作区其他同期修改。
+- 影响文件：src/app.js、src/camera-navigation.js、src/ui-features.js、src/perspective.js、src/editor.html、src/editor.css、src/help/content.json、README.md、docs/使用说明.md、docs/使用说明.html、dist/index.html、dist/build-report.json；tests/verify-camera-navigation.cjs、tests/verify-min-pitch.cjs、tests/verify-world-move.cjs、tests/verify-solid-transform.cjs、tests/verify-grid-snapping.cjs、tests/fixtures/world-move-points.cjs 及四份 browser-perspective*/browser-camera-navigation.cjs 脚本；logs/CHANGELOG.md。
+- 验证：npm run build 成功；使用 bundled Python 执行 tools/build-manual.py 成功；最终 npm test 全部 24 组通过。新增默认透视、入口移除、取景/预设/立面切换、SVG 透视回退及平面/立面缩放检查；原世界移动、尺寸和网格测试改用已知世界端点生成透视指针轨迹，保留原有坐标、固定角点、吸附及历史断言，并将尺寸轴退化用例的相机对准实际角点。初轮保留旧正交固定屏幕位移、0.5° 下限与拖动行程的测试预期失败，更新测试驱动和预期后整套复跑通过。
+- 验证：node tests/browser-camera-navigation.cjs、node tests/browser-perspective.cjs 通过独立临时配置的真实 Chrome，覆盖默认透视、六向导航、选中状态右键导航/工具优先级、停止保护、平面/立面缩放、真实移动/旋转/尺寸及撤销、近裁剪、PNG/SVG 实际下载和 400 实体缓存导航；无页面异常或在线请求。已查看移除下拉框后的界面截图和导出 PNG，证据在 qa/camera-navigation/、qa/perspective/。Chrome 沙箱内首次启动 EPERM，获准独立启动后通过。临时 Node.js 检查帮助三处同步、生成页无投影下拉框、空种子和构建占位符通过；本次 14 份脚本的 node --check 与相关文件 git diff --check 通过，仅有既有 LF/CRLF 转换提示。
+- 未运行：Windows 重新封装/桌面 EXE 冒烟、手机真机、独立透视缓存像素对照和大型场景长时压力测试；本次交付源码、教程与离线网页，已运行完整自动回归及相关真实浏览器交互和导出检查。

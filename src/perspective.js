@@ -1,4 +1,4 @@
-// Optional perspective basis. Orthographic drafting continues to use the original math.
+// Perspective solid views share the drafting coordinate math used by plan/elevation.
 (()=>{
 'use strict';const M=window.StudioModel,oldBasis=M.viewBasis,oldProject=M.project,oldUnproject=M.unproject;
 const depth=(p,b)=>M.dot(M.sub(b.eye,p),b.n);
