@@ -898,3 +898,192 @@
 - 验证：node tests/browser-sets.cjs 在独立临时配置的真实无头 Chrome 中通过，覆盖真实组件列表 Ctrl 多选与集合菜单、撤销/重做/暂存重载、8 种视口与主题，以及部分重叠、内部空腔、贯穿孔三种场景各 PNG/SVG/OBJ/FBX 共 12 个实际下载。Three.js 独立读取器确认 OBJ/FBX 体积、空腔六向内壁位置和朝向空腔的法线、贯穿方向没有残留表面及外部材料保留；无页面异常或在线请求。已查看贯穿孔的立体界面截图及实际导出 PNG。Chrome 首次沙箱启动 EPERM，获准独立启动后通过。
 - 验证：临时 Node.js 检查教程三处同步、正式种子为空及 12 个导出文件存在通过；本次源码/测试的 node --check 和相关文件 git diff --check 通过，仅有既有 LF/CRLF 提示。
 - 未运行：Windows 重新封装及桌面 EXE 冒烟、手机真机与大型复杂集合性能压力；本次交付修复源码、回归、同步教程和离线网页。
+
+## 2026-11-03 · 修复标记字号退格导致组件误删
+
+- 变更：标记字号输入框补齐模型已有的 8–200 范围约束。将默认字号 16 退格成 1 时，沿用属性输入的范围处理，避免校验失败重建面板并丢失焦点；可继续退格清空、重复按 Backspace/Delete 和重新输入字号，不再触发组件删除。保留单选、多选和一次输入对应一次撤销/重做的行为，明确聚焦画布后仍可用 Backspace 删除所选组件。保留工作区其他同期修改并重建离线网页。
+- 影响文件：src/app.js、tests/verify-property-inspector.cjs、tests/browser-marker-font-size.cjs、dist/index.html、dist/build-report.json、logs/CHANGELOG.md；本地浏览器证据在 qa/marker-font-size/。
+- 验证：新增真实浏览器回归在旧构建上复现首次 Backspace 后字号仍为 16 的失败；npm run build 成功。node tests/verify-property-inspector.cjs 通过，新增单个标记、多个标记、标记与文字混选的中间数字、空输入、焦点/输入节点保持、删除键保护、范围和历史检查。node tests/browser-marker-font-size.cjs 使用独立临时配置的真实无头 Chrome 通过，覆盖空间三视图、曲线图、标记多选的实际点击与键盘输入、连续/重复 Backspace、全选 Delete、空值失焦恢复、8–200 模型范围、一次撤销/重做和画布删除快捷键；无页面异常或在线请求。沙箱内 Chrome 启动 EPERM，获准独立启动后完成复现与修复验证；已查看截图及报告。src/app.js 与两份测试脚本的 node --check 通过。
+- 未运行：npm test 全套应用回归、实际导出下载、Windows 重新封装和桌面 EXE 冒烟；本次仅补齐标记字号控件约束，已运行对应属性面板回归与真实浏览器输入验证。
+
+## 2026-11-03 · 精简变换栏单位并居中标题
+
+- 变更：移除组件属性“变换”栏中位置、旋转、大小下方的 cm、度、cm 小字，将三个标题改为单行并与对应 XYZ 输入框垂直居中；单选、多选共用相同布局。保留工作区其他同期修改并重建离线网页。
+- 影响文件：src/property-inspector.js、src/editor.css、dist/index.html、dist/build-report.json、logs/CHANGELOG.md；本次浏览器截图及报告在 qa/property-inspector/。
+- 验证：npm run build 成功；node tests/verify-property-inspector.cjs 通过；node tests/browser-property-inspector.cjs 在独立临时配置的真实无头 Chrome 中通过，覆盖单选/多选输入、三视图、撤销重做和 12 种窗口宽度/主题组合，无页面异常或在线请求。已查看 1440px 浅色和 390px 深色截图，确认单位小字已移除、标题与输入行居中且无溢出。Chrome 沙箱内首次启动 EPERM，获准独立启动后通过。node --check src/property-inspector.js 和相关文件 git diff --check 通过，仅有既有 LF/CRLF 提示。
+- 未运行：npm test 全套应用回归、实际导出下载、Windows 重新封装及桌面 EXE 冒烟；本次只调整变换栏的文字与布局。
+
+
+## 2026-11-03 · 楼梯改用拖拽范围放置
+
+- 变更：楼梯与爬梯改为和平面矩形相同的左键按下、拖出范围、松开创建，平面图中的占地尺寸跟随拖拽范围，Shift 可约束正方形；旋转楼梯在平面图中始终按正圆占地创建，无需按 Shift，保留内外半径比例。立面图保留创建入口，拖拽确定可见宽度和起止高度，左右立面使用对应朝向。取消原先随鼠标移动的固定尺寸楼梯虚影与单击放置，改用矩形/圆形轮廓预览；保留标记的单击放置。
+- 变更：三类楼梯复用创建端点吸附、网格与 Ctrl/Command 暂停、连续创建、单击返回选择及一次撤销/重做；Esc、右键、指针取消、切换工具/视图/楼层/图稿会取消未完成的创建。同步工具提示、内置与外部教程，移除已过时的单击放置动画；教程生成脚本按实际章节及演示数量报告结果。新增独立楼梯交互回归并接入 npm test，更新原有网格、单梯段、楼层配色及工具菜单的创建手势样例。保留工作区其他同期修改。
+- 影响文件：src/interactions.js、src/app.js、src/move-snapping.js、src/usage-help.js、src/help/content.json、package.json、tools/build-manual.py；tests/verify-stair-placement.cjs、tests/browser-stair-placement.cjs、tests/verify-grid-snapping.cjs、tests/verify-v10.cjs、tests/browser-floor-colors.cjs、tests/browser-tool-groups.cjs；docs/使用说明.md、docs/使用说明.html、dist/index.html、dist/build-report.json、logs/CHANGELOG.md。
+- 验证：npm run build 成功；使用 bundled Python 执行 tools/build-manual.py 成功，生成 8 节说明与 6 段当前适用的离线演示。npm test 启动时包含的 25 组回归全部通过；新增 node tests/verify-stair-placement.cjs 单独通过并已加入后续 npm test（现共 26 组），覆盖四个拖拽方向、矩形/正圆与 Shift、楼层高度、预览、连续创建、六种取消路径、单击选择、一次撤销/重做、JSON，以及左右立面宽度/升高/位置。新增用例起初放在原空间回归中触发其 80 条历史上限，改为独立上下文后通过，原空间回归保持原样。网格回归覆盖平面/立面及 1/10/75/250/1000 单位网格和 Ctrl 精确尺寸。
+- 验证：node tests/browser-stair-placement.cjs、node tests/browser-floor-colors.cjs、node tests/browser-tool-groups.cjs 均通过独立临时配置的真实无头 Chrome，覆盖实际菜单与鼠标拖拽、轮廓预览、正圆、连续创建、取消、撤销重做、网格/Ctrl、立面、窄屏、楼层配色和键盘/触屏菜单；无页面异常或在线请求。沙箱内首次启动 Chrome 遇到 EPERM，获准独立启动后执行；初轮专项驱动的空白立面取景、踏步包围盒高度预期和窄屏工具面板入口已修正后复跑通过。已查看正圆预览、楼梯成品和窄屏旋转楼梯截图，证据在 qa/stair-placement/、qa/floor-colors/、qa/tool-groups/。
+- 验证：本次相关 JS 的 node --check、相关文件 git diff --check、内置/Markdown/HTML 放置说明一致性、旧动画入口移除和正式空种子检查通过，仅有既有 LF/CRLF 提示。
+- 未运行：实际浏览器 PNG/SVG 文件下载、Windows 重新封装及桌面 EXE 冒烟；本次改变创建手势，未调整导出格式或桌面程序。
+
+
+## 2026-11-03 · 楼层数字快捷键、多选与拖动排序
+
+- 变更：空间图支持数字键 1–9 切换楼层列表第 1–9 层，0 切换第 10 层，兼容开启 Num Lock 的数字小键盘；按当前列表顺序对应，缺少目标楼层时不响应。复用楼层点击的切换与整层组件选择行为，取消未完成的绘制或拖动；输入框、文字及楼层改名、中文输入、组合键、重复按键和对话框期间不误切换。
+- 变更：楼层列表支持 Ctrl / Command 点击多选或取消单层、Shift 连续范围选择及收缩、Ctrl / Command＋Shift 追加范围；多选用于批量调整列表顺序，保留当前编辑楼层与画布组件选择，普通点击或数字快捷键恢复单层选择。按住楼层名称可单层或批量拖动，所选楼层保持相对顺序；复用组件列表的浮层、插入线和边缘自动滚动，支持 Esc、移出列表松开、指针取消/丢失捕获、切换图稿/视图及窗口失焦取消。排序只改 floors 数组顺序，保留楼层 ID、名称、高度、可见性、配色、组件与宿主空洞归属、当前楼层和画布选择；一次撤销/重做并随 JSON 和自动暂存保存，校验失败完整回滚。
+- 变更：按用户要求撤回本次数字角标及楼层排版调整，保留原有楼层 DOM 内容与现有样式，只增加不可见的操作/无障碍属性和手势行为；没有新增楼层 CSS。同步内置/外部说明并重建离线网页，保留工作区同期其他改动。
+- 影响文件：src/floor-list.js、src/app.js、src/help/content.json、tools/build.mjs、package.json、tests/verify-floor-list.cjs、tests/browser-floor-list.cjs、docs/使用说明.md、docs/使用说明.html、dist/index.html、dist/build-report.json、logs/CHANGELOG.md；本地浏览器报告与截图在 qa/floor-list/，组件回归证据在 qa/component-list/。
+- 验证：npm run build 成功；使用 bundled Python 执行 tools/build-manual.py 成功。node tests/verify-floor-list.cjs 通过，覆盖数字/小键盘、输入及 IME 保护、三视图、Ctrl/Shift/Command 范围与非连续批量排序、预览不改数据、当前选择保持、单次历史、无变化不入历史、取消/回滚及 JSON。npm test 本次启动时列出的 25 组全部通过；工作区同期新增的 node tests/verify-stair-placement.cjs 另行运行通过，包括楼层切换时取消创建。
+- 验证：node tests/browser-floor-list.cjs 和 node tests/browser-component-list.cjs 在独立临时配置的真实无头 Chrome 中通过，覆盖真实数字键、Chrome 协议发送开启 Num Lock 的小键盘事件、输入/对话框保护、Ctrl/Shift 多选和范围收缩、单层/多层真实拖动、取消/撤销/重做、改名及可见性、JSON/自动暂存重载、30 层自动滚动和桌面/390px 窄屏的深浅主题；无页面异常或在线请求。Chrome 沙箱内首次启动 EPERM，获准独立启动；修正测试脚本的变量重名及 Playwright Numpad2 默认映射为 ArrowDown 的驱动预期后，最终浏览器检查通过。已查看桌面浅色和窄屏深色截图，确认未添加数字角标或改变楼层排版。
+- 验证：本次新增/修改的应用和测试脚本 node --check、相关文件 git diff --check 通过，仅有既有 LF/CRLF 提示；临时 Node.js 检查内置/Markdown/HTML 帮助同步、正式空种子、构建占位符清理，以及未添加楼层角标/排版包装/楼层 CSS 均通过。
+- 未运行：本次真实浏览器导出文件下载、Windows 重新封装及桌面 EXE 冒烟；本次交付源码、回归、教程和离线网页，未更改导出或桌面封装逻辑。
+
+## 2026-11-03 · 统一立体图移动、旋转与大小工具中心
+
+- 变更：立体视图的 W 移动、E 旋转、R 大小主手柄统一使用组件本地包围框中心，不再分别取屏幕左下顶点、世界包围框中心和所选角点；倾斜实体旋转及切换视角后仍保持同一中心。多选移动与旋转共用整体世界包围框中心。大小的本地 X/Y/Z 轴围绕中心向两侧伸缩、中心固定；包围框角点仍支持直接拖动并固定对角点，点击角点只保留角点高亮，不再改变主轴位置。沿用网格/Ctrl、圆形约束、宿主空洞与编组标注、单次撤销重做及取消流程。同步状态提示、内置与外部教程，重建离线网页，保留工作区其他同期修改。
+- 影响文件：src/world-move.js、src/world-transform.js、src/app.js、src/usage-help.js、src/help/content.json、tests/fixtures/world-move-points.cjs、tests/verify-solid-transform.cjs、tests/verify-grid-snapping.cjs、tests/browser-solid-transform.cjs、docs/使用说明.md、docs/使用说明.html、dist/index.html、dist/build-report.json、logs/CHANGELOG.md；本次浏览器截图与报告在 qa/solid-transform/、qa/perspective/。
+- 验证：npm run build 成功；使用 bundled Python 执行 tools/build-manual.py 成功。node tests/verify-world-move.cjs、node tests/verify-grid-snapping.cjs、node tests/verify-solid-transform.cjs 通过；新增六类实体的倾斜/不对称轮廓/非零楼层、三个相机方位、W/E/R 与角点选择的中心一致性、旋转后中心保持及三轴尺寸中心固定检查，保留固定对角点、宿主、历史、取消、JSON 与导出排除断言。透视手势驱动改为从中心世界坐标生成轨迹，修正旧角点用例复用已重绘 DOM 节点及相机未重新取景的问题后复跑通过。
+- 验证：两次 npm test 在工作区同期摄像机按钮/速率文案与回归预期尚未同步时中断；相关源码、构建及测试同步后，单独 node tests/verify-camera-navigation.cjs 通过。随后单独运行立体变换，并以 PowerShell foreach 顺序执行变换吸附、正交尺寸、网格、属性、组件列表、楼层列表、发布内存、网格导出、切割、集合、多边形和几何缓存回归；组件列表的双击改名断言首轮失败，单独 node tests/verify-component-list.cjs 复跑通过，未改动该测试或列表实现。本次与前段已通过的回归合计覆盖当前 npm test 的全部 25 组，按分段通过记录，不将中断的 npm test 写为整套成功。
+- 验证：node tests/browser-solid-transform.cjs 在最终重建网页上通过独立临时配置的真实 Chrome，覆盖实际 W/E/R 切换、主手柄中心一致、旋转/中心轴与角点拖动、一次撤销重做/Esc、宿主、锁定、输入及 JSON/三视图和 SVG 手柄排除。node tests/browser-perspective.cjs 通过真实移动/旋转/大小、近裁剪、400 实体缓存导航和 PNG/SVG 实际下载，无页面异常或在线请求。Chrome 首次沙箱启动 EPERM，获准独立启动后通过；已查看 W/E/R 三张中心截图及实际导出 PNG。
+- 验证：临时 Node.js 检查内置/Markdown/HTML 的立体变换教程同步、离线演示资源、正式空种子及构建占位符展开通过；本次八份源码/测试的 node --check 与相关文件 git diff --check 通过，仅有既有 LF/CRLF 提示。
+- 未运行：Windows 重新封装与桌面 EXE 冒烟、手机真机；本次交付源码、回归、同步教程与离线网页。
+
+## 2026-11-03 · 浏览器重启后恢复工程保存位置
+
+- 变更：Chrome、Edge 首次保存成功后，将文件句柄与当前有效暂存工程关联并保存在本机 IndexedDB；关闭浏览器、重新打开并恢复工程后，保存按钮及 Ctrl/Command＋S 继续更新原文件。仅在用户保存时按需申请原文件写入权限，拒绝授权时保留编辑内容与原文件，允许再次保存重试。旧版本未持久保存文件关联，更新后的首次保存仍需选择一次原文件。
+- 变更：关联按既有网页暂存键隔离，不写入工程 JSON 或撤销历史；载入另一工程、无有效暂存或暂存损坏时不复用旧目标。保存等待启动关联恢复，旧异步恢复/写入完成不会绑定到新工程；文件移动或删除时保留工程并提示重新选择。关联存储不可用时仍可保存文件并提示重开需重新选择，当前页面可继续快速保存。同步内置/外部教程及 README，重建离线网页，保留工作区其他同期修改。
+- 影响文件：src/project-saving.js、src/app.js、src/help/content.json、tests/browser-project-saving-restart.cjs、README.md、docs/使用说明.md、docs/使用说明.html、dist/index.html、dist/build-report.json、logs/CHANGELOG.md；本次报告在 qa/project-saving-restart/、qa/project-saving/。
+- 验证：新增重启用例在旧构建上复现重新弹文件选择器的失败。npm run build 成功；使用 bundled Python 执行 tools/build-manual.py 最终成功，初次写 HTML 遇到临时 OSError，重跑后两份说明生成成功。node tests/browser-project-saving-restart.cjs 最终通过 10 组检查，覆盖真实 Chrome 完整进程关闭/重启、IndexedDB 结构化克隆真实 OPFS 文件句柄及写入、原文件覆盖、权限重授/拒绝重试、恢复延迟、原文件删除、载入新工程的异步冲突、关联存储丢失、路径隔离、损坏暂存和存储失败；另覆盖 JSON 不含目标和撤销/重做保留目标，无页面异常。初轮 OPFS 使用 file 来源受浏览器限制，驱动改为仅监听本机的临时网页服务；删除文件用例暴露 createWritable 可重建文件，补充写入前 getFile 存在检查后复跑通过。选择器与权限响应由测试控制，文件句柄、浏览器存储和写入为真实实现。
+- 验证：node tests/browser-project-saving.cjs 在最终构建上通过，覆盖真实 Chrome 编辑/快捷键/下载回退和真实 Electron IPC、沙箱及 JSON 写盘，原生对话框选择使用测试替身。浏览器首次沙箱启动 EPERM，获准使用独立测试配置启动后通过。npm test 启动时列出的 25 组全部通过；工作区同期新增的 node tests/verify-stair-placement.cjs 另行运行通过。本次应用/新增测试的 node --check、相关文件 git diff --check 通过；临时 Node.js 检查内置/Markdown/HTML 保存教程同步、正式空工程及构建占位符清理通过。
+- 未运行：人工操作原生文件选择器与权限弹窗后的外部文件跨重启保存、真实 Edge、Windows 重新封装及发布 EXE 冒烟；本次交付浏览器保存修复、回归、同步教程与离线网页，桌面版跨重启保存位置行为保持原样。
+
+
+## 2026-11-03 · 立体图右下角显示并调节摄像机速率
+
+- 变更：将立体图右下角的“透视”替换为摄像机移动速率数字，以 m/s 度量但不附单位，默认显示 6；整数不补小数零，小数四舍五入到小数点后一位（例如 7.5、9.4），显示舍入不影响实际移动精度。加减按钮与右键＋滚轮共用同一速率，每次乘以或除以 1.25，保留现有 0.1–1000 m/s 范围；达到上下限时禁用对应按钮，反向仍可调节。SVG 与 WebGL 共用显示更新，调速不改变相机位置、视野、组件选择、工具、工程数据或撤销历史；平面图和立面图仍显示缩放百分比并用加减按钮缩放。同步控件提示、内置/外部教程并重建离线网页，保留工作区同期修改。
+- 影响文件：src/camera-navigation.js、src/app.js、src/webgl-viewport.js、src/editor.css、src/help/content.json、tests/verify-camera-navigation.cjs、tests/browser-camera-navigation.cjs、docs/使用说明.md、docs/使用说明.html、dist/index.html、dist/build-report.json、logs/CHANGELOG.md；本次浏览器截图与报告在 qa/camera-navigation/。
+- 验证：npm run build 成功；使用 bundled Python 执行 tools/build-manual.py 成功。node tests/verify-camera-navigation.cjs 通过，覆盖按键实际位移、按钮和滚轮同步、m/s 纯数字及小数舍入、上下限、选中组件与工具保留、两种正交视图缩放，以及工程/历史/导出隔离。
+- 验证：node tests/browser-camera-navigation.cjs 在独立临时配置的真实无头 Chrome 中通过，覆盖 WebGL 速率显示、实际移动、右键滚轮、按钮点击与 Enter 激活、视图切换、速度上下限及 1600px/390px × 深浅主题布局；无页面异常或在线请求。已查看桌面默认值及窄屏最大值截图，确认无单位、无溢出。Chrome 沙箱内首次启动 EPERM，获准独立启动后执行；初轮浏览器测试在新增按钮操作后因测试鼠标仍停在按钮上而未进入画布，补齐鼠标返回画布后通过。
+- 验证：npm test 初轮前三组通过，在 verify-v10.cjs 的既有双击改名计时断言处中断；本次单独重跑 node tests/verify-v10.cjs 通过，摄像机回归单独通过，再用 PowerShell 顺序运行余下 21 组回归全部通过，最终分段覆盖当前全部 26 组（含同期新增的楼梯放置与楼层列表检查）；未将初轮 npm test 记录为整套成功。分段结果见 qa/camera-navigation/remaining-regressions.json。
+- 验证：临时 Node.js 检查内置与外部教程同步、正式种子为空及构建插入点已展开通过；src/app.js、src/camera-navigation.js、src/webgl-viewport.js 和两份摄像机测试的 node --check 通过；相关源码、测试和日志的 git diff --check 通过，仅有既有 LF/CRLF 提示。
+- 未运行：本次真实浏览器导出下载、Windows 重新封装与桌面 EXE 冒烟、手机真机；本次交付源码、同步教程与离线网页。
+
+## 2026-11-03 · 将变换分组的大小标签改为缩放
+
+- 变更：属性面板“变换”分组中的“大小”改为“缩放”，同步分组的无障碍名称和内置、外部教程中的对应名称；数值仍表示组件本地轴的长宽高。重建离线网页，保留工作区已有修改。
+- 影响文件：src/property-inspector.js、src/help/content.json、docs/使用说明.md、docs/使用说明.html、dist/index.html、dist/build-report.json、logs/CHANGELOG.md。
+- 验证：npm run build 成功；node tests/verify-property-inspector.cjs 通过；node --check src/property-inspector.js 通过。临时 Node.js/jsdom 检查实际渲染标签及 aria-label 为“缩放”、教程同步和左侧“大小”工具名称保持原样，通过。npm run manual 因系统 Python 为 Microsoft Store 占位入口而失败，改用 bundled Python 执行 tools/build-manual.py 成功。
+- 未运行：整套 npm test、真实浏览器及 Windows 封装/桌面检查；本次仅修改属性面板文案，已运行对应属性回归并同步网页及教程。
+
+## 2026-11-03 · 回退变换分组标签改名
+
+- 变更：按用户要求撤回上一条“大小”改为“缩放”的文案变更，恢复属性面板的“大小”标签及无障碍名称，恢复对应教程原文并重新生成外部教程和离线网页。仅撤回本次文案，保留工作区同期新增的缩放字段及其他实现；历史日志保留。
+- 影响文件：src/property-inspector.js、src/help/content.json、docs/使用说明.md、docs/使用说明.html、dist/index.html、dist/build-report.json、logs/CHANGELOG.md。
+- 验证：npm run build 成功；使用 bundled Python 执行 tools/build-manual.py 成功；node --check src/property-inspector.js 通过。临时 Node.js 文本检查源码及构建网页的标签恢复为“大小”，内置帮助及 Markdown/HTML 教程恢复对应原文，通过；相关文件 git diff --check 通过，仅有既有 LF/CRLF 提示。
+- 验证限制：临时 jsdom 检查在选中实体时因工作区同期缩放实现调用尚不存在的 StudioModel.objectScale 而失败，未完成实际 DOM 标签验证；保留该同期实现，未越界修复或撤销其他任务代码。属性面板完整回归、整套 npm test、真实浏览器及 Windows 封装/桌面检查未运行，此次仅回退文案。
+
+
+## 2026-11-03 · 撤回矩形圆形 Blockout 参数改造
+
+- 变更：按用户要求撤回本次尝试新增的独立 Size、缩放倍率、尺寸锚点、矩形/圆形切换、正圆约束和可配置分段，以及相应模型校验、几何与交互改造；删除本次新增的模型模块和临时专项测试，恢复原有尺寸、圆形采样及轮廓转换逻辑。保留工作区此前及同期其他修改，包括当前“大小”标签和墙壁操作调整，并重新生成离线网页。
+- 影响文件：src/property-inspector.js、src/app.js、src/interactions.js、src/advanced-interactions.js、src/curved-geometry.js、src/world-transform.js、src/grid-snapping.js、src/editor.css、tools/build.mjs、dist/index.html、dist/build-report.json、logs/CHANGELOG.md；本次临时 src/blockout-model.js 和 tests/verify-blockout.cjs 已删除。
+- 验证：撤回后 npm run build 成功；node tests/verify-property-inspector.cjs 通过，覆盖共有属性、尺寸精确输入、宿主空洞、撤销重做、三视图及数值拖动。node --check src/property-inspector.js、node --check src/interactions.js 和相关源码 git diff --check 通过，仅有既有 LF/CRLF 提示。Node.js 残留检查确认相关源码、构建清单、生成应用及临时文件均无本次实现；首次检查误匹配内嵌 Three.js 自带的 radialSegments，排除该第三方字段后通过。
+- 验证记录：撤回前的临时 Blockout 专项测试在导出结构断言中引用不存在的 positions 字段而失败，未将该测试视作通过；对应临时测试与实现已一并撤回。
+- 未运行：撤回后的整套 npm test、真实浏览器及导出下载、Windows 重新封装与桌面冒烟；本次按要求恢复原有功能并完成针对性回归。
+
+
+## 2026-11-03 · 墙壁改为悬停组件边缘并点击放置
+
+- 变更：平面图点击“墙壁”进入持续放置状态，鼠标靠近当前楼层可见且未锁定实体的直边时，以黄色线和端点高亮整条边；单击沿整条边生成独立墙壁，墙根位置、长度、方向与高度准确跟随源边缘，支持旋转、倾斜和凹多边形。保留楼层默认配色，默认墙高 180、厚度 18；沿边放置不对源边缘做网格取整。平面、墙壁、楼梯、爬梯、旋转楼梯的直边及集合实体边缘复用现有几何；圆形、椭圆和曲线段不作为直边，被其他实体遮挡的边缘、隐藏/锁定实体和其他楼层不可放置。
+- 变更：取消墙壁原先拖出占地矩形的入口；空白或组件内部点击不创建并保持放置状态，可连续点击其他边缘。按下时不改工程，左键松开才提交；拖动、Esc、右键、指针取消/丢失捕获、失焦和切换工具/视图/楼层/图稿会取消待放置操作。每面墙壁只有一条撤销记录，失败时恢复工程、原选择和最近创建状态；高亮不进入 SVG 成品。同步按钮提示、README、内置与外部教程，重建离线页面；保留工作区同期其他修改。
+- 影响文件：src/wall-placement.js、src/app.js、src/interactions.js、src/usage-help.js、src/help/content.json、tools/build.mjs、package.json、README.md；tests/verify-wall-placement.cjs、tests/browser-wall-placement.cjs、tests/verify-v9.cjs、tests/verify-spatial-update.cjs、tests/browser-floor-colors.cjs；docs/使用说明.md、docs/使用说明.html、dist/index.html、dist/build-report.json、logs/CHANGELOG.md。
+- 验证：npm run build 成功；使用 bundled Python 执行 tools/build-manual.py 成功。最终 npm test 的 27 组回归全部通过，完整输出在 qa/wall-placement/regressions.log；首轮曾在工作区同期临时属性面板依赖未同步时因 M.objectScale 缺失中断，同期实现撤回并重新构建后复跑通过。最终 node tests/verify-wall-placement.cjs 另行通过，覆盖四边、旋转/倾斜、凹轮廓、非零楼层、精确端点/网格、连续创建、遮挡与可见性/锁定、六类实体、缩放命中阈值、取消、一次历史、JSON、三视图、导出辅助线排除及失败后原选择恢复。
+- 验证：node tests/browser-wall-placement.cjs 和 node tests/browser-floor-colors.cjs 通过独立临时配置的真实无头 Chrome，覆盖实际工具点击、鼠标悬停与点击松开、旋转边缘准确对齐、连续放置、撤销重做、空白/内部点击、取消、可见性/锁定、楼层配色与暂存重载和 390px 窄屏，无页面异常或在线请求。Chrome 首次沙箱启动 EPERM，获准独立启动后执行；初轮浏览器驱动误将成品 data-wall-edges 匹配为辅助线，并遗漏窄屏工具面板切换，修正驱动后最终通过。已查看桌面边缘高亮、旋转墙壁和窄屏高亮截图，证据在 qa/wall-placement/ 和 qa/floor-colors/。
+- 验证：相关应用和测试 JS 的 node --check、相关文件 git diff --check 通过，仅有既有 LF/CRLF 提示；临时 Node.js 检查源码/内置/Markdown/HTML 说明同步、帮助媒体存在、正式种子为空、构建插入点展开以及墙壁构建/回归入口唯一接入通过。
+- 未运行：本次真实浏览器 PNG/SVG 下载、Windows 重新封装与桌面 EXE 冒烟、手机真机；本次交付源码、测试、同步教程和离线网页。
+
+## 2026-11-03 · 修复立体图路线选中掉帧和底部绘制提示遮挡
+
+- 变更：立体图选中路线时复用 SVG 标注场景绘制选中轮廓与节点，不再因路线可编辑而逐帧构建整幅实体 SVG 场景；文字、标记、路线的变化只更新标注，不再重建未改变的 GPU 实体批次。路线节点拖动时按鼠标射线候选即时获取实体表面，保留抬高平台、宿主空洞与下层表面的正确贴面行为，以及节点增删、锁定、取消和撤销重做。
+- 变更：将画布底部绘制提示和相机控制栏放入同一个纵向布局容器，绘制提示与“完成绘制／取消”位于相机栏上方；明确 GPU、SVG 和界面层级，保留画布和控件的指针操作。同步内置、Markdown 和 HTML 路线说明，重建离线网页；保留工作区同期其他功能修改。
+- 影响文件：src/webgl-viewport.js、src/app.js、src/editor.html、src/editor.css、src/help/content.json、tests/browser-route-selection.cjs、docs/使用说明.md、docs/使用说明.html、dist/index.html、dist/build-report.json、logs/CHANGELOG.md；本次专项报告与截图在 qa/route-selection/，透视导出证据在 qa/perspective/。
+- 验证：新增 node tests/browser-route-selection.cjs 在修复前的构建上复现失败：400 实体场景在路线选中导航的 33 帧中累计投影 13200 个实体，约 21.5 FPS；绘制提示与相机栏重叠，两个按钮均无法命中。最终在最新离线页面的独立真实 Chrome 上通过，400 实体导航 76 帧只处理路线标注、实体 SVG 投影数为 0，约 56.4 FPS，GPU 几何及批次未重建，工程与历史保持一致；该帧率仅为本机测试场景测量，不代表所有工程或设备。
+- 验证：专项真实鼠标操作通过抬高表面与空洞下层贴面、一次撤销/重做、Esc 取消、插入中点、Delete、锁定及三视图；1600px/390px × 深浅主题下提示与相机栏不重叠，按钮在屏幕内且可实际点击完成/取消，创建仅提交一次历史。已查看桌面修复前后和窄屏深色截图。初轮专项驱动使用超限画布夹具、并遗漏撤销后重新选择的现有语义，修正夹具和驱动后最终通过；Chrome 首次沙箱启动 EPERM，获准使用独立临时配置后执行。
+- 验证：npm run build 成功；使用 bundled Python 执行 tools/build-manual.py 成功。npm test 首轮因工作区同期临时属性实现依赖缺失的 StudioModel.objectScale 中断，同期实现撤回并重新构建后，本次完整复跑的 27 组全部通过。node tests/browser-perspective.cjs 通过，覆盖真实 GPU 命中、移动/旋转/尺寸、近裁剪、400 实体缓存导航、视图切换和实际透视 PNG/SVG 下载，无页面异常或在线请求；本次路线专项同样无页面异常或在线请求。
+- 验证：src/app.js、src/webgl-viewport.js 和 tests/browser-route-selection.cjs 的 node --check 通过；相关源码、教程、测试与日志的 git diff --check 通过，仅有既有 LF/CRLF 提示。临时 Node.js 检查最新网页及两份外部教程包含当前路线说明、构建插入点已展开、正式种子为空，通过。
+- 未运行：Windows 重新封装和发布 EXE 冒烟、手机真机；本次交付源码、专项回归、同步教程和离线网页，390px 检查使用真实 Chrome 的窄视口。
+
+## 2026-11-03 · 墙壁与梯子合并为建筑类，集合类更名数学类
+
+- 变更：左侧绘图工具新增“建筑”分组，将原独立墙壁入口和原“梯子”菜单中的楼梯、爬梯、旋转楼梯合并到同一菜单；使用建筑图标，沿用现有展开、键盘导航、选中高亮、菜单项单选及视图可用性。“集合”分组显示名称改为“数学”，保留交集、差集操作。同步内置与外部使用说明并重新生成离线网页；保留工作区其他已有修改。
+- 影响文件：src/editor.html、src/help/content.json、tests/browser-tool-groups.cjs、docs/使用说明.md、docs/使用说明.html、dist/index.html、dist/build-report.json、logs/CHANGELOG.md；浏览器证据在 qa/tool-groups/。
+- 验证：npm run build 成功；使用 bundled Python 执行 tools/build-manual.py 成功；node tests/verify-sets.cjs、node tests/verify-wall-placement.cjs、node tests/verify-stair-placement.cjs 全部通过。node --check tests/browser-tool-groups.cjs 及相关文件 git diff --check 通过，仅有 LF/CRLF 提示。临时 Node.js 检查构建菜单的四个建筑工具、唯一墙壁入口、旧梯子分组移除、所有教程步骤同步、正式空种子与构建占位符展开，通过。
+- 验证：node tests/browser-tool-groups.cjs 最终通过真实无头 Chrome 的鼠标悬停/点击、键盘导航与墙壁选择、菜单高亮/焦点、触屏、九种原有分组工具真实创建、历史隔离、三视图/曲线可用性、42 组窗口尺寸/深浅主题布局及减少动效检查，无页面异常或在线请求；已查看 390px 浅色建筑菜单截图，四个条目完整可见。沙箱内 Chrome 首次启动 EPERM，获准独立临时配置启动后继续；旧测试通过欢迎页创建图稿时被画布遮挡，初始化改用已有 createDocument 接口后完整通过，菜单操作仍使用真实输入。
+- 未运行：整套 npm test、此次真实浏览器导出下载及 Windows 重新封装/桌面冒烟；本次仅调整工具分类与名称，已运行对应回归和真实菜单检查。
+
+## 2026-11-03 · 使用说明动图更新为当前版本界面
+
+- 变更：以当前 v1.2 黑黄界面重新录制切割、楼梯与标记、轮廓与大小、文字与路线、立体移动与复制、曲线事件、保存与导出七组真实浏览器操作，替换旧版蓝白 UI 及菜单过时的动图和 PNG 封面。统一为 1152×800，保留逐步提示、鼠标指针、循环播放和按需解码；恢复“放置楼梯与标记”章节的演示，展示当前“建筑”菜单下拖拽创建梯子与“标注”菜单下点击放置标记。同步内置帮助、外部 Markdown/HTML 说明及离线网页；保留工作区其他已有修改。
+- 变更：更新录制与编码工具，移除历史工作目录和仅支持两组动图的限制，支持七组独立重录、真实操作结果检查、共享 GIF 调色板及播放验证；录制使用独立临时 Chrome 配置，示例仅用于录制，不写入正式启动种子。保存演示使用应用现有 JSON 下载回退，不模拟原生文件选择器。
+- 影响文件：src/help/*.gif、src/help/*.png、src/help/content.json、tests/record-help-demos.js、tools/encode-help-demos.py、docs/使用说明.md、docs/使用说明.html、dist/index.html、dist/build-report.json、logs/CHANGELOG.md；录制帧、前后对照、操作与播放报告位于 qa/help-ui/。
+- 验证：node tests/record-help-demos.js 最终成功录制全部七组共 197 张实际截图，操作断言通过，无页面异常或在线请求。初次沙箱内 Chrome 启动 EPERM，经自动审批允许独立临时配置启动后继续；初轮驱动因组件列表只选择单件而未复制整组，以及工具栏选择器过时而中断，修正录制夹具的整组选择及实际选择器后完整重录通过，未修改应用交互。
+- 验证：使用 bundled Python 执行 tools/encode-help-demos.py 成功，七组 GIF 的尺寸、多帧、循环、总时长及 PNG 封面检查通过；已查看新旧总览、立体复制与导出实际录制画面。npm run build 成功；使用 bundled Python 执行 tools/build-manual.py 成功，生成八章、七组内嵌离线动图。
+- 验证：node tests/record-help-demos.js --verify 通过真实无头 Chrome 检查内置与独立 HTML 的全部七组 GIF/封面字节与源文件一致、实际画面随播放变化、单组播放、停止恢复封面、关闭帮助停止播放，以及 1440px/390px 布局，无页面异常或在线请求。node tests/verify-release.cjs、node --check tests/record-help-demos.js、录制/编码工具 git diff --check 通过；临时 Python 检查七组 Markdown 媒体引用、全部 GIF/PNG 尺寸、正式种子为空及构建占位符展开通过。
+- 未运行：整套 npm test、Windows 重新封装及桌面 EXE 冒烟、手机真机；本次仅更新帮助媒体、对应说明与录制工具，未修改应用实现。系统 python 为 Microsoft Store 占位入口，教程与编码使用实际 bundled Python 执行。
+
+## 2026-11-03 · 统一组件与派生组件的下划线命名
+
+- 变更：新建组件统一使用“类型_三位编号”（例如平面_001），编号兼容已有“平面12”和“平面_012”等名称及原计数器，删除后继续编号。复制副本、粘贴、Alt 拖动和复制楼层中的组件保留来源名称，使用“来源名_副本_001”；切割、交集和差集使用“来源名_切割_001”“来源名_交集_001”“来源名_差集_001”。同类派生操作继续编号，批量生成预留名称避免冲突；反复复制、切割不会重复堆叠同类后缀，来源名末尾已有下划线时正确衔接。
+- 变更：组件列表及属性面板的改名共用规则，将英文/全角点号、中文句号和中点替换为下划线，合并连续下划线；同图稿重名自动顺延，多选改名逐件分配唯一名称，空名称拒绝提交。旧工程导入与暂存恢复整理名称，优先保留已符合规则的名称，不改变组件 ID、几何、文字内容、分组和宿主归属；保留既有单次操作撤销、输入法保护和取消行为。同步内置/外部教程、重建离线网页，保留工作区同期其他改动。
+- 影响文件：src/model.js、src/component-names.js、src/app.js、src/advanced-interactions.js、src/property-inspector.js、src/cutting-geometry.js、src/set-geometry.js、tools/build.mjs、package.json、src/help/content.json；tests/verify-component-names.cjs、tests/browser-component-names.cjs、tests/verify-property-inspector.cjs、tests/browser-property-inspector.cjs；docs/使用说明.md、docs/使用说明.html、dist/index.html、dist/build-report.json、logs/CHANGELOG.md。专项证据与分段回归日志在 qa/component-names/，属性浏览器证据在 qa/property-inspector/。
+- 验证：npm run build 成功；使用 bundled Python 执行 tools/build-manual.py 成功。node tests/verify-component-names.cjs 最终构建上通过，覆盖默认/旧编号、复制/粘贴/楼层复制、宿主空洞与分组、批量避重、连续切割/数学操作、集合实体复制、含正则字符和尾下划线的来源名、旧工程只改名称、JSON 幂等、单选/多选/输入法改名、空名和撤销重做。专项测试首轮因测试变量重复声明而未执行，修正测试后通过。
+- 验证：npm test 首轮前 17 组通过，在网格回归因工作区同期工具提示改动的中间构建仍引用 toolTeaching 而中断；确认当前源码引用一致后重建，继续运行余下 12 组。属性回归原先允许批量同名与空名称，按本次新规则更新断言后通过；最终分段覆盖启动时全部 29 组，不将首轮 npm test 记为一次整套成功。末尾下划线衔接补齐后重建，命名、属性、组件列表、切割和数学操作五组再次通过；最终教程文字同步后再次构建，命名专项再次通过。初次临时 Node.js 顺序驱动未成功启动检查，改用 PowerShell 逐项执行并保存日志。
+- 验证：node tests/browser-component-names.cjs 在独立真实无头 Chrome 中通过，覆盖实际属性/列表输入、点号规范化、重名编号、空名拒绝、Esc 取消、键盘复制粘贴与复制副本、单次撤销重做、暂存重载及 390px 改名；无页面异常或在线请求。Chrome 初次沙箱启动 EPERM，获准使用独立临时配置启动后通过，补齐尾下划线边界后的构建再次通过。node tests/browser-property-inspector.cjs 通过真实 Ctrl 多选、连续输入唯一名称、焦点、属性编辑/历史及 12 组尺寸与主题布局；已查看命名专项桌面与窄屏截图。
+- 验证：本次相关应用/构建/测试 JS 的 node --check、相关文件 git diff --check 通过，仅有既有 LF/CRLF 提示；临时 Node.js 检查教程同步、帮助媒体存在、正式种子为空、构建插入点展开、命名模块顺序与专项回归唯一接入通过。
+- 未运行：此次真实浏览器导出下载、Windows 重新封装/桌面 EXE 冒烟和手机真机；本次交付源码、测试、教程及离线网页。三维网格文件由自动导出回归生成并用独立读取器验证，未将其记作浏览器实际下载验收。
+
+## 2026-11-03 · 属性快捷复制粘贴与整行悬停反馈
+
+- 变更：组件属性的“变换”和“外观与参数”支持 Shift＋右键单击复制、Shift＋左键单击粘贴，属性名称、数值框、X/Y/Z 色块、颜色、文字及下拉选项均可操作。点击位置、旋转、大小的行标题可复制或粘贴整组三轴；整组旋转一次设置欧拉角，避免中间奇异姿态丢失轴值。属性使用本页内独立剪贴板，保留模型精度，可跨组件和图稿使用，不覆盖组件复制内容；多选统一赋值，每次有效粘贴沿用原子校验、撤销与重做。多个值不能复制，类型、选项、范围、锁定及几何校验失败时提示并保留原值。
+- 变更：Shift 单击松开后提交复制或粘贴，横向拖动仍为原有精细调值；移动超过阈值、移出后松开、Esc、指针取消、丢失捕获、失焦、窗口变化和控件失效不会误粘贴。普通输入、颜色和下拉控件保持既有操作。
+- 变更：鼠标悬停时整条属性行轻微变灰，复制或粘贴成功后整行短暂闪亮并在约 360ms 内淡出，失败不触发成功闪亮；减少动态效果时使用约 160ms 的静态提示。按用户截图扩大高亮至分组完整宽度，统一名称和三轴控件两侧内边距，并增加上下留白；最终保留原属性栏宽度。同步内置与外部教程，重建离线网页，保留工作区同期其他改动。
+- 影响文件：src/property-inspector.js、src/editor.css、src/help/content.json、package.json、tests/verify-property-clipboard.cjs、tests/browser-property-clipboard.cjs、docs/使用说明.md、docs/使用说明.html、dist/index.html、dist/build-report.json、logs/CHANGELOG.md；浏览器证据在 qa/property-clipboard/，原数值拖动证据在 qa/property-scrub/。
+- 验证：npm run build 成功；使用 bundled Python 执行 tools/build-manual.py 成功。node tests/verify-property-inspector.cjs 和新增 node tests/verify-property-clipboard.cjs 通过，覆盖精度、单轴及三轴、五类控件、flight 参数、宿主空洞、三视图、多选、历史、失败回滚、类型及范围、锁定、精细拖动、取消与跨图稿独立剪贴板。
+- 验证：npm test 首轮前 12 组通过，在 verify-world-move.cjs 的既有路线工具提示文案断言处中断（实测“直接拖动路线节点调整”，预期“路线形状由路线节点决定”）；重新构建后单独重跑 node tests/verify-world-move.cjs 通过，按当前 package.json 顺序运行其后 16 组全部通过，本次合计分段覆盖 29 组，不将首轮 npm test 记录为整套成功。后 16 组的退出码见 qa/property-clipboard/remaining-regressions.json；最终样式构建后再次运行属性剪贴板专项通过。
+- 验证：node tests/browser-property-clipboard.cjs 在独立临时配置的真实无头 Chrome 中最终通过，覆盖九轴与三视图、三组三轴、原生颜色及下拉控件、多行文字、flight、一次撤销重做、批量及拒绝操作、Shift 起手精细拖动、输入与取消、重复闪亮、失败不闪亮、减少动态效果，以及 390/440/768/1600px × 深浅主题共 8 组布局；确认高亮铺满分组宽度且控件两侧至少 8px 留白，悬停无布局跳动，无页面异常或在线请求。node tests/browser-property-scrub.cjs 通过原有九轴数值拖动、网格、精细调整、宿主、批量、七类取消及窄屏回归。已查看最终浅色与深色局部悬停图、深色闪亮图及窄屏图。
+- 验证记录：Chrome 首次在沙箱中启动 EPERM，获准使用独立临时配置后完成。初轮专项驱动分别误设既有几何错误提示文本、JSON 载入后的活动图稿预期、Chrome 取消原生菜单时仍必须产生 contextmenu 事件，以及将横向 Shift 拖动当作“移出取消”；修正驱动预期和夹具后最终通过，未绕过实际复制粘贴、模型、历史及动效断言。
+- 验证：相关 JS 的 node --check、相关源码与教程的 git diff --check 通过，仅有既有 LF/CRLF 提示。临时 Node.js 检查内置与外部教程文本同步、构建插入点展开、正式种子为空及分段回归退出码通过。
+- 未运行：本次真实浏览器 PNG/SVG 下载、Windows 重新封装与桌面 EXE 冒烟、手机真机；本次交付源码、专项回归、同步教程和离线网页。
+
+
+## 2026-11-03 · 统一网页鼠标悬浮提示文案
+
+- 变更：重写网页已有的鼠标悬浮提示，统一为简短的功能说明、参数含义或当前状态，不含点击、拖动、快捷键等操作指引，固定文案不使用分号。覆盖绘图工具及分组、禁用原因、撤销重做、保存工程、深浅主题、图稿与楼层、组件列表、背景、吸附、相机与缩放、文字字号、属性字段、事件列表，以及 SVG 世界移动、旋转和尺寸手柄；组件名称和文件名仍保留实际内容。禁用工具原因与状态反馈复用同一来源，相应反馈同步改为状态陈述。保留工作区原有修改，重新生成离线网页。
+- 影响文件：src/app.js、src/editor.html、src/usage-help.js、src/keyboard.js、src/property-inspector.js、src/floor-list.js、src/event-editing.js、src/camera-navigation.js、src/project-saving.js、src/ui-shell.js、src/world-move.js、src/world-transform.js；tests/verify-v10.cjs、tests/verify-world-move.cjs、tests/browser-world-move.js；dist/index.html、dist/build-report.json、logs/CHANGELOG.md。
+- 验证：npm run build 成功。npm test 首轮在 verify-v10.cjs 对旧状态文案“请先选择”的断言处失败，同步为新的明确状态描述后，完整重跑当前全部 29 组回归通过；原有世界移动和浏览器操作片段中的悬浮文案断言一并同步。
+- 验证：临时 Node.js/jsdom 检查 118 个界面状态、141 条不同的 HTML/SVG 提示，覆盖空工程、空间三视图、各类组件与锁定状态、工具激活、楼层及组件可见性、深浅主题、曲线事件，以及浏览器下载、保存位置重置、文件选择器保存与桌面保存分支，均不含操作指引、分号、空值或 undefined，无 jsdom 异常；另检查三视图下交集与差集启用时的说明通过。报告在 qa/hover-copy/audit.json 和 qa/hover-copy/multiple.json。
+- 验证：相关 12 个 JS 文件的 node --check 及浏览器函数片段语法检查通过；当前离线网页包含新文案、构建报告字节数匹配、脚本插入点展开、正式种子保持空工程检查通过。相关文件 git diff --check 通过，仅有既有 LF/CRLF 提示。
+- 未运行：真实浏览器鼠标悬浮观察、真实 PNG/SVG 下载、Windows 重新封装及桌面 EXE 冒烟；本次只调整提示文案，使用实际构建网页的 DOM 状态检查与现有自动回归验证，不改变鼠标手势或编辑逻辑。
+
+## 2026-11-03 · 移除画布点击后的焦点描边
+
+- 变更：移除 SVG 编辑画布的 `:focus-visible` 描边，修复新建图稿后首次点击画布出现一圈深色边线的问题；平面、立面、立体与曲线图均不再显示该描边。保留画布焦点、Tab 导航和工具快捷键，其他按钮与输入控件仍保留键盘焦点提示。
+- 影响文件：src/editor.css、dist/index.html、dist/build-report.json、logs/CHANGELOG.md；本次浏览器截图与报告位于 qa/canvas-focus/。保留工作区已有修改。
+- 验证：npm run build 成功；node tests/verify-camera-navigation.cjs 通过。临时 Playwright 脚本通过独立无头 Chrome 的 20 项画布焦点/描边检查，覆盖深浅主题、空间三视图和曲线图的真实点击与 Tab 返回、P 快捷键、文本输入框返回画布、工程与撤销历史不变、工具栏键盘焦点提示保留，无页面异常；已查看修复前后截图。
+- 验证说明：沙箱内 Chrome 启动 EPERM，自动审批允许独立临时配置启动后完成检查；早期辅助探查使用不存在的 #grid-size 选择器而超时，最终改用实际 #doc-name 输入框并全部通过。
+- 未运行：整套 npm test、导出下载、Windows 重新封装与桌面 EXE 冒烟；本次仅移除网页画布焦点样式，已构建并验证对应浏览器行为。
+
+## 2026-11-03 · 组件操作按钮改为单行四个小按钮
+
+- 变更：右侧组件属性底部的“上移”“下移”“锁定”“删除”固定排成一行四个等宽小按钮，统一高度、间距及水平/垂直居中，移除临时双行布局和图标。锁定后以短标签“解锁”显示，保留完整无障碍名称；删除沿用危险文字颜色。保留既有操作、锁定与立体图禁用规则，其他按钮区域不受该专用布局影响。
+- 变更：同步内置和外部教程中的按钮名称及单行布局，重新生成离线网页，保留工作区其他改动。
+- 影响文件：src/app.js、src/property-inspector.js、src/editor.css、src/help/content.json、docs/使用说明.md、docs/使用说明.html、dist/index.html、dist/build-report.json、logs/CHANGELOG.md；本次浏览器截图和报告在 qa/inspector-actions/。
+- 验证：npm run build 成功；使用 bundled Python 执行 tools/build-manual.py 成功；node tests/verify-property-inspector.cjs 通过。
+- 验证：临时 Playwright 驱动通过独立临时配置的真实无头 Chrome 检查 1600/1280/1024/991/768/440/390/360px × 深浅主题共 16 组布局，确认四个按钮同一行、等宽等高、文字水平中心误差不超过 0.6px、垂直居中、按钮高度小于 40px、无溢出；实际点击验证上移/下移及撤销、锁定/解锁、删除及撤销，以及三个视图的既有可用性，无页面异常或在线请求。已查看桌面深浅主题及 390px 浅色局部截图。
+- 验证：相关应用 JS 的 node --check、相关文件 git diff --check、内置与外部教程同步及正式空种子检查通过。
+- 未运行：整套 npm test、浏览器实际导出下载、Windows 重新封装和桌面 EXE 冒烟、手机真机；本次为局部按钮排版与短标签调整，已完成对应属性回归及真实按钮操作检查。
+
+## 2026-11-03 · README 配图更新为当前界面
+
+- 变更：将 README 引用的空间图立体视图、节奏曲线总览两张旧版蓝白界面截图替换为当前 v1.2 黑黄界面的真实 Chrome 截图，保留原图片路径及现有示例工程。立体图通过正常中键平移调整取景，使平台、楼梯、路线和独立椭圆完整位于相机控制栏上方；两图保持 1600×1000。保留 README 和工作区其他已有修改。
+- 影响文件：docs/空间图_立体.png、docs/曲线图_总览.png、logs/CHANGELOG.md；本次临时截屏驱动及检查报告在 qa/readme-ui/。
+- 验证：node qa/readme-ui/capture.cjs 最终通过，使用独立临时配置的真实无头 Chrome 载入当前 dist/index.html 及 data/qa-project.json，确认 WebGL 透视已绘制、当前建筑菜单、空间/曲线图切换、页面无横向溢出、README 两条图片引用均有效，无页面异常或在线请求。已查看两张新版完整截图，并在取景调整后复看立体图；临时 Node.js 检查两张 PNG 均为 1600×1000、文件有效通过。
+- 未运行：本次应用构建、整套 npm test、教程重建、Windows 封装及桌面冒烟；仅替换 README 引用的静态图片，未修改应用实现、帮助媒体或文档引用路径，使用当前已有最新离线网页截屏。

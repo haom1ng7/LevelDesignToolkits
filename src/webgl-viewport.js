@@ -19,7 +19,9 @@ function gpuObjectData(d,o,g){
 }
 function syncGPUGeometry(d,g){
  if((cameraKeys.size||drag?.kind==='orbit')&&g.doc===d.id&&g.signature)return;
- const signature=JSON.stringify(d);if(g.doc===d.id&&g.signature===signature)return;
+ // Annotation edits only change the SVG overlay, not the solid GPU batches.
+ g.annotations=d.objects.filter(o=>['text','marker','route'].includes(o.type));
+ const signature=JSON.stringify([d.width,d.height,d.floors,d.objects.filter(o=>window.StudioMeshExport.solidTypes.has(o.type)||o.type==='hole')]);if(g.doc===d.id&&g.signature===signature)return;
  if(g.doc!==d.id)g.cache.clear();g.doc=d.id;g.signature=signature;
  for(const child of [...g.group.children]){g.group.remove(child);child.geometry.dispose()}
  const {T}=g,batches=new Map(),edgePositions=[],edgeColors=[],ids=new Set();g.transparent=null;let objects=0,min=[Infinity,Infinity],max=[-Infinity,-Infinity];
@@ -35,7 +37,7 @@ function syncGPUGeometry(d,g){
  for(const batch of batches.values()){let material=g.materials.get(batch.transparent);if(!material){material=new T.MeshBasicMaterial({vertexColors:true,side:T.BackSide,transparent:batch.transparent,depthWrite:!batch.transparent,polygonOffset:true,polygonOffsetFactor:1,polygonOffsetUnits:1});g.materials.set(batch.transparent,material)}const mesh=geometry(batch.positions,batch.colors,batch.transparent?4:3);if(batch.transparent){const index=new T.BufferAttribute(new Uint32Array(batch.positions.length/3),1).setUsage(T.DynamicDrawUsage);mesh.setIndex(index);g.transparent={spans:batch.spans,index,normal:null}}g.group.add(new T.Mesh(mesh,material))}
  const used=new Set([...batches.values()].map(batch=>batch.transparent));for(const [key,material]of g.materials)if(!used.has(key)){material.dispose();g.materials.delete(key)}
  if(edgePositions.length)g.group.add(new T.LineSegments(geometry(edgePositions,edgeColors),g.edgeMaterial));
- g.bounds=objects?{min,max}:{min:[0,0],max:[d.width,d.height]};g.annotations=d.objects.filter(o=>['text','marker','route'].includes(o.type));g.stats.objects=objects;g.stats.sceneBuilds++;
+ g.bounds=objects?{min,max}:{min:[0,0],max:[d.width,d.height]};g.stats.objects=objects;g.stats.sceneBuilds++;
 }
 function sortGPUTransparency(g,b){
  const t=g.transparent;if(!t||t.normal?.every((v,i)=>v===b.n[i]))return;t.normal=[...b.n];
@@ -64,15 +66,17 @@ function drawGPUViewport(){
  g.camera.projectionMatrix.elements[0]*=-1;g.camera.projectionMatrixInverse.copy(g.camera.projectionMatrix).invert();renderer.render(g.world,g.camera);g.stats.frames++;g.stats.drawCalls=renderer.info.render.calls;g.stats.triangles=renderer.info.render.triangles;g.stats.geometries=renderer.info.memory.geometries;g.stats.cachedObjects=g.cache.size;
  const options={selection,ghost:false,camera,tolerance:pixel()*8,interactive:true},annotations={...d,objects:g.annotations,gridVisible:false,heightReferences:false};
  const overlay=R.scene(annotations,view,options);scene=overlay;
- if(drawing||creationTools.includes(tool)||routeVertexEditable())scene=buildScene();
+ // Direct route handles use the annotation scene. Resolve solid surfaces only
+ // at the pointer when dragging a node, rather than projecting every solid per frame.
+ if(drawing||creationTools.includes(tool))scene=buildScene();
  else if(selection.length){
   const ids=new Set(selection);for(const o of d.objects)if(ids.has(o.id)&&o.host)ids.add(o.host);
-  const objects=d.objects.filter(o=>ids.has(o.id)||ids.has(o.host)),handles=R.scene({...annotations,objects},view,options);
-  scene={...overlay,faces:handles.faces,holeHits:handles.holeHits,outlines:new Map([...overlay.outlines,...handles.outlines])};
+  const objects=d.objects.filter(o=>(ids.has(o.id)||ids.has(o.host))&&!['text','marker','route'].includes(o.type));
+  if(objects.length){const handles=R.scene({...annotations,objects},view,options);scene={...overlay,faces:handles.faces,holeHits:handles.holeHits,outlines:new Map([...overlay.outlines,...handles.outlines])}}
  }
  perspectivePickKey=null;g.stats.overlayObjects=g.annotations.length+selection.length;
  canvas.setAttribute('viewBox',`${camera.x} ${camera.y} ${camera.w} ${camera.h}`);canvas.setAttribute('preserveAspectRatio','none');clearTimeout(atlasTimer);++renderVersion;atlas=null;
- $('#scene').innerHTML=overlay.geom+overlay.normalText+`<g fill="${R.contrast(d.background)}">${overlay.masks.replaceAll('fill="white"','')}</g>`+drawGPUReferences(d,g,b);drawHandles();$('#zoom-label').textContent='透视';return true;
+ $('#scene').innerHTML=overlay.geom+overlay.normalText+`<g fill="${R.contrast(d.background)}">${overlay.masks.replaceAll('fill="white"','')}</g>`+drawGPUReferences(d,g,b);drawHandles();return true;
 }
 function gpuPickDocument(d,g,q){
  const b=M.viewBasis(d,view),ray=M.perspectiveRay(q,b),ids=new Set(selection);

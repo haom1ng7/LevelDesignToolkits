@@ -18,8 +18,8 @@ try{
  const ys=ids.map(id=>object(id).position[1]);change('#prop-px',600);ids.forEach((id,i)=>{near(object(id).position[0],600);near(object(id).position[1],ys[i]);near(object(id).position[2],20)});assert.equal($('#prop-px').value,'600');assert.equal(A.undoCount,count+1);A.command('undo');assert.equal(JSON.stringify(A.document.objects),before);A.command('redo');choose(ids);
  count=A.undoCount;change('#prop-rx',25,'input');change('#prop-rx',25);assert.equal(A.undoCount,count+1,'rotation input and native commit are one undo');vector(object(a).orientation,orientation(25,0,0),'first own Euler axes');vector(object(b).orientation,orientation(25,0,30),'second keeps Y/Z');mixed('#prop-rz');assert.equal($('#prop-rx').value,'25');
  change('#prop-fill','#789abc');assert(ids.every(id=>object(id).fill==='#789abc'));assert(!$('#prop-fill').closest('.mixed-color'));
- count=A.undoCount;change('#prop-name','批量','input');change('#prop-name','批量名称','input');assert.equal(A.undoCount,count+1,'typing is one batch undo');assert(ids.every(id=>object(id).name==='批量名称'));A.command('undo');assert(ids.every(id=>object(id).name!=='批量名称'));A.command('redo');choose(ids);
- before=JSON.stringify(A.document.objects);change('#prop-name','');assert(ids.every(id=>object(id).name===''),'empty common text is intentional');A.command('undo');choose(ids);
+ count=A.undoCount;change('#prop-name','批量','input');change('#prop-name','批量名称','input');assert.equal(A.undoCount,count+1,'typing is one batch undo');assert.deepEqual(ids.map(id=>object(id).name),['批量名称','批量名称_002'],'batch names are unique');A.command('undo');assert(ids.every(id=>!object(id).name.startsWith('批量名称')));A.command('redo');choose(ids);
+ before=JSON.stringify(A.document.objects);count=A.undoCount;change('#prop-name','');assert.equal(JSON.stringify(A.document.objects),before,'empty component names are rejected');assert.equal(A.undoCount,count);choose(ids);
  // Each entity uses its local physical dimensions, with rotation and origin retained.
  for(const type of types)for(let axis=0;axis<3;axis++){
   ids=fresh([type]);a=ids[0];$('#snap').checked=true;const o=object(a);o.orientation=orientation(20,15,35);choose(ids);const original=dims(o),origin=[...o.position],matrix=[...o.orientation],value=original[axis]*1.25+.375;
@@ -33,6 +33,17 @@ try{
  ids=fresh(['spiral','spiral']);object(ids[0]).outer=120;object(ids[1]).outer=70;choose(ids);before=JSON.stringify(A.document.objects);count=A.undoCount;change('#prop-inner',80);assert.equal(JSON.stringify(A.document.objects),before);assert.equal(A.undoCount,count);
  ids=fresh(['stairs','stairs']);object(ids[1]).countMode='manual';choose(ids);assert.equal($('#prop-countMode').value,'');assert.equal($('#prop-countMode').selectedOptions[0].textContent,'多个值');change('#flight-steps',17,'input');assert(ids.every(id=>object(id).flights[0].steps===17&&object(id).countMode==='manual'));assert.equal($('#prop-countMode').value,'manual','dependent select refreshes while typing');
  ids=fresh(['text','text']);object(ids[1]).text='另一个文本';choose(ids);mixed('#prop-text');change('#prop-text','共同文字','input');assert(ids.every(id=>object(id).text==='共同文字'));
+ // Intermediate font-size digits must not invalidate markers and replace the focused input.
+ for(const kinds of [['marker'],['marker','marker'],['marker','text']]){
+  ids=fresh(kinds);ids.forEach(id=>object(id).size=16);choose(ids);before=JSON.stringify(A.document.objects);count=A.undoCount;
+  const input=$('#prop-size');input.focus();change('#prop-size','1','input');
+  assert.equal($('#prop-size'),input,'small intermediate digit keeps the input node');assert.equal(d.activeElement,input,'small intermediate digit keeps focus');assert.equal(input.value,'1');assert(ids.every(id=>object(id).size===8));
+  change('#prop-size','','input');assert.equal(d.activeElement,input);assert.equal(input.value,'');assert(ids.every(id=>object(id).size===8),'blank input preserves the valid model size');
+  for(const key of ['Backspace','Delete']){const event=new w.KeyboardEvent('keydown',{key,bubbles:true,cancelable:true});input.dispatchEvent(event);assert(!event.defaultPrevented,'deletion keys belong to the input');assert.equal(A.document.objects.length,kinds.length)}
+  change('#prop-size','32','input');change('#prop-size','32');assert(ids.every(id=>object(id).size===32));assert.equal(A.undoCount,Math.min(80,count+1),'clearing and typing share one history entry');
+  A.command('undo');assert.equal(JSON.stringify(A.document.objects),before);A.command('redo');assert(ids.every(id=>object(id).size===32));choose(ids);
+  change('#prop-size','250','input');assert(ids.every(id=>object(id).size===200),'large font input respects model bounds');M.validate(A.project);
+ }
  ids=fresh(['plane','text']);choose(ids);assert($('#prop-px'));assert(!$('#prop-rx'));assert(!$('#prop-dimensionX'));assert(!$('#prop-thickness'));assert(!$('#prop-fill'),'only common fields appear');
  ids=fresh();object(ids[1]).locked=true;choose(ids);before=JSON.stringify(A.document.objects);assert([...d.querySelectorAll('#properties input,#properties select')].every(i=>i.disabled));change('#prop-px',10);assert.equal(JSON.stringify(A.document.objects),before,'any locked component prevents the batch');
  // Numeric properties are exact even with snapping enabled, including sub-grid sizes.

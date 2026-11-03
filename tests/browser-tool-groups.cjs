@@ -2,7 +2,7 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const {pathToFileURL}=require('node:url'),{chromium}=require('playwright-core');
 const out=path.join(__dirname,'../qa/tool-groups'),url=pathToFileURL(path.join(__dirname,'../dist/index.html')).href;
-const groups={shapes:['plane','ellipse','polygon'],ladders:['stairs','ladder','spiral'],annotations:['text','marker','route']};
+const groups={shapes:['plane','ellipse','polygon'],buildings:['wall','stairs','ladder','spiral'],annotations:['text','marker','route']};
 (async()=>{
  fs.mkdirSync(out,{recursive:true});
  const browser=await chromium.launch({headless:true,...(process.env.STUDIO_BROWSER?{executablePath:process.env.STUDIO_BROWSER}:{channel:'chrome'})});
@@ -13,7 +13,11 @@ const groups={shapes:['plane','ellipse','polygon'],ladders:['stairs','ladder','s
   const page=await context.newPage();track(page);await page.goto(url);await page.evaluate(()=>document.fonts.ready);
   const trigger=g=>page.locator(`[data-tool-group="${g}"]`),menu=g=>page.locator(`#tool-${g}-menu`);
   for(const g of Object.keys(groups))assert(await trigger(g).isDisabled(),'empty project disables '+g);
-  await page.locator('#welcome [data-template="space"]').click();
+  await page.evaluate(()=>SpatialEditor.createDocument('space','工具分组检查'));
+  assert.equal((await trigger('buildings').innerText()).replace('›','').trim(),'建筑');
+  assert.equal((await trigger('sets').innerText()).replace('›','').trim(),'数学');
+  assert.deepEqual(await menu('buildings').locator('[data-tool]').evaluateAll(items=>items.map(b=>b.dataset.tool)),groups.buildings);
+  assert.equal(await page.locator('.tool-grid > [data-tool="wall"]').count(),0);
   const unchanged=()=>page.evaluate(()=>({project:JSON.stringify(SpatialEditor.project),undo:SpatialEditor.undoCount}));
   const before=await unchanged();
   await trigger('shapes').hover();assert(await menu('shapes').isVisible());
@@ -31,10 +35,16 @@ const groups={shapes:['plane','ellipse','polygon'],ladders:['stairs','ladder','s
   assert(await trigger('shapes').evaluate(el=>el.classList.contains('active')));
   assert.equal(await page.locator('[data-tool="ellipse"]').getAttribute('aria-checked'),'true');
   assert(await page.locator('#canvas').evaluate(el=>el===document.activeElement),'selection returns focus to canvas');
-  await trigger('ladders').click();await page.keyboard.press('Tab');assert(await menu('ladders').isHidden());
-  await trigger('ladders').hover();await trigger('annotations').hover();assert(await menu('ladders').isHidden());assert(await menu('annotations').isVisible());
+  await trigger('buildings').click();await page.keyboard.press('Tab');assert(await menu('buildings').isHidden());
+  await trigger('buildings').hover();await trigger('annotations').hover();assert(await menu('buildings').isHidden());assert(await menu('annotations').isVisible());
   await page.locator('#doc-title').click();assert(await menu('annotations').isHidden(),'outside pointer closes');
   assert.deepEqual(await unchanged(),before,'browsing menus and changing tools do not edit project/history');
+  await trigger('buildings').focus();await page.keyboard.press('ArrowDown');
+  assert(await page.locator('[data-tool="wall"]').evaluate(el=>el===document.activeElement));
+  await page.keyboard.press('Enter');assert.equal(await page.evaluate(()=>SpatialEditor.tool),'wall');
+  assert(await menu('buildings').isHidden());assert(await trigger('buildings').evaluate(el=>el.classList.contains('active')));
+  assert.equal(await page.locator('[data-tool="wall"]').getAttribute('aria-checked'),'true');
+  assert.deepEqual(await unchanged(),before,'choosing wall from buildings does not edit project/history');
   checks.push('hover, gap crossing, leave/outside dismissal, one menu, keyboard wrap/Home/End/Tab/Escape, focus and history isolation');
   // Existing physical shortcuts still select grouped tools without opening a menu.
   for(const [key,t,g] of [['p','plane','shapes'],['c','ellipse','shapes'],['t','text','annotations'],['m','marker','annotations'],['l','route','annotations']]){
@@ -46,7 +56,7 @@ const groups={shapes:['plane','ellipse','polygon'],ladders:['stairs','ladder','s
   await page.keyboard.press('Escape');await page.locator('#snap').uncheck();await page.locator('#move-snap').uncheck();
   const point=p=>page.evaluate(p=>{const q=new DOMPoint(...p).matrixTransform(document.querySelector('#canvas').getScreenCTM());return {x:q.x,y:q.y}},p);
   const pick=async t=>{const g=Object.keys(groups).find(g=>groups[g].includes(t));await trigger(g).click();await page.locator(`[data-tool="${t}"]`).click();assert(await menu(g).isHidden());assert.equal(await page.evaluate(()=>SpatialEditor.tool),t)};
-  for(const [t,a,b] of [['plane',[160,140],[360,270]],['ellipse',[750,140],[950,270]],['stairs',[430,390]],['ladder',[720,390]],['spiral',[950,390]],['marker',[170,550]]]){
+  for(const [t,a,b] of [['plane',[160,140],[360,270]],['ellipse',[750,140],[950,270]],['stairs',[430,330],[550,490]],['ladder',[680,350],[760,370]],['spiral',[900,330],[1040,470]],['marker',[170,550]]]){
    await pick(t);const count=await page.evaluate(()=>SpatialEditor.document.objects.length),p=await point(a);await page.mouse.move(p.x,p.y);
    if(b){const q=await point(b);await page.mouse.down();await page.mouse.move(q.x,q.y,{steps:8});await page.mouse.up()}else await page.mouse.click(p.x,p.y);
    assert.equal(await page.evaluate(()=>SpatialEditor.document.objects.length),count+1,'create '+t);
@@ -64,12 +74,12 @@ const groups={shapes:['plane','ellipse','polygon'],ladders:['stairs','ladder','s
   assert.deepEqual(await unchanged(),selectedBefore);checks.push('menu arrows do not move selected objects');
   for(const mode of ['elevation','solid']){
    await page.locator(`[data-view="${mode}"]`).click();assert(await trigger('shapes').isDisabled());
-   assert.equal(await trigger('ladders').isDisabled(),mode==='solid');
+   assert.equal(await trigger('buildings').isDisabled(),mode==='solid');
    await trigger('annotations').click();
    for(const t of groups.annotations)assert.equal(await page.locator(`[data-tool="${t}"]`).isDisabled(),mode==='solid'?t==='marker':t!=='marker');
    await page.keyboard.press('Escape');
   }
-  await page.evaluate(()=>SpatialEditor.createDocument('curve','菜单状态检查'));assert(await trigger('shapes').isDisabled());assert(await trigger('ladders').isDisabled());
+  await page.evaluate(()=>SpatialEditor.createDocument('curve','菜单状态检查'));assert(await trigger('shapes').isDisabled());assert(await trigger('buildings').isDisabled());
   await trigger('annotations').click();for(const t of groups.annotations)assert(await page.locator(`[data-tool="${t}"]`).isEnabled());await page.keyboard.press('Escape');
   checks.push('empty/curve/elevation/solid availability preserved');
   await page.evaluate(()=>SpatialEditor.createDocument('space','工具分组'));
@@ -83,7 +93,7 @@ const groups={shapes:['plane','ellipse','polygon'],ladders:['stairs','ladder','s
     if(!layout.hit)await page.screenshot({path:path.join(out,'hit-failure.png')});
     assert(layout.box.x>=0&&layout.box.y>=0&&layout.box.right<=width&&layout.box.bottom<=900,`${width}/${theme}/${g} fits viewport`);assert(layout.hit,`${width}/${theme}/${g} menu reachable above scroll rail: ${JSON.stringify(layout)}`);assert(!layout.overflow);
     layouts.push({width,theme,group:g,...layout});
-    if((width===1600&&g==='shapes')||(width===390&&g==='ladders'))await page.screenshot({path:path.join(out,`${g}-${width}-${theme}.png`)});
+    if((width===1600&&g==='shapes')||(width===390&&g==='buildings'))await page.screenshot({path:path.join(out,`${g}-${width}-${theme}.png`)});
     await page.keyboard.press('Escape');
    }
   }
@@ -91,7 +101,7 @@ const groups={shapes:['plane','ellipse','polygon'],ladders:['stairs','ladder','s
   await page.emulateMedia({reducedMotion:'reduce'});await trigger('shapes').click();
   assert.equal(await menu('shapes').evaluate(el=>getComputedStyle(el).animationName),'none');await page.keyboard.press('Escape');checks.push('reduced motion');
   const touch=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
-  await touch.addInitScript(()=>{Storage.prototype.setItem=function(){}});const phone=await touch.newPage();track(phone);await phone.goto(url);await phone.locator('#welcome [data-template="space"]').tap();await phone.locator('[data-shell-pane="tools"]').tap();
+  await touch.addInitScript(()=>{Storage.prototype.setItem=function(){}});const phone=await touch.newPage();track(phone);await phone.goto(url);await phone.evaluate(()=>SpatialEditor.createDocument('space','触屏工具分组检查'));await phone.locator('[data-shell-pane="tools"]').tap();
   await phone.locator('[data-tool-group="shapes"]').tap();assert(await phone.locator('#tool-shapes-menu').isVisible());assert.equal(await phone.locator('body').getAttribute('data-pane'),'tools');
   await phone.locator('[data-tool="ellipse"]').tap();assert.equal(await phone.locator('body').getAttribute('data-pane'),'canvas');assert.equal(await phone.evaluate(()=>SpatialEditor.tool),'ellipse');assert(await phone.locator('#tool-shapes-menu').isHidden());checks.push('touch opens menu, child selection returns to canvas');
   assert.deepEqual(errors,[]);assert.deepEqual(network,[]);fs.writeFileSync(path.join(out,'report.json'),JSON.stringify({checks,layouts,errors,network},null,2));

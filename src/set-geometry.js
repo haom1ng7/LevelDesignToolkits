@@ -75,8 +75,8 @@ function source(d,o){
  }
  return fromFaces(faces);
 }
-function resultObject(d,o,polys,label){
- return {id:o.id,type:'solid',name:o.name+' · '+label,floor:o.floor,position:[...o.position],orientation:[...o.orientation],visible:true,locked:false,opacity:o.opacity,fill:o.fill,stroke:o.stroke,width:o.width??1,mesh:polys.map(p=>p.points.map(v=>M.local(d,o,v)))};
+function resultObject(d,o,polys,label,reserved){
+ return {id:o.id,type:'solid',name:M.derivedName(d,o,label,reserved),floor:o.floor,position:[...o.position],orientation:[...o.orientation],visible:true,locked:false,opacity:o.opacity,fill:o.fill,stroke:o.stroke,width:o.width??1,mesh:polys.map(p=>p.points.map(v=>M.local(d,o,v)))};
 }
 function setComponents(d,ids,mode){
  if(d?.type!=='space'||!['intersect','difference'].includes(mode))throw Error('集合工具仅支持空间实体');
@@ -84,10 +84,10 @@ function setComponents(d,ids,mode){
  if(roots.length<2)throw Error('请选中至少两个实体组件');
  if(roots.some(o=>o.locked||o.visible===false||M.floor(d,o)?.visible===false)||d.objects.some(o=>o.type==='hole'&&roots.some(r=>r.id===o.host)&&(o.locked||o.visible===false)))throw Error('请先显示并解锁所选实体及其附属空洞');
  const meshes=roots.map(o=>source(d,o));if(meshes.some(p=>!occupied(p)))throw Error('所选组件无法形成有效实体');
- const replacements=new Map(),label=mode==='intersect'?'交集':'差集';
+ const replacements=new Map(),label=mode==='intersect'?'交集':'差集',reserved=new Set();
  if(mode==='intersect'){
   let out=meshes[0];for(const p of meshes.slice(1)){out=operation(out,p,'intersect');if(!occupied(out)){out=[];break}}
-  roots.forEach(o=>replacements.set(o.id,null));if(out.length)replacements.set(roots[0].id,resultObject(d,roots[0],out,label));
+  roots.forEach(o=>replacements.set(o.id,null));if(out.length)replacements.set(roots[0].id,resultObject(d,roots[0],out,label,reserved));
  }else{
   // Every original operand cuts every overlapping operand, including its host.
   // Keep cutters even when their own result is empty so selection order is irrelevant.
@@ -97,7 +97,7 @@ function setComponents(d,ids,mode){
   }
   roots.forEach((o,i)=>{
    let out=meshes[i],changed=false;for(let j=0;j<roots.length;j++)if(j!==i&&overlaps[i][j]){out=operation(out,meshes[j],'subtract');changed=true;if(!occupied(out)){out=[];break}}
-   if(changed)replacements.set(o.id,out.length?resultObject(d,o,out,label):null);
+   if(changed)replacements.set(o.id,out.length?resultObject(d,o,out,label,reserved):null);
   });
  }
  const next=d.objects.flatMap(o=>replacements.has(o.id)?replacements.get(o.id)?[replacements.get(o.id)]:[]:o.type==='hole'&&replacements.has(o.host)?[]:[o]);

@@ -90,13 +90,14 @@ function moveWithSnapping(q,e){
  M.move(doc(),drag.ids,M.sub(desired,drag.applied||[0,0,0]),drag.floor);drag.applied=desired;moveSnapGuides=result.guides;
  if(moveSnapGuides.length)status(moveSnapGuides[0].projected?'平面位置已对齐 · 高度保持不变':'已吸附连接边 · 拖动中按 Ctrl 暂停');
 }
-function moveSnapMarkup(){const cursor=['plane','ellipse','wall'].includes(tool)&&!drag?moveSnapGuides[0]?.a:null;const color=doc()?.background==='#101214'?'#ffc58a':'#ac4c0d';return moveSnapGuides.map(g=>`<g data-move-snap-guide="true" pointer-events="none"><path d="${R.path([g.t.a2,g.t.b2])}" fill="none" stroke="${color}" stroke-width="${pixel()*3}"/><path d="${R.path([g.a,g.z])}" fill="none" stroke="${color}" stroke-width="${pixel()*1.5}" stroke-dasharray="${pixel()*4} ${pixel()*3}"/></g>`).join('')+(cursor?'<circle data-creation-snap-point="true" cx="'+cursor[0]+'" cy="'+cursor[1]+'" r="'+pixel()*3+'" fill="'+color+'" stroke="'+doc().background+'" stroke-width="'+pixel()+'" pointer-events="none"/>':'')}
+function moveSnapMarkup(){const cursor=['plane','ellipse','wall','stairs','ladder','spiral'].includes(tool)&&!drag?moveSnapGuides[0]?.a:null;const color=doc()?.background==='#101214'?'#ffc58a':'#ac4c0d';return moveSnapGuides.map(g=>`<g data-move-snap-guide="true" pointer-events="none"><path d="${R.path([g.t.a2,g.t.b2])}" fill="none" stroke="${color}" stroke-width="${pixel()*3}"/><path d="${R.path([g.a,g.z])}" fill="none" stroke="${color}" stroke-width="${pixel()*1.5}" stroke-dasharray="${pixel()*4} ${pixel()*3}"/></g>`).join('')+(cursor?'<circle data-creation-snap-point="true" cx="'+cursor[0]+'" cy="'+cursor[1]+'" r="'+pixel()*3+'" fill="'+color+'" stroke="'+doc().background+'" stroke-width="'+pixel()+'" pointer-events="none"/>':'')}
 
 // Creation uses the same cached targets and pixel thresholds as movement.
 function creationSnap(q,e,reset=false){
  const d=doc();if(reset)creationSnapCache=null;
  if(!creationSnapCache||creationSnapCache.document!==d){creationSnapCache=MoveSnapping.prepare(d,[],scene.basis,view,$('#ghost').checked);creationSnapCache.document=d}
- const world=M.unproject(q,scene.basis,[0,0,floor(d.activeFloor)?.height||0],[0,0,1]),c=creationSnapCache;
+ const world=placementPoint(q),c=creationSnapCache;
+ if(view.mode==='elevation'){if(gridEnabled(e)){moveSnapGuides=[];return gridRectanglePoint(q,e)}const result=MoveSnapping.solve({...c,sources:[{a:world,b:world,kind:'point',owner:{type:'cursor'},height:[world[2],world[2]]}]},[0,0,0],pixel(),e.ctrlKey||e.metaKey||!$('#move-snap').checked);moveSnapGuides=result.guides;return M.project(M.add(world,result.delta),scene.basis)}
  if(gridEnabled(e)){moveSnapGuides=[];return M.project([Math.round(world[0]/gridStep())*gridStep(),Math.round(world[1]/gridStep())*gridStep(),world[2]],scene.basis)}
  const source=(a,b)=>({a,b,kind:'point',owner:{type:'cursor'},height:[world[2],world[2]]});c.sources=[source(world,world)];if(drag?.kind==='create-rect'){const at=p=>M.unproject(p,scene.basis,[0,0,world[2]],[0,0,1]);c.sources.push(source(at([drag.start[0],q[1]]),world),source(at([q[0],drag.start[1]]),world))}
  const paused=e.ctrlKey||e.metaKey||!$('#move-snap').checked,result=MoveSnapping.solve(c,[0,0,0],pixel(),paused),grid=e.ctrlKey||e.metaKey?world:snap(world),point=[...grid];

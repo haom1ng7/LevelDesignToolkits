@@ -26,4 +26,4 @@ script='''const buttons=[...document.querySelectorAll('.demo')];function stop(){
 nav=''.join('<a href="#'+s['id']+'">'+e(s['title'])+'</a>' for s in content['sections'])
 doc='<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>关卡设计工具箱 · 使用说明</title><style>'+style+'</style></head><body><header><h1>关卡设计工具箱 · 使用说明</h1></header><nav aria-label="操作目录">'+nav+'</nav><main><p>'+e(content['intro'])+'</p>'+''.join(sections)+'<section><h2>常用快捷键</h2><dl>'+''.join(shortcuts)+'</dl><p>'+e(content['shortcutNote'])+'</p></section></main><script>'+script+'</script></body></html>'
 (root/'docs/使用说明.html').write_text(doc,encoding='utf-8')
-print('Built synchronized manuals: 8 sections, 7 self-contained on-demand GIFs')
+print(f"Built synchronized manuals: {len(content['sections'])} sections, {sum(bool(s.get('demo')) for s in content['sections'])} self-contained on-demand GIFs")

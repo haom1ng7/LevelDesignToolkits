@@ -19,7 +19,37 @@ function intersect(a,b,c,d){const v=(p,q,r)=>(q[0]-p[0])*(r[1]-p[1])-(q[1]-p[1])
 function simple(p){if(p.length<3)return false;let area=0;for(let i=0;i<p.length;i++){const a=p[i],b=p[(i+1)%p.length];area+=a[0]*b[1]-b[0]*a[1];for(let j=i+1;j<p.length;j++)if(j!==i+1&&!(i===0&&j===p.length-1)&&intersect(a,b,p[j],p[(j+1)%p.length]))return false}return Math.abs(area)>1e-4}
 function validHole(d,h){const host=d.objects.find(o=>o.id===h.host);if(!host||!simple(h.points)||!h.points.every(p=>inside(p,host.points)))return false;const crossing=(a,b)=>a.some((p,i)=>b.some((q,j)=>intersect(p,a[(i+1)%a.length],q,b[(j+1)%b.length])));if(crossing(h.points,host.points))return false;return holes(d,host).filter(o=>o.id!==h.id).every(o=>!crossing(h.points,o.points)&&!h.points.some(p=>inside(p,o.points))&&!o.points.some(p=>inside(p,h.points)))}
 function validGeometry(d){return d.objects.filter(o=>['plane','wall'].includes(o.type)).every(o=>simple(o.points))&&d.objects.filter(o=>o.type==='hole').every(o=>validHole(d,o))}
-function nextName(d,type){d.counters=d.counters||{};let n=d.counters[type]||0;const prefix=names[type];for(const o of d.objects){const m=o.name?.match(new RegExp('^'+prefix+'(\\d+)$'));if(m)n=Math.max(n,+m[1])}let name;do{name=prefix+(++n)}while(d.objects.some(o=>o.name===name));d.counters[type]=n;return name}
+// Component labels share one separator and a document-wide name space.
+const normalizeName=value=>String(value??'').trim().replace(/\s*[.．。·•・⋅‧…]+\s*/gu,'_').replace(/_+/g,'_');
+const numberedName=(prefix,n)=>prefix.replace(/_+$/,'')+'_'+String(n).padStart(3,'0');
+function availableName(used,value){
+ if(!used.has(value))return value;
+ const match=value.match(/^(.*)_(\d+)$/),prefix=match?match[1]:value;let n=match?Number(match[2]):1;
+ if(!Number.isSafeInteger(n)||n<0||n>=Number.MAX_SAFE_INTEGER)n=1;
+ let name;do{name=numberedName(prefix,++n)}while(used.has(name));return name;
+}
+function uniqueName(d,value,exclude=[]){const name=normalizeName(value);if(!name)throw Error('组件名称不能为空');return availableName(new Set(d.objects.filter(o=>!exclude.includes(o.id)).map(o=>normalizeName(o.name))),name)}
+function renameComponents(d,ids,value){
+ const name=normalizeName(value);if(!name)throw Error('组件名称不能为空');const selected=new Set(ids),used=new Set(d.objects.filter(o=>!selected.has(o.id)).map(o=>normalizeName(o.name)));
+ for(const o of d.objects)if(selected.has(o.id)){o.name=availableName(used,name);used.add(o.name)}
+}
+function nextName(d,type){
+ d.counters=d.counters||{};let n=d.counters[type];if(!Number.isSafeInteger(n)||n<0||n>=Number.MAX_SAFE_INTEGER)n=0;
+ const prefix=names[type]||'组件',pattern=new RegExp('^'+prefix+'_?(\\d+)$'),used=new Set(d.objects.map(o=>normalizeName(o.name)));
+ for(const name of used){const m=name.match(pattern),value=m&&Number(m[1]);if(Number.isSafeInteger(value)&&value<Number.MAX_SAFE_INTEGER)n=Math.max(n,value)}
+ let name;do{name=numberedName(prefix,++n)}while(used.has(name));d.counters[type]=n;return name;
+}
+function derivedName(d,o,action='副本',reserved=new Set()){
+ const source=normalizeName(o.name)||names[o.type]||'组件',prefix=normalizeName(source.replace(new RegExp('(?:_'+action+'_?\\d+)+$'),'')+'_'+action),used=new Set([...d.objects.map(o=>normalizeName(o.name)),...reserved]);
+ let n=0;const pattern=new RegExp('^'+prefix.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'_(\\d+)$');
+ for(const name of used){const m=name.match(pattern),value=m&&Number(m[1]);if(Number.isSafeInteger(value)&&value<Number.MAX_SAFE_INTEGER)n=Math.max(n,value)}
+ let name;do{name=numberedName(prefix,++n)}while(used.has(name));reserved.add(name);return name;
+}
+function normalizeComponentNames(d){
+ // Reserve already valid labels first, so a legacy dotted name cannot steal one.
+ const used=new Set(d.objects.map(o=>normalizeName(o.name)).filter(Boolean)),claimed=new Set(),ordered=[...d.objects.filter(o=>o.name===normalizeName(o.name)),...d.objects.filter(o=>o.name!==normalizeName(o.name))];
+ for(const o of ordered){let name=normalizeName(o.name)||nextName(d,o.type);if(claimed.has(name))name=availableName(used,name);o.name=name;used.add(name);claimed.add(name)}
+}
 function base(d,type,pos){return {id:uid(),type,name:nextName(d,type),floor:d.activeFloor,position:pos||[600,400,0],orientation:I(),visible:true,locked:false,opacity:1}}
 function createObject(d,type,pos){const o=base(d,type,pos);if(type==='plane')Object.assign(o,{points:[[-120,-90],[120,-90],[120,90],[-120,90]],thickness:14,fill:'#dce8df',stroke:'#719483',width:1.5});
  if(type==='wall')Object.assign(o,{points:[[-120,0],[120,0],[120,180],[-120,180]],thickness:18,fill:'#dce6f2',stroke:'#7693af',width:1.5});
@@ -72,7 +102,7 @@ function normal(o){return mat(o.orientation||I(),o.type==='wall'?[0,1,0]:[0,0,1]
 function rotate(d,ids,axis,angle,pivot){const set=new Set(ids),roots=d.objects.filter(o=>set.has(o.id)&&o.type!=='hole'),R=axisRotation(axis,angle);for(const o of roots){const p=add(pivot,mat(R,sub(origin(d,o),pivot)));o.position=sub(p,[0,0,floor(d,o)?.height||0]);o.orientation=product(R,o.orientation);if(o.type==='text')o.textAngle+=(angle*180/Math.PI)}for(const h of d.objects.filter(o=>set.has(o.id)&&o.type==='hole'&&!set.has(o.host))){const p=h.points.reduce((a,b)=>[a[0]+b[0]/h.points.length,a[1]+b[1]/h.points.length],[0,0]),host=d.objects.find(o=>o.id===h.host),signed=angle*(dot(mat(host.orientation,host.type==='wall'?[0,-1,0]:[0,0,1]),axis)>=0?1:-1),c=Math.cos(signed),s=Math.sin(signed);h.points=h.points.map(q=>[p[0]+(q[0]-p[0])*c-(q[1]-p[1])*s,p[1]+(q[0]-p[0])*s+(q[1]-p[1])*c])}}
 function move(d,ids,delta,floorId=null){const set=new Set(ids);if(floorId){d.floors.find(f=>f.id===floorId).height+=delta[2];delta=[delta[0],delta[1],0]}for(const o of d.objects.filter(o=>set.has(o.id)&&o.type!=='hole'))o.position=add(o.position,delta);for(const h of d.objects.filter(o=>set.has(o.id)&&o.type==='hole'&&!set.has(o.host))){const host=d.objects.find(o=>o.id===h.host),v=mat(transpose(host.orientation),delta),q=faceLocal(host,v);h.points=h.points.map(p=>[p[0]+q[0],p[1]+q[1]])}}
 function expand(d,ids){const s=new Set(ids);let changed=true;while(changed){changed=false;for(const o of d.objects)if(s.has(o.id))for(const c of d.objects)if((o.group&&o.group===c.group||c.type==='hole'&&c.host===o.id)&&!s.has(c.id)){s.add(c.id);changed=true}}return [...s]}
-function duplicate(d,ids){const s=new Set(ids);for(const h of d.objects)if(h.type==='hole'&&s.has(h.host))s.add(h.id);const a=clone(d.objects.filter(o=>s.has(o.id))),map=new Map(a.map(o=>[o.id,uid()])),groups=new Map();for(const o of a){if(o.group&&!groups.has(o.group))groups.set(o.group,uid());o.id=map.get(o.id);o.name=nextName(d,o.type);if(o.group)o.group=groups.get(o.group);if(o.type==='hole'&&map.has(o.host))o.host=map.get(o.host);d.objects.push(o)}return a.map(o=>o.id)}
+function duplicate(d,ids){const s=new Set(ids);for(const h of d.objects)if(h.type==='hole'&&s.has(h.host))s.add(h.id);const a=clone(d.objects.filter(o=>s.has(o.id))),map=new Map(a.map(o=>[o.id,uid()])),groups=new Map();for(const o of a){if(o.group&&!groups.has(o.group))groups.set(o.group,uid());o.id=map.get(o.id);o.name=derivedName(d,o);if(o.group)o.group=groups.get(o.group);if(o.type==='hole'&&map.has(o.host))o.host=map.get(o.host);d.objects.push(o)}return a.map(o=>o.id)}
 function migrate(old){if(old.version===3)return old;const p={format:'level-spatial-editor',version:3,documents:[],activeDocument:old.activeDocument};for(const a of old.documents||[]){const d={id:a.id,type:a.pacing?'curve':'space',name:a.name,width:a.width,height:a.height,background:a.background,gridVisible:a.gridVisible??true,objects:[],counters:{},unit:a.unit||'单位'};
  if(a.pacing){const q=a.pacing,stages=[...q.stages].sort((a,b)=>a.start-b.start);d.curve={title:q.title,subtitle:q.subtitle,xAxis:{mode:'numeric',title:'时间',unit:'min',min:0,max:q.duration,ticks:[0,.25,.5,.75,1].map(t=>({id:uid(),label:String(+(q.duration*t).toFixed(2)),value:q.duration*t}))},yAxis:{title:'强度',min:0,max:100,ticks:[0,25,50,75,100].map((v,i)=>({id:uid(),label:['平静','舒缓','紧张','激烈','高潮'][i],value:v}))},stages:stages.map(s=>({id:s.id,label:s.name,color:s.color,start:s.start/q.duration})),events:q.events.map(e=>{let j=0;for(let i=1;i<stages.length;i++)if(e.time>=stages[i].start)j=i;const s=stages[j],end=stages[j+1]?.start??q.duration;return {id:e.id,label:e.label,x:e.time/q.duration,y:e.intensity/100,labelPosition:e.labelPosition,stage:s.id,fraction:Math.max(0,Math.min(1,(e.time-s.start)/(end-s.start)))}}),showBands:true}}
  else{d.floors=clone(a.floors||[{id:uid(),name:'Base Floor',height:0,visible:true}]);d.activeFloor=a.activeFloor||d.floors[0].id}
@@ -84,5 +114,5 @@ function validate(input){if(!input||!['level-spatial-editor','thunder-temple-spa
  for(const h of d.objects.filter(o=>o.type==='hole')){const host=d.objects.find(o=>o.id===h.host);if(!host||!['plane','wall'].includes(host.type)||host.floor!==h.floor||!validHole(d,h))throw Error('空洞归属或轮廓不正确')}
  if(d.type==='curve'){const c=d.curve;if(!c||typeof c.title!=='string'||typeof c.subtitle!=='string'||!Array.isArray(c.stages)||!c.stages.length||c.stages.length>50||!Array.isArray(c.events)||c.events.length>500)throw Error('曲线数据不正确');for(const axis of [c.xAxis,c.yAxis]){if(!axis||typeof axis.title!=='string'||!num(axis.min)||!num(axis.max)||axis.max<=axis.min||!Array.isArray(axis.ticks)||axis.ticks.length<2||axis.ticks.length>50||axis.ticks.some(t=>!id(t.id)||typeof t.label!=='string'||!num(t.value)||t.value<axis.min||t.value>axis.max)||new Set(axis.ticks.map(t=>t.value)).size!==axis.ticks.length)throw Error('坐标轴刻度不正确')}if(!['numeric','stages'].includes(c.xAxis.mode)||c.stages.some(s=>!id(s.id)||typeof s.label!=='string'||!color(s.color)))throw Error('阶段不正确');if(c.events.some(e=>!id(e.id)||typeof e.label!=='string'||!num(e.x)||!num(e.y)||e.x<0||e.x>1||e.y<0||e.y>1||!c.stages.some(s=>s.id===e.stage)||!num(e.fraction)||e.fraction<0||e.fraction>1))throw Error('事件不正确')}
  }p.format='level-spatial-editor';p.version=3;return p}
-return {faceNormal,stairProfile,clone,uid,names,I,add,sub,mul,dot,cross,mat,transpose,product,axisRotation,origin,world,local,facePoint,faceLocal,normal,floor,holes,inside,simple,validHole,validGeometry,nextName,createObject,createDocument,geometry,controls,viewBasis,project,unproject,rotate,move,expand,duplicate,validate};
+return {faceNormal,stairProfile,clone,uid,names,I,add,sub,mul,dot,cross,mat,transpose,product,axisRotation,origin,world,local,facePoint,faceLocal,normal,floor,holes,inside,simple,validHole,validGeometry,normalizeName,uniqueName,renameComponents,normalizeComponentNames,nextName,derivedName,createObject,createDocument,geometry,controls,viewBasis,project,unproject,rotate,move,expand,duplicate,validate};
 })();

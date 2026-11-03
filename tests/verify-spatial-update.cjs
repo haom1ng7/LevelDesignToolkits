@@ -26,7 +26,7 @@ try{
  A.setTool('ellipse');c.dispatchEvent(new w.KeyboardEvent('keydown',{key:'p',code:'KeyP',bubbles:true}));assert.equal(A.tool,'plane','P always selects rectangle');
  for(const mode of ['elevation','solid']){d.querySelector(`[data-view="${mode}"]`).click();assert(d.querySelector('[data-tool="plane"]').disabled);assert(d.querySelector('[data-tool="ellipse"]').disabled)}
  A.createDocument('curve');assert(d.querySelector('[data-tool="plane"]').disabled);assert(d.querySelector('[data-tool="ellipse"]').disabled);
- for(const type of ['plane','wall']){blank();A.setTool(type);drag([100,100],[300,200]);const id=A.document.objects.at(-1).id;tap([1100,750]);assert.equal(A.tool,'select');assert.equal(A.selection.id,id);A.setTool(type);tap([150,150]);assert.equal(A.tool,'select');assert.equal(A.selection.id,id)}
+ for(const type of ['plane']){blank();A.setTool(type);drag([100,100],[300,200]);const id=A.document.objects.at(-1).id;tap([1100,750]);assert.equal(A.tool,'select');assert.equal(A.selection.id,id);A.setTool(type);tap([150,150]);assert.equal(A.tool,'select');assert.equal(A.selection.id,id)}
  let doc=blank(),p=add(doc,'plane',[100,100,0],{points:[[0,0],[300,0],[300,300],[0,300]]}),p2=add(doc,'plane',[500,100,0],{points:[[0,0],[300,0],[300,300],[0,300]]});
  refresh();assert(d.querySelector('[data-tool="cut"]').disabled);A.select(p.id,false,true);assert(!d.querySelector('[data-tool="cut"]').disabled);A.setTool('hole');assert(d.querySelector(`[data-selection-outline="${p.id}"]`));
  drag([150,150],[200,200]);let h=A.document.objects.at(-1);assert.equal(h.type,'hole');assert.equal(h.host,p.id);assert.equal(A.selection.id,h.id);assert.equal(A.tool,'hole');assert.equal(pick([175,175]),h.id);

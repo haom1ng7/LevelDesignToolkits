@@ -1,7 +1,21 @@
 // Solid views always use a perspective camera; plan/elevation retain drafting projection.
 const cameraKeys=new Set();
 let cameraFrame=null,cameraTickAt=0,cameraMoveSpeed=600;
-function syncPerspectiveControls(){document.querySelectorAll('[data-action="zoom-in"],[data-action="zoom-out"]').forEach(b=>b.disabled=view.mode==='solid'||!doc())}
+function cameraMoveSpeedText(){return String(Math.round(cameraMoveSpeed/10)/10)}
+function syncPerspectiveControls(){
+ const d=doc(),solid=d?.type==='space'&&view.mode==='solid',label=$('#zoom-label');
+ document.querySelectorAll('[data-action="zoom-in"],[data-action="zoom-out"]').forEach(b=>{
+  const increase=b.dataset.action==='zoom-in',name=solid?(increase?'提高摄像机速率':'降低摄像机速率'):(increase?'放大':'缩小');
+  b.disabled=!d||solid&&(increase?cameraMoveSpeed>=100000:cameraMoveSpeed<=10);b.setAttribute('aria-label',name);b.title=solid?(increase?'提高摄像机在空间中的移动速率':'降低摄像机在空间中的移动速率'):(increase?'放大图稿在视窗中的显示比例':'缩小图稿在视窗中的显示比例');
+ });
+ label.textContent=solid?cameraMoveSpeedText():d?Math.round(d.width/camera.w*100)+'%':'100%';
+ label.title=solid?'摄像机的移动速率，单位为米每秒':'图稿在视窗中的显示比例';label.setAttribute('aria-label',solid?'摄像机移动速率：'+label.textContent+' m/s':'视图缩放：'+label.textContent);
+}
+function changeCameraMoveSpeed(steps){
+ if(doc()?.type!=='space'||view.mode!=='solid')return;
+ cameraMoveSpeed=clamp(cameraMoveSpeed*Math.pow(1.25,steps),10,100000);syncPerspectiveControls();
+ status('摄像机移动速率：'+cameraMoveSpeedText()+' m/s · ＋/− 或右键＋滚轮调节');
+}
 function enablePerspectiveCamera(frame=false){
  if(view.fly||view.mode!=='solid'||doc()?.type!=='space')return;
  const b=M.viewBasis(doc(),view),center=[camera.x+camera.w/2,camera.y+camera.h/2],target=M.unproject(center,b,b.origin),focal=camera.w*.9;
@@ -28,7 +42,7 @@ function adjustCameraMoveSpeed(e){
  if(doc()?.type!=='space'||view.mode!=='solid'||!(e.buttons&2)&&drag?.kind!=='orbit')return false;
  // Treat a wheel detent as one step, while retaining fine trackpad deltas.
  const delta=e.deltaY*(e.deltaMode===1?16:e.deltaMode===2?800:1);
- if(delta){cameraMoveSpeed=clamp(cameraMoveSpeed*Math.pow(1.25,clamp(-delta/100,-4,4)),10,100000);if(drag?.kind==='orbit')drag.rateAdjusted=true;status('摄像机移动速率：'+Math.round(cameraMoveSpeed)+' cm/s · 右键＋滚轮调节')}
+ if(delta){if(drag?.kind==='orbit')drag.rateAdjusted=true;changeCameraMoveSpeed(clamp(-delta/100,-4,4))}
  return true;
 }
 document.addEventListener('keyup',e=>{const k=cameraKey(e);if(k)cameraKeys.delete(k);if(!cameraKeys.size)stopCameraNavigation()});

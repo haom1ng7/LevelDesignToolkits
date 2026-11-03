@@ -60,7 +60,7 @@ M.cutComponents=(d,id,path,footprint=false)=>{
  const expected=Math.abs(area(input.points))-input.holes.reduce((s,r)=>s+Math.abs(area(r)),0),actual=parts.reduce((s,p)=>s+Math.abs(area(p.points))-p.holes.reduce((n,r)=>n+Math.abs(area(r)),0),0);
  if(Math.abs(expected-actual)>Math.max(.001,expected*1e-7)||parts.some(p=>!M.simple(p.points)))throw Error('无法形成有效的切割区域，请调整取点');
  const at=d.objects.indexOf(o),children=new Set(d.objects.filter(h=>h.type==='hole'&&h.host===id).map(h=>h.id));
- const objects=parts.map((p,i)=>{const n=M.clone(o);n.id=i?M.uid():o.id;n.name=o.name+' · 切割'+(i+1);delete n.group;delete n.shape;delete n.curves;delete n.wallPath;delete n.wallFootprint;delete n.cutouts;
+ const reservedNames=new Set(),objects=parts.map((p,i)=>{const n=M.clone(o);n.id=i?M.uid():o.id;n.name=M.derivedName(d,o,'切割',reservedNames);delete n.group;delete n.shape;delete n.curves;delete n.wallPath;delete n.wallFootprint;delete n.cutouts;
   if(footprint){n.wallFootprint=p.points;M.syncWallProfile(n)}else n.points=p.points;
   if(p.holes.length)n.cutouts=p.holes.map(points=>{const h={points};if(n.type==='wall')h.cut=footprint?{origin:[0,0,0],r:[1,0,0],d:[0,1,0],n:[0,0,1]}:{origin:[0,0,0],r:[1,0,0],d:[0,0,1],n:[0,-1,0]};return h});structural(n);return n});
  const hidden=d.objects.filter(h=>children.has(h.id)&&h.visible===false).map(h=>{const host=objects.find(n=>M.validHole({...d,objects:[...d.objects.filter(o=>o.id!==id&&!children.has(o.id)),...objects,{...h,host:n.id}]},{...h,host:n.id}));if(!host)throw Error('切割线经过隐藏的开口，请先显示该开口再切割');return {...M.clone(h),host:host.id}});

@@ -2,7 +2,7 @@
 const shellNarrow=window.matchMedia?.('(max-width: 990px)');
 const shellDark=window.matchMedia?.('(prefers-color-scheme: dark)');
 function shellIsDark(){return document.documentElement.dataset.theme?document.documentElement.dataset.theme==='dark':!!shellDark?.matches}
-function syncShellTheme(){const b=$('#theme-toggle'),dark=shellIsDark();b.setAttribute('aria-pressed',String(dark));b.setAttribute('aria-label',dark?'切换到浅色界面':'切换到深色界面');b.title=dark?'切换到浅色界面':'切换到深色界面';b.innerHTML=dark?'<svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 1v3m0 16v3M1 12h3m16 0h3M4 4l2 2m12 12 2 2M4 20l2-2M18 6l2-2"/></svg>':'<svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4v16"/><path d="M12 4a8 8 0 0 1 0 16Z" fill="currentColor" stroke="none"/></svg>'}
+function syncShellTheme(){const b=$('#theme-toggle'),dark=shellIsDark();b.setAttribute('aria-pressed',String(dark));b.setAttribute('aria-label',dark?'切换到浅色界面':'切换到深色界面');b.title=dark?'当前界面为深色':'当前界面为浅色';b.innerHTML=dark?'<svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 1v3m0 16v3M1 12h3m16 0h3M4 4l2 2m12 12 2 2M4 20l2-2M18 6l2-2"/></svg>':'<svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4v16"/><path d="M12 4a8 8 0 0 1 0 16Z" fill="currentColor" stroke="none"/></svg>'}
 function syncShellPanes(){const active=document.body.dataset.pane||'canvas',narrow=!!shellNarrow?.matches;for(const name of ['tools','canvas','properties']){const el=$('#workspace-'+name);el.inert=narrow&&name!==active}document.querySelectorAll('[data-shell-pane]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.shellPane===active)))}
 function setShellPane(name){if(!['tools','canvas','properties'].includes(name))return;finishEditing();document.body.dataset.pane=name;syncShellPanes();if(name==='canvas')requestAnimationFrame(()=>{if(doc())fit()})}
 // Presentation changes follow real editor state, without per-frame observers or save writes.
@@ -49,7 +49,7 @@ function syncToolGroups(){
  for(const group of toolGroups){
   const trigger=group.querySelector('[data-tool-group]'),items=[...group.querySelectorAll('[data-tool]')],active=items.find(b=>b.dataset.tool===tool);
   trigger.disabled=items.every(b=>b.disabled);trigger.classList.toggle('active',!!active);
-  trigger.title=trigger.disabled?'当前图稿或视图不支持此组工具':active?'当前：'+active.textContent.trim()+' · 展开工具菜单':'展开工具菜单';
+  trigger.title=trigger.disabled?'当前图稿或视图不支持此组工具':active?toolDescription(active.dataset.tool):{shapes:'创建不同轮廓的平面组件',buildings:'创建墙壁与不同类型的梯子',sets:'计算实体间的交集与差集',annotations:'为图稿添加文字、标记与路线'}[trigger.dataset.toolGroup];
   for(const item of items)if(item.getAttribute('role')==='menuitemradio')item.setAttribute('aria-checked',String(item===active));
  }
 }

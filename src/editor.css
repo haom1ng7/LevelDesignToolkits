@@ -81,8 +81,8 @@ main{display:flex;flex-direction:column;min-height:0;min-width:0;overflow:hidden
 #backgrounds{display:flex;align-items:center;gap:.4375rem;padding:.25rem .375rem;border-left:1px solid var(--ark-rule)}#backgrounds button{width:1.125rem;height:1.125rem;padding:0;border:1px solid var(--ark-ink-2)}#backgrounds button.active{outline:2px solid var(--ark-focus);outline-offset:2px}
 #elevation-tabs{flex:none;display:flex;align-items:center;flex-wrap:wrap;gap:.375rem;padding:.4375rem 1rem;border-bottom:1px solid var(--ark-rule);font-size:.6875rem}#elevation-tabs button{padding:.375rem .625rem}#elevation-scope{width:9rem;margin-left:auto;padding:.375rem}#face-label{color:var(--ark-ink-2)}
 #space-options{flex:none;padding:.4375rem 1rem;background:var(--ark-panel);border-bottom:1px solid var(--ark-rule);gap:1rem}#creation-options{flex:none;display:flex;align-items:center;flex-wrap:wrap;gap:.625rem;padding:.4375rem 1rem;border-bottom:1px solid var(--ark-rule);font-size:.6875rem}#creation-options label{display:flex;align-items:center;gap:.5rem}#creation-options span{color:var(--ark-ink-2)}#creation-shape{width:10rem;padding:.3125rem}
-#stage{flex:1;min-height:0;position:relative;overflow:hidden}#canvas{width:100%;height:100%;display:block;touch-action:none;outline:none;font-family:'Microsoft YaHei','Segoe UI',sans-serif}#canvas:focus-visible{outline:2px solid var(--ark-focus);outline-offset:-3px}.object{cursor:default}.object.locked{cursor:not-allowed}.hit{fill:none;stroke:transparent;stroke-width:18}.handle,.midpoint{cursor:crosshair}#canvas.drawing .object{cursor:default}#canvas .rotate-ring{cursor:grab}#canvas.rotating .rotate-ring{cursor:grabbing}.pacing-node{cursor:move}
-.canvas-bottom{flex:none;min-height:2.5rem;display:flex;align-items:center;justify-content:space-between;gap:.75rem;padding:0 1rem;border-top:1px solid var(--ark-rule);background:var(--ark-panel);color:var(--ark-ink-2);font-size:.6875rem}#selection-info{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.zoom{display:flex;align-items:center;gap:.125rem;flex:none}.zoom button{min-width:2.25rem;min-height:2.25rem;padding:.25rem;font-size:1.125rem}.zoom span{width:2.625rem;text-align:center;font-size:.6875rem}
+#stage{flex:1;min-height:0;position:relative;overflow:hidden}#canvas{width:100%;height:100%;display:block;touch-action:none;outline:none;font-family:'Microsoft YaHei','Segoe UI',sans-serif}.object{cursor:default}.object.locked{cursor:not-allowed}.hit{fill:none;stroke:transparent;stroke-width:18}.handle,.midpoint{cursor:crosshair}#canvas.drawing .object{cursor:default}#canvas .rotate-ring{cursor:grab}#canvas.rotating .rotate-ring{cursor:grabbing}.pacing-node{cursor:move}
+.canvas-bottom{flex:none;min-height:2.5rem;display:flex;align-items:center;justify-content:space-between;gap:.75rem;padding:0 1rem;border-top:1px solid var(--ark-rule);background:var(--ark-panel);color:var(--ark-ink-2);font-size:.6875rem}#selection-info{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.zoom{display:flex;align-items:center;gap:.125rem;flex:none}.zoom button{min-width:2.25rem;min-height:2.25rem;padding:.25rem;font-size:1.125rem}.zoom span{min-width:2.625rem;padding:0 .25rem;text-align:center;font-size:.6875rem;white-space:nowrap;font-variant-numeric:tabular-nums}
 /* Empty stage: one blueprint layer and two direct, illustrated entry actions. */
 body[data-document=empty] .canvas-top,body[data-document=empty] .workspace-readout{display:none}
 #welcome{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.75rem;padding:2rem;overflow:auto;background-color:var(--ark-paper);background-image:linear-gradient(color-mix(in srgb,var(--ark-rule) 40%,transparent) 1px,transparent 1px),linear-gradient(90deg,color-mix(in srgb,var(--ark-rule) 40%,transparent) 1px,transparent 1px);background-size:3rem 3rem}
@@ -101,15 +101,15 @@ body[data-document=empty] .canvas-top,body[data-document=empty] .workspace-reado
 .right .inspector-section{margin:.625rem 0 0;border:1px solid var(--ark-rule)}
 .right .inspector-section>summary{padding:.625rem .75rem;background:var(--ark-paper);font-size:.75rem;font-weight:700;color:var(--ark-ink)}
 .inspector-section-body{padding:.25rem .625rem .625rem}
+.right .inspector-section-body{padding-inline:.5rem}
 .inspector-section .property{display:grid;grid-template-columns:6rem minmax(0,1fr);align-items:center;gap:.625rem;margin:0;min-height:2.625rem;padding:.375rem 0;border-bottom:1px solid color-mix(in srgb,var(--ark-rule) 55%,transparent)}
 .inspector-section .property:last-child{border-bottom:0}
 .inspector-section .property>label{margin:0;font-size:.6875rem;overflow-wrap:anywhere}
 .inspector-section .property>input,.inspector-section .property>select,.inspector-section .property>textarea{padding:.375rem .5rem;font-size:.75rem}
 .inspector-section .paired-fields{display:block}
-.transform-row{display:grid;grid-template-columns:3rem minmax(0,1fr);align-items:center;gap:.5rem;padding:.5rem 0;border-bottom:1px solid var(--ark-rule)}
+.transform-row{display:grid;grid-template-columns:3rem minmax(0,1fr);align-items:center;gap:.5rem;margin-inline:-.5rem;padding:.625rem .5rem;border-bottom:1px solid var(--ark-rule)}
 .transform-row:last-child{border-bottom:0}
-.transform-label{font-size:.6875rem;font-weight:600}
-.right .transform-label small{margin:0;font-size:.5625rem;line-height:1.4;font-weight:400}
+.transform-label{align-self:center;font-size:.6875rem;font-weight:600;line-height:1.4;white-space:nowrap}
 .transform-values{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.25rem}
 .axis-field{display:flex;align-items:stretch;min-width:0;--axis-color:#b4433e;border:1px solid var(--ark-rule);background:var(--ark-panel);cursor:ew-resize;touch-action:pan-y}
 .axis-field.axis-1{--axis-color:#38784e}.axis-field.axis-2{--axis-color:#356ca3}
@@ -120,6 +120,19 @@ body[data-document=empty] .canvas-top,body[data-document=empty] .workspace-reado
 .axis-field input::-webkit-inner-spin-button,.axis-field input::-webkit-outer-spin-button{appearance:none;margin:0}
 .axis-field:focus-within{outline:1px solid var(--ark-ink)}
 .axis-field input:focus-visible{outline-offset:0}
+.transform-row,[data-inspector-section="parameters"] .property{position:relative;isolation:isolate;transition:background-color 120ms ease-out}
+[data-inspector-section="parameters"] .property{margin-inline:-.5rem;padding-inline:.5rem}
+@media(hover:hover){
+ .transform-row:hover,[data-inspector-section="parameters"] .property:hover{background:color-mix(in srgb,var(--ark-ink) 7%,transparent)}
+}
+.property-flash::after{content:'';position:absolute;inset:0;z-index:2;pointer-events:none;background:color-mix(in srgb,var(--ark-signal) 32%,transparent);box-shadow:inset 2px 0 var(--ark-focus);animation:property-feedback 360ms ease-out both}
+.inspector-actions.button-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.375rem;margin-top:1rem}
+.inspector-actions.button-row>button{display:flex;align-items:center;justify-content:center;min-width:0;min-height:2rem;padding:.375rem .25rem;font-size:.6875rem;line-height:1;text-align:center;white-space:nowrap}
+@keyframes property-feedback{from{opacity:1}to{opacity:0}}
+@media(prefers-reduced-motion:reduce){
+ .transform-row,[data-inspector-section="parameters"] .property{transition:none}
+ .property-flash::after{animation:none;opacity:.6}
+}
 .inspector-section input::placeholder,.inspector-section textarea::placeholder{color:var(--ark-ink-2);opacity:1}
 .mixed-color{display:flex;align-items:center;gap:.5rem;font-size:.6875rem}
 .mixed-color input[type=color]{background:repeating-linear-gradient(135deg,var(--ark-chip) 0 4px,var(--ark-panel) 4px 8px)}
@@ -175,4 +188,8 @@ dialog{border-color:var(--ark-rule);border-top:3px solid var(--ark-signal);box-s
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 
 /* Perspective GPU layer; the SVG above it keeps pointer handling and edit overlays. */
-#solid-webgl{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}#solid-webgl[hidden]{display:none}#canvas{position:relative}
+#solid-webgl{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}#solid-webgl[hidden]{display:none}#canvas{position:relative;z-index:1}
+/* Keep drawing actions and view controls in separate rows above both render layers. */
+.canvas-hud{position:absolute;z-index:3;bottom:1.25rem;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:.5rem;width:max-content;max-width:calc(100% - 2rem);pointer-events:none}
+.canvas-hud>#drawing-hint,.canvas-hud>#view-controls{position:static;transform:none;max-width:100%;pointer-events:auto}
+@media(max-width:660px){.canvas-hud{bottom:.75rem}}

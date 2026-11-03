@@ -1,7 +1,12 @@
 // Component details share one schema for single and multiple selections.
 const inspectorSections=new Map();
+const propertyClipboardHint='Shift＋右键复制，Shift＋左键粘贴';
 function propertyObjects(){return selected().filter(o=>o.type!=='hole'||!selection.includes(o.host))}
 function inspectorSection(key,label,html){return `<details class="inspector-section" data-inspector-section="${key}" ${inspectorSections.get(key)!==false?'open':''}><summary>${label}</summary><div class="inspector-section-body">${html}</div></details>`}
+function componentActionsMarkup(){
+ const isLocked=locked();
+ return `<div class="button-row inspector-actions" role="group" aria-label="组件操作"><button data-action="front">上移</button><button data-action="back">下移</button><button data-action="lock" aria-label="${isLocked?'解除锁定编辑':'锁定编辑'}">${isLocked?'解锁':'锁定'}</button><button class="danger" data-action="delete">删除</button></div>`;
+}
 document.addEventListener('toggle',e=>{const key=e.target.dataset?.inspectorSection;if(key)inspectorSections.set(key,e.target.open)},true);
 document.addEventListener('focusin',e=>{if(e.target.closest('#properties')&&e.target.dataset.scope)lastFormKey=null});
 function propertyRotation(o){
@@ -12,9 +17,9 @@ function propertyOrientation(angles){return M.product(M.product(M.axisRotation([
 function propertyDimensions(o){const b=solidLocalBounds(o);return M.sub(b.max,b.min)}
 function transformFields(o){
  if(o.type==='hole')return '';
- const row=(label,keys,values,unit,titles)=>`<div class="transform-row" role="group" aria-label="${label}"><span class="transform-label">${label}<small>${unit}</small></span><div class="transform-values">${keys.map((key,i)=>`<label class="axis-field axis-${i}" data-property-scrub="${key}" title="${titles[i]} · 左右拖动调值，单击输入；Shift 精细调整，数值不受网格吸附限制"><span aria-hidden="true">${'XYZ'[i]}</span><input id="prop-${key}" data-scope="prop" data-key="${key}" type="number" step="any" ${key.startsWith('dimension')?'min="0.01"':''} value="${+values[i].toFixed(4)}" aria-label="${titles[i]}"></label>`).join('')}</div></div>`;
- let html=row('位置',['px','py','pz'],o.position,'cm',['X 位置','Y 位置','Z 位置（相对楼层）']);
- if(solidTypes.includes(o.type))html+=row('旋转',['rx','ry','rz'],propertyRotation(o),'度',['X 旋转 / Roll','Y 旋转 / Pitch','Z 旋转 / Yaw'])+row('大小',['dimensionX','dimensionY','dimensionZ'],propertyDimensions(o),'cm',['本地 X 长度','本地 Y 宽度','本地 Z 高度']);
+ const row=(label,keys,values,titles)=>`<div class="transform-row" role="group" aria-label="${label}"><span class="transform-label" title="组件的三轴${label}参数">${label}</span><div class="transform-values">${keys.map((key,i)=>`<label class="axis-field axis-${i}" data-property-scrub="${key}" title="${titles[i]}"><span aria-hidden="true">${'XYZ'[i]}</span><input id="prop-${key}" data-scope="prop" data-key="${key}" type="number" step="any" ${key.startsWith('dimension')?'min="0.01"':''} value="${+values[i].toFixed(4)}" aria-label="${titles[i]}"></label>`).join('')}</div></div>`;
+ let html=row('位置',['px','py','pz'],o.position,['组件在世界 X 轴上的位置','组件在世界 Y 轴上的位置','组件相对楼层的高度']);
+ if(solidTypes.includes(o.type))html+=row('旋转',['rx','ry','rz'],propertyRotation(o),['组件绕 X 轴的旋转角度','组件绕 Y 轴的旋转角度','组件绕 Z 轴的旋转角度'])+row('大小',['dimensionX','dimensionY','dimensionZ'],propertyDimensions(o),['组件本地 X 轴的长度','组件本地 Y 轴的宽度','组件本地 Z 轴的高度']);
  return inspectorSection('transform','变换',html);
 }
 function propertyValue(o,scope,key){
@@ -49,8 +54,9 @@ function selectionPropertyMarkup(){
    input.value='#000000';input.setAttribute('value','#000000');const wrapper=document.createElement('div');wrapper.className='mixed-color';input.replaceWith(wrapper);wrapper.append(input);const note=document.createElement('span');note.textContent='多个值';wrapper.append(note);
   }else{input.value='';input.setAttribute('value','');input.placeholder='多个值';if(input.tagName==='TEXTAREA')input.textContent=''}
  }
- if(objects.length>1){root.querySelectorAll('small:not(.transform-label small),.group-note,button').forEach(e=>e.remove());root.querySelectorAll('.paired-fields').forEach(e=>{if(!e.children.length)e.remove()})}
+ if(objects.length>1){root.querySelectorAll('small,.group-note,button').forEach(e=>e.remove());root.querySelectorAll('.paired-fields').forEach(e=>{if(!e.children.length)e.remove()})}
  root.querySelectorAll('.inspector-section').forEach(e=>{if(!e.querySelector('[data-scope]'))e.remove()});
+ root.querySelectorAll('[data-inspector-section="parameters"] .property').forEach(e=>e.title='组件参数：'+e.querySelector('label').textContent.trim());
  const holder=document.createElement('div');holder.append(root);return holder.innerHTML;
 }
 function syncPropertyInputs(active){
@@ -85,11 +91,90 @@ function applyObjectProperty(o,scope,key,value){
   M.updateCounts(o);
 }
 function applyComponentProperty(scope,key,value){
+ if(scope==='prop'&&key==='name'){M.renameComponents(doc(),propertyObjects().map(o=>o.id),value);return}
  if(key==='floor'){
   const ids=childIds();doc().objects.filter(o=>ids.has(o.id)).forEach(o=>o.floor=value);doc().activeFloor=value;return;
  }
  for(const o of propertyObjects())applyObjectProperty(o,scope,key,value);
 }
+
+// A separate in-editor clipboard keeps property values independent of copied components.
+let propertyClipboard=null,propertyClipboardGesture=null,propertyClipboardClickUntil=0,propertyClipboardContextUntil=0;
+const propertyFlashTimers=new WeakMap();
+function flashPropertyValue(target){
+ const {scope,key}=target.inputs[0].dataset,input=$(`#properties [data-scope="${scope}"][data-key="${key}"]`),row=input?.closest('.transform-row,.property');if(!row)return;
+ clearTimeout(propertyFlashTimers.get(row));row.classList.remove('property-flash');void row.offsetWidth;row.classList.add('property-flash');
+ propertyFlashTimers.set(row,setTimeout(()=>row.classList.remove('property-flash'),window.matchMedia?.('(prefers-reduced-motion: reduce)').matches?160:400));
+}
+function propertyClipboardTarget(target){
+ const section=target.closest('#properties [data-inspector-section="transform"],#properties [data-inspector-section="parameters"]');
+ if(!section)return null;
+ const field=target.closest('.axis-field,.property,.transform-row');if(!field)return null;
+ const inputs=propertyControls(field);if(!inputs.length)return null;
+ return {inputs,label:field.getAttribute('aria-label')||field.querySelector('label')?.textContent||inputs[0].getAttribute('aria-label'),group:inputs.length>1?inputs.map(i=>i.dataset.key).join(','):null};
+}
+function propertyClipboardKind(input){return input.tagName==='SELECT'?'select':input.type==='number'?'number':input.type==='color'?'color':'text'}
+function copyPropertyValue(target){
+ const objects=propertyObjects();if(!objects.length)return;
+ const entries=target.inputs.map(input=>{
+  const {scope,key}=input.dataset,kind=propertyClipboardKind(input),values=objects.map(o=>propertyValue(o,scope,key));
+  if(values.some(v=>!sameProperty(v,values[0])))throw Error('多个值无法复制，请先选择单个组件或相同值');
+  const value=kind==='number'?values[0]:String(values[0]??'');
+  if(kind==='number'&&!Number.isFinite(value))throw Error('当前属性没有可复制的数值');
+  return {kind,value};
+ });
+ propertyClipboard={group:target.group,entries};flashPropertyValue(target);status(`已复制${target.label} · ${propertyClipboardHint}`);
+}
+function pastePropertyValue(target){
+ if(locked()||target.inputs.some(i=>i.disabled)){status('请先解除组件锁定再粘贴属性');return}
+ if(!propertyClipboard){status('请先 Shift＋右键复制属性');return}
+ if(propertyClipboard.group!==target.group||propertyClipboard.entries.some((entry,i)=>entry.kind!==propertyClipboardKind(target.inputs[i]))){status('属性类型不兼容，请复制相同类型的属性');return}
+ const entries=target.inputs.map((input,i)=>{
+  const {kind,value}=propertyClipboard.entries[i];
+  if(kind==='select'&&![...input.options].some(o=>!o.disabled&&o.value===value))throw Error('此属性不支持复制的选项');
+  if(kind==='number'&&(!Number.isFinite(value)||input.min!==''&&value<+input.min||input.max!==''&&value>+input.max))throw Error('复制的数值超出此属性的有效范围');
+  return {scope:input.dataset.scope,key:input.dataset.key,value};
+ });
+ lastFormKey=null;
+ const ok=mutate(()=>{
+  // Apply Euler triples together so intermediate gimbal lock cannot discard an axis.
+  if(target.group==='rx,ry,rz')for(const o of propertyObjects())o.orientation=propertyOrientation(entries.map(e=>e.value));
+  else for(const {scope,key,value} of entries)applyComponentProperty(scope,key,value);
+ },`已粘贴${target.label} · Ctrl＋Z 可撤销`);
+ if(ok)flashPropertyValue(target);
+}
+document.addEventListener('pointerdown',e=>{
+ propertyClipboardGesture=null;propertyClipboardClickUntil=0;propertyClipboardContextUntil=0;
+ if(!e.shiftKey||e.ctrlKey||e.metaKey||e.altKey||![0,2].includes(e.button)||e.isPrimary===false||drag||propertyScrub?.started)return;
+ const target=propertyClipboardTarget(e.target);if(!target)return;
+ // Delay the click action until release: Shift-drag still performs fine scrubbing.
+ propertyClipboardGesture={target,pointer:e.pointerId,button:e.button,x:e.clientX,y:e.clientY,moved:false};
+ e.preventDefault();
+},true);
+document.addEventListener('pointermove',e=>{
+ const a=propertyClipboardGesture;if(a&&e.pointerId===a.pointer&&Math.hypot(e.clientX-a.x,e.clientY-a.y)>=4)a.moved=true;
+},true);
+document.addEventListener('pointerup',e=>{
+ const a=propertyClipboardGesture;if(!a||e.pointerId!==a.pointer||e.button!==a.button)return;propertyClipboardGesture=null;
+ propertyClipboardClickUntil=performance.now()+250;
+ if(a.button===2)propertyClipboardContextUntil=performance.now()+250;
+ if(a.moved||Math.hypot(e.clientX-a.x,e.clientY-a.y)>=4||propertyScrub?.started||!a.target.inputs.every(i=>i.isConnected))return;
+ const released=propertyClipboardTarget(e.target);if(!released||released.inputs[0]!==a.target.inputs[0]||released.group!==a.target.group)return;
+ e.preventDefault();e.stopImmediatePropagation();finishPropertyScrub(true);
+ try{if(a.button===2)copyPropertyValue(a.target);else pastePropertyValue(a.target)}catch(error){status(error.message)}
+},true);
+document.addEventListener('contextmenu',e=>{
+ if(propertyClipboardTarget(e.target)&&(e.shiftKey||propertyClipboardGesture?.button===2||performance.now()<propertyClipboardContextUntil)){e.preventDefault();e.stopImmediatePropagation();if(!propertyClipboardGesture)propertyClipboardContextUntil=0}
+},true);
+document.addEventListener('click',e=>{
+ if(performance.now()<propertyClipboardClickUntil&&e.target.closest('#properties')){propertyClipboardClickUntil=0;propertyScrubClickUntil=0;e.preventDefault();e.stopImmediatePropagation()}
+},true);
+document.addEventListener('auxclick',e=>{if(performance.now()<propertyClipboardClickUntil&&e.target.closest('#properties')){e.preventDefault();e.stopImmediatePropagation()}},true);
+document.addEventListener('pointercancel',()=>propertyClipboardGesture=null,true);
+document.addEventListener('lostpointercapture',()=>propertyClipboardGesture=null,true);
+document.addEventListener('keydown',e=>{if(e.key==='Escape')propertyClipboardGesture=null},true);
+window.addEventListener('blur',()=>propertyClipboardGesture=null);
+window.addEventListener('resize',()=>propertyClipboardGesture=null);
 
 // Scrubbing previews from the original state and commits one history entry on release.
 let propertyScrub=null,propertyScrubClickUntil=0;

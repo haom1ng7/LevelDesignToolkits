@@ -16,7 +16,7 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('n
    if(to){const b=await screen(to);await page.mouse.down();await page.mouse.move(b.x,b.y,{steps:8});await page.mouse.up()}else await page.mouse.click(a.x,a.y);
    return (await state()).objects.at(-1);
   };
-  const samples=[['plane',[180,200],[400,360]],['ellipse',[800,440],[1000,600]],['wall',[180,480],[400,510]],['stairs',[540,260]],['ladder',[750,260]],['spiral',[990,260]]];
+  const samples=[['plane',[180,200],[400,360]],['ellipse',[800,440],[1000,600]],['wall',[290,360]],['stairs',[500,180],[620,380]],['ladder',[700,180],[780,200]],['spiral',[900,180],[1040,320]]];
   const first=[];for(const sample of samples)first.push(await create(...sample));
   assert.equal(first.length,(await state()).objects.length);assert.deepEqual(first.map(o=>o.type),['plane','plane','wall','stairs','ladder','spiral']);
   const color=first[0].fill;assert.equal(new Set(first.map(o=>o.fill)).size,1);assert.equal(new Set(first.map(o=>o.stroke)).size,1);checks.push('six real creation tools share one floor color');
@@ -33,7 +33,7 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('n
   await page.keyboard.press('Control+z');assert(!(await state()).objects.some(o=>o.id===extra.id));await page.keyboard.press('Control+Shift+z');assert.equal((await state()).objects.find(o=>o.id===extra.id).fill,second[0].fill);checks.push('manual color remains independent and creation undo/redo is atomic');
   await selectTool(page,'plane');const a=await screen([500,680]),b=await screen([650,730]),beforeCancel=JSON.stringify(await state());await page.mouse.move(a.x,a.y);await page.mouse.down();await page.mouse.move(b.x,b.y,{steps:8});await page.keyboard.press('Escape');await page.mouse.up();assert.equal(JSON.stringify(await state()),beforeCancel);checks.push('cancelled creation preserves colors and objects');
   await page.evaluate(()=>{StudioModel.validate(JSON.parse(JSON.stringify(SpatialEditor.project)));SpatialEditor.command('autosave')});const saved=await state();await page.reload();assert.deepEqual(await state(),saved);
-  const afterReload=await create('wall',[180,680],[400,710]);assert.equal(afterReload.fill,second[0].fill);assert.equal((await state()).objects.find(o=>o.id===second[0].id).fill,'#123456');checks.push('JSON/autosave restores default and custom colors');
+  const afterReload=await create('wall',[290,200]);assert.equal(afterReload.fill,second[0].fill);assert.equal((await state()).objects.find(o=>o.id===second[0].id).fill,'#123456');checks.push('JSON/autosave restores default and custom colors');
   await page.keyboard.press('Escape');await page.locator('[data-view="solid"]').click();await page.locator('[data-action="fit"]').click();await page.screenshot({path:path.join(out,'two-floors-solid.png'),fullPage:true});
   assert.deepEqual(errors,[]);assert.deepEqual(network,[]);fs.writeFileSync(path.join(out,'report.json'),JSON.stringify({checks,firstColor:color,secondColor:second[0].fill,errors,network},null,2));
   console.log('PASS Chrome floor colors: six creation tools, two floors, three views, manual color, undo/redo, cancellation and JSON/autosave. Evidence: qa/floor-colors/.');

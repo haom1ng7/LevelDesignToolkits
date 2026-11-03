@@ -15,11 +15,7 @@ function worldGizmoInfo(){
  if(!usesWorldGizmo()||!['select','move'].includes(tool))return null;
  let anchor;
  if(drag?.kind==='world-move')anchor=M.add(drag.gizmoAnchor,drag.applied||[0,0,0]);
- else{
-  const roots=selected().filter(o=>!['hole','text','route'].includes(o.type)),points=roots.flatMap(o=>o.type==='marker'?[M.add(M.origin(doc(),o),M.add(M.mul(scene.basis.r,-o.r*Math.SQRT1_2),M.mul(scene.basis.down,o.r*Math.SQRT1_2)))]:M.geometry(doc(),o).flatMap(f=>f.points));
-  if(!points.length)return null;const candidates=points.map(p=>({world:p,screen:M.project(p,scene.basis)})),b=bounds2(candidates.map(p=>p.screen)),corner=[b.min[0],b.max[1]];
-  anchor=candidates.reduce((best,p)=>Math.hypot(...M.sub(p.screen,corner))<Math.hypot(...M.sub(best.screen,corner))?p:best).world;
- }
+ else anchor=solidCenter();
  if(scene.basis.eye&&M.cameraDepth(anchor,scene.basis)<scene.basis.near)return null;return {anchor,p:M.project(anchor,scene.basis),vectors:worldProjection(scene.basis,anchor)};
 }
 function worldGizmoMarkup(){
@@ -28,13 +24,13 @@ function worldGizmoMarkup(){
  let s='<g class="world-gizmo" data-world-gizmo="true">';
  for(const axes of [[0,1],[0,2],[1,2]]){
   const [i,j]=axes,poly=[[15,15],[31,15],[31,31],[15,31]].map(([a,b])=>M.add(at(i,a),M.mul(vectors[j],b*k))),available=!!worldConstraint(axes,[0,0],scene.basis);
-  s+=`<g ${attrs(axes,available)}><title>拖动可沿 ${axes.map(i=>worldNames[i]).join('')} 平面移动</title><path class="gizmo-plane" d="${R.path(poly,true)}" stroke-width="${k*1.3}"/></g>`;
+  s+=`<g ${attrs(axes,available)}><title>组件在世界 ${axes.map(i=>worldNames[i]).join('')} 平面内的位置</title><path class="gizmo-plane" d="${R.path(poly,true)}" stroke-width="${k*1.3}"/></g>`;
  }
  for(let i=0;i<3;i++){
   const a=at(i,7),b=at(i,88),v=M.unit([...vectors[i],0]),normal=[-v[1],v[0]],tip=[b,M.add(M.sub(b,M.mul(v.slice(0,2),11*k)),M.mul(normal,5*k)),M.sub(M.sub(b,M.mul(v.slice(0,2),11*k)),M.mul(normal,5*k))],available=!!worldConstraint([i],[0,0],scene.basis),label=M.add(b,M.mul(v.slice(0,2),12*k));
-  s+=`<g ${attrs([i],available)}><title>拖动沿 ${worldNames[i]} 轴移动；Alt 拖动复制</title><path d="${R.path([a,b])}" stroke="white" stroke-width="${k*5}" pointer-events="none"/><path class="gizmo-axis" d="${R.path([a,b])}" stroke-width="${k*2.7}"/><path class="gizmo-tip" d="${R.path(tip,true)}" stroke="white" stroke-width="${k}"/><path d="${R.path([a,b])}" stroke="transparent" stroke-width="${k*13}"/><text x="${label[0]}" y="${label[1]+k*4}" font-size="${k*12}" text-anchor="middle" fill="${worldColors[i]}" stroke="white" stroke-width="${k*3}" paint-order="stroke" pointer-events="none">${worldNames[i]}</text></g>`;
+  s+=`<g ${attrs([i],available)}><title>组件在世界 ${worldNames[i]} 轴上的位置</title><path d="${R.path([a,b])}" stroke="white" stroke-width="${k*5}" pointer-events="none"/><path class="gizmo-axis" d="${R.path([a,b])}" stroke-width="${k*2.7}"/><path class="gizmo-tip" d="${R.path(tip,true)}" stroke="white" stroke-width="${k}"/><path d="${R.path([a,b])}" stroke="transparent" stroke-width="${k*13}"/><text x="${label[0]}" y="${label[1]+k*4}" font-size="${k*12}" text-anchor="middle" fill="${worldColors[i]}" stroke="white" stroke-width="${k*3}" paint-order="stroke" pointer-events="none">${worldNames[i]}</text></g>`;
  }
- return s+`<circle cx="${p[0]}" cy="${p[1]}" r="${k*3}" fill="white" stroke="#44536a" stroke-width="${k}" pointer-events="none"/></g>`;
+ return s+transformCenterMarkup(info.anchor,k)+'</g>';
 }
 function beginWorldMove(e,q){
  const target=e.target.closest('[data-world-handle]'),info=worldGizmoInfo();if(!target||!info)return false;const axes=target.dataset.worldHandle.split('').map(Number);
