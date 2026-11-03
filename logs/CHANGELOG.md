@@ -1087,3 +1087,13 @@
 - 影响文件：docs/空间图_立体.png、docs/曲线图_总览.png、logs/CHANGELOG.md；本次临时截屏驱动及检查报告在 qa/readme-ui/。
 - 验证：node qa/readme-ui/capture.cjs 最终通过，使用独立临时配置的真实无头 Chrome 载入当前 dist/index.html 及 data/qa-project.json，确认 WebGL 透视已绘制、当前建筑菜单、空间/曲线图切换、页面无横向溢出、README 两条图片引用均有效，无页面异常或在线请求。已查看两张新版完整截图，并在取景调整后复看立体图；临时 Node.js 检查两张 PNG 均为 1600×1000、文件有效通过。
 - 未运行：本次应用构建、整套 npm test、教程重建、Windows 封装及桌面冒烟；仅替换 README 引用的静态图片，未修改应用实现、帮助媒体或文档引用路径，使用当前已有最新离线网页截屏。
+
+## 2026-11-03 · 修复首页无响应及删除全部图稿后残留画布
+
+- 变更：SVG 画布改用实际的 hidden 属性控制显隐，并在页面模板中默认隐藏；修复空工程启动时透明画布挡住“空间图／曲线图”卡片，以及删除最后一张图稿后旧画面仍覆盖首页、看似卡死的问题。恢复首页后可直接点击卡片新建图稿，删除仍保留一次撤销／重做语义。
+- 变更：进入空工程状态时清除场景、编辑手柄、绘制／拖动状态和文字对比图像缓存，隐藏 GPU 画面与绘制提示；取消待启动的渲染定时器，并使已经开始的异步渲染结果失效，避免删除后旧画面重新出现。新增空工程专项回归并接入 npm test；重建项目快捷方式所指向的 dist/index.html，正式种子仍为空工程。
+- 影响文件：src/app.js、src/editor.html、package.json、tests/verify-empty-project.cjs、tests/browser-empty-project.cjs、dist/index.html、dist/build-report.json、logs/CHANGELOG.md；浏览器报告、截图和完整自动回归输出在 qa/empty-project/。
+- 验证：npm run build 成功；node tests/verify-empty-project.cjs 通过，覆盖 SVG 属性与实际显示、两张首页卡片、空间／曲线与混合工程删空、一次撤销重做、JSON 和空工程暂存、旧场景／手柄／提示清理、未启动与进行中的异步渲染取消。npm test 最终一次完整运行的 30 组全部通过，输出在 qa/empty-project/regressions.log。
+- 验证：node tests/browser-empty-project.cjs 修复前在真实 Chrome 中复现启动及删空后 canvasDisplay 为 block、两张卡片均无法命中，随后断言失败；最终在独立临时配置的真实无头 Chrome 中通过首页卡片与删除按钮实际点击、平面／立面／WebGL 立体／曲线图、撤销重做、删空混合工程与暂存重载、重新创建，以及 1440px／390px 与深浅主题共 16 组组合，无页面异常或在线请求。已查看修复后桌面浅色与窄屏深色首页截图；截图关闭入场动画以检查最终画面。首次沙箱启动 Chrome 遇到 EPERM，获准独立启动后继续；专项驱动初轮误假设曲线图自带组件，修正夹具后通过。
+- 验证：src/app.js 及两份新增测试的 node --check、git diff --check 通过，仅有既有 LF／CRLF 提示；临时 Node.js 检查正式种子为空与离线构建插入点已展开通过。确认根目录 LevelDesignToolkits.lnk 的目标为本次更新的 dist/index.html。
+- 未运行：本次真实浏览器导出下载、教程重建、Windows 重新封装及桌面 EXE 冒烟、手机真机；此次修复空工程界面生命周期，未修改教程内容或桌面实现，窄屏使用真实 Chrome 视口验证。
