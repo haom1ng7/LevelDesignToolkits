@@ -11,7 +11,7 @@ const out=path.join(__dirname,'../qa/endfield-ui');
   const context=await browser.newContext({viewport:{width:1440,height:1000},colorScheme:'light'});
   await context.addInitScript(()=>{
    const set=Storage.prototype.setItem,remove=Storage.prototype.removeItem;
-   const projectKey=k=>/^(spatial-studio-v9:|level-diagram-studio-desktop-v1)/.test(k);
+   const projectKey=k=>/^spatial-studio-v9:/.test(k);
    Storage.prototype.setItem=function(k,v){if(!projectKey(k))return set.call(this,k,v)};
    Storage.prototype.removeItem=function(k){if(!projectKey(k))return remove.call(this,k)};
   });
@@ -43,7 +43,7 @@ const out=path.join(__dirname,'../qa/endfield-ui');
   await page.locator('[data-action="undo"]').click();assert.equal(await page.evaluate(()=>SpatialEditor.document.objects.length),before.count);
   await page.locator('[data-action="redo"]').click();assert.equal(await page.evaluate(()=>SpatialEditor.document.objects.length),before.count+1);
   await page.locator('[data-tool="select"]').click();
-  const house=JSON.parse(fs.readFileSync(path.join(__dirname,'../data/two-storey-house.json'),'utf8'));
+  const house=JSON.parse(fs.readFileSync(path.join(__dirname,'../data/空间图示例.json'),'utf8'));
   await page.evaluate(p=>SpatialEditor.loadProject(p),house);
   for(const theme of ['light','dark']){
    await page.evaluate(t=>document.documentElement.dataset.theme=t,theme);
@@ -75,7 +75,7 @@ const out=path.join(__dirname,'../qa/endfield-ui');
   await capture('house-solid-reduced-motion');
   await page.locator('[data-action="help"]').click();await capture('help-desktop');await page.locator('[data-action="close-help"]').click();
   const svg=await page.evaluate(()=>SpatialEditor.renderSVG());assert(!/stage-frame|shell-view|workbench/.test(svg),'shell instruments stay out of artwork');
-  assert.equal(await page.evaluate(()=>Object.keys(localStorage).filter(k=>/^(spatial-studio-v9:|level-diagram-studio-desktop-v1)/.test(k)).length),0);
+  assert.equal(await page.evaluate(()=>Object.keys(localStorage).filter(k=>/^spatial-studio-v9:/.test(k)).length),0);
   assert.deepEqual(errors,[]);assert.deepEqual(network,[]);
   fs.writeFileSync(path.join(out,'workbench-report.json'),JSON.stringify({layouts,checks:['full workspace width and height without navigation rail or status row','real pointer create, single undo/redo','two-storey house in three views and both themes','real property name input','hidden internal status updates','compact desktop options','reduced motion parity','offline help','export shell exclusion','suppressed QA persistence'],errors,network},null,2));
   console.log('PASS Endfield workbench: 7 desktop/portrait/short-wide layouts; full workspace width and height without navigation rail or status row; both entry actions visible at 390×844; real pointer creation and undo/redo; house three views/light/dark; property edit; compact options; reduced motion; no shell in exports, page errors or network. Evidence: qa/endfield-ui/.');

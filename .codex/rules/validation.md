@@ -10,7 +10,7 @@
 
 | 改动范围 | 优先检查 |
 | --- | --- |
-| 工程保存、首次位置选择与 Ctrl/Command+S | `node tests/browser-project-saving.cjs`；真实 Chrome 键盘/编辑及 Electron IPC/文件写盘，浏览器文件句柄与原生对话框选择使用测试替身，证据在 `qa/project-saving/` |
+| 工程保存、首次位置选择与 Ctrl/Command+S | `node tests/browser-project-saving.cjs`；真实 Chrome 键盘/编辑和下载，文件选择器与句柄使用测试替身，证据在 `qa/project-saving/`；重启恢复与真实文件写入用 `node tests/browser-project-saving-restart.cjs` |
 | 逐点切割、闭合/贯穿拆分、内轮廓和历史 | `node tests/verify-cutting.cjs`；真实鼠标、剪刀、退点/取消、窄屏和实际四种格式下载用 `node tests/browser-cutting.cjs`，证据在 `qa/cutting/` |
 | 空间创建、宿主空洞、可见性与输出范围 | `node tests/verify-spatial-update.cjs` |
 | 楼层默认颜色、手动配色与旧工程兼容 | `node tests/verify-v9.cjs`；真实创建、三视图、改色和暂存恢复用 `node tests/browser-floor-colors.cjs`，证据在 `qa/floor-colors/` |
@@ -35,6 +35,5 @@
 - 对鼠标命中、拖动、文本输入或视觉布局的变化，按需要用真实浏览器操作；jsdom 不等于真实浏览器验收。
 - `tests/browser-*.js` 多为接收 Playwright `page` 的函数片段，不是直接 `node` 运行即可完成的测试入口。先检查驱动方式、URL 和历史输出路径。
 - 导出变化除预览外还需检查实际下载的 PNG/SVG：尺寸、范围、背景和辅助元素过滤。`tests/check-*.cjs` 需要对应 QA 报告与文件，不能在缺少证据时直接引用旧结果。
-- 桌面变化使用独立配置验证；`tests/desktop-smoke.cjs` 通过 `STUDIO_EXE` 指向目录版程序。单文件便携版不能直接套用同一个调试启动方式。
 - 低风险文档修改不另写实现镜像测试。只在新增行为或已有覆盖不足时补充有意义的测试。
 - 最终说明和变更日志只记录本次运行的命令及结果，并注明未验证部分；`docs/最终检查记录.md` 是历史证据。

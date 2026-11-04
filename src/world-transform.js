@@ -1,17 +1,17 @@
-// W/E/R share a center; direct corner resizing keeps the opposite corner fixed.
+// W/E/R share the minimum local bounding-box corner; direct resizing fixes the opposite corner.
 const solidTypes=['plane','wall','stairs','ladder','spiral','solid'];
 let solidCorner=null;
 function solidRoots(){return selected().filter(o=>solidTypes.includes(o.type))}
 function solidRotationAvailable(){return worldMovable()&&solidRoots().length>0}
 function solidSizeAvailable(){return solidRotationAvailable()&&!floorSelection&&solidRoots().length===1}
 function bounds3(points){const min=[Infinity,Infinity,Infinity],max=[-Infinity,-Infinity,-Infinity];for(const p of points)for(let i=0;i<3;i++){min[i]=Math.min(min[i],p[i]);max[i]=Math.max(max[i],p[i])}return {min,max}}
-function solidCenter(){
+function solidPivot(){
  const roots=selected().filter(o=>!['hole','text','route'].includes(o.type));
- if(roots.length===1){const o=roots[0];if(o.type==='marker')return M.origin(doc(),o);const b=solidLocalBounds(o);return M.world(doc(),o,M.mul(M.add(b.min,b.max),.5))}
- const b=bounds3(roots.flatMap(o=>o.type==='marker'?[M.origin(doc(),o)]:M.geometry(doc(),o).flatMap(f=>f.points)));return M.mul(M.add(b.min,b.max),.5);
+ if(roots.length===1){const o=roots[0];if(o.type==='marker')return M.origin(doc(),o);return M.world(doc(),o,solidLocalBounds(o).min)}
+ return bounds3(roots.flatMap(o=>o.type==='marker'?[M.origin(doc(),o)]:M.geometry(doc(),o).flatMap(f=>f.points))).min;
 }
 function transformCenterMarkup(center,k=pixel()){const p=M.project(center,scene.basis);return `<circle data-transform-center="true" cx="${p[0]}" cy="${p[1]}" r="${k*3}" fill="white" stroke="#44536a" stroke-width="${k}" pointer-events="none"/>`}
-function solidRing(axis,center=solidCenter(),basis=scene.basis,radius=pixel()*76){
+function solidRing(axis,center=solidPivot(),basis=scene.basis,radius=pixel()*76){
  const u=worldAxes[(axis+1)%3],v=worldAxes[(axis+2)%3],p=M.project(center,basis),project=a=>M.projectVector(a,basis,center);
  return {axis,center,p,u,v,pu:project(u),pv:project(v),radius,basis,worldRadius:basis.eye?radius*M.cameraDepth(center,basis)/basis.focal:radius};
 }
@@ -25,7 +25,7 @@ function solidLocalBounds(o,d=doc()){
  return b;
 }
 function solidResizeInfo(){
- if(!solidSizeAvailable())return null;const o=solidRoots()[0],b=solidLocalBounds(o),center=solidCenter(),axes=worldAxes.map(a=>M.mat(o.orientation,a)),corners=Array.from({length:8},(_,n)=>[0,1,2].map(i=>(n>>i)&1?b.max[i]:b.min[i]));
+ if(!solidSizeAvailable())return null;const o=solidRoots()[0],b=solidLocalBounds(o),center=solidPivot(),axes=worldAxes.map(a=>M.mat(o.orientation,a)),corners=Array.from({length:8},(_,n)=>[0,1,2].map(i=>(n>>i)&1?b.max[i]:b.min[i]));
  const index=solidCorner?.id===o.id?solidCorner.index:7;
  return {id:o.id,b,center,axes,vectors:axes.map(a=>M.projectVector(a,scene.basis,center)),corners,index,world:corners.map(p=>M.world(doc(),o,p))};
 }
@@ -37,7 +37,7 @@ function solidSizeDelta(axes,delta,vectors){
 function solidTransformMarkup(){
  const k=pixel();let s='';
  if(tool==='rotate'&&solidRotationAvailable()){
-  const center=drag?.kind==='solid-rotate'?drag.center:solidCenter();if(scene.basis.eye&&M.cameraDepth(center,scene.basis)<scene.basis.near)return '';s='<g class="world-gizmo" data-solid-transform="rotate">';
+  const center=drag?.kind==='solid-rotate'?drag.center:solidPivot();if(scene.basis.eye&&M.cameraDepth(center,scene.basis)<scene.basis.near)return '';s='<g class="world-gizmo" data-solid-transform="rotate">';
   for(let i=0;i<3;i++){const r=solidRing(i,center),points=Array.from({length:97},(_,j)=>solidRingPoint(r,j*Math.PI/48)),path=R.path(points),active=drag?.kind==='solid-rotate'&&drag.axis===i;
    s+=`<g data-world-rotate="${i}" role="button" aria-label="绕 ${worldNames[i]} 轴旋转" class="${active?'active':''}" style="--gizmo-color:${worldColors[i]};cursor:grab"><title>组件绕世界 ${worldNames[i]} 轴的旋转角度</title><path d="${path}" fill="none" stroke="white" stroke-width="${k*5}" pointer-events="none"/><path class="gizmo-axis" d="${path}" fill="none" stroke-width="${k*2.5}"/><path class="gizmo-ring-hit" d="${path}" fill="none" stroke="transparent" stroke-width="${k*12}"/></g>`;
    const p=solidRingPoint(r,Math.PI*.22+i*.7);s+=`<text x="${p[0]+k*6}" y="${p[1]-k*6}" fill="${worldColors[i]}" stroke="white" stroke-width="${k*3}" paint-order="stroke" font-size="${k*12}" pointer-events="none">${worldNames[i]}</text>`;
@@ -50,7 +50,7 @@ function solidTransformMarkup(){
  for(let n=0;n<8;n++)for(let i=0;i<3;i++)if(!(n&(1<<i)))s+=`<path d="${R.path([points[n],points[n|(1<<i)]])}" fill="none" stroke="${R.contrast(doc().background)}" stroke-opacity=".55" stroke-width="${k}" stroke-dasharray="${k*4} ${k*3}" pointer-events="none"/>`;
  for(let i=0;i<3;i++){
   const available=!!solidSizeDelta([i],[0,0],vectors),p=M.add(active,M.mul(vectors[i],k*66)),label=M.add(p,M.mul(vectors[i],k*15));
-  s+=`<g ${available?`data-solid-size-axis="${i}" role="button" aria-label="围绕中心调整本地 ${worldNames[i]} 尺寸"`:'opacity=".25" pointer-events="none"'} class="${drag?.kind==='solid-size'&&drag.centered&&drag.axes[0]===i?'active':''}" style="--gizmo-color:${worldColors[i]};cursor:ew-resize"><title>组件本地 ${worldNames[i]} 轴的尺寸，中心保持固定</title><path d="${R.path([active,p])}" stroke="white" stroke-width="${k*5}"/><path class="gizmo-axis" d="${R.path([active,p])}" stroke-width="${k*2.5}"/><rect class="gizmo-tip" x="${p[0]-k*4}" y="${p[1]-k*4}" width="${k*8}" height="${k*8}" stroke="white" stroke-width="${k}"/><path class="gizmo-size-hit" d="${R.path([active,p])}" stroke="transparent" stroke-width="${k*12}"/><text x="${label[0]}" y="${label[1]+k*4}" text-anchor="middle" fill="${worldColors[i]}" stroke="white" stroke-width="${k*3}" paint-order="stroke" font-size="${k*12}" pointer-events="none">${worldNames[i]}</text></g>`;
+  s+=`<g ${available?`data-solid-size-axis="${i}" role="button" aria-label="以角点为基点调整本地 ${worldNames[i]} 尺寸"`:'opacity=".25" pointer-events="none"'} class="${drag?.kind==='solid-size'&&drag.axisHandle&&drag.axes[0]===i?'active':''}" style="--gizmo-color:${worldColors[i]};cursor:ew-resize"><title>组件本地 ${worldNames[i]} 轴的尺寸，共用角点保持固定</title><path d="${R.path([active,p])}" stroke="white" stroke-width="${k*5}"/><path class="gizmo-axis" d="${R.path([active,p])}" stroke-width="${k*2.5}"/><rect class="gizmo-tip" x="${p[0]-k*4}" y="${p[1]-k*4}" width="${k*8}" height="${k*8}" stroke="white" stroke-width="${k}"/><path class="gizmo-size-hit" d="${R.path([active,p])}" stroke="transparent" stroke-width="${k*12}"/><text x="${label[0]}" y="${label[1]+k*4}" text-anchor="middle" fill="${worldColors[i]}" stroke="white" stroke-width="${k*3}" paint-order="stroke" font-size="${k*12}" pointer-events="none">${worldNames[i]}</text></g>`;
  }
  // Paint nearer corners last so a top/front view still has reachable handles.
  const order=Array.from({length:8},(_,i)=>i).sort((a,b)=>M.dot(world[a],scene.basis.n)-M.dot(world[b],scene.basis.n));
@@ -67,7 +67,7 @@ function beginSolidTransform(e,q){
  const cornerTarget=e.target.closest('[data-solid-corner]'),axisTarget=e.target.closest('[data-solid-size-axis]');if(!cornerTarget&&!axisTarget||tool!=='size')return false;const info=solidResizeInfo();if(!info)return false;
  if(cornerTarget){info.index=+cornerTarget.dataset.solidCorner;solidCorner={id:info.id,index:info.index};info.vectors=info.axes.map(a=>M.projectVector(a,scene.basis,info.world[info.index]))}
  const axes=axisTarget?[+axisTarget.dataset.solidSizeAxis]:solidPair(info.vectors);if(!solidSizeDelta(axes,[0,0],info.vectors))return false;
- const centered=!!axisTarget,anchor=centered?info.center:info.world[info.index^7],handleAnchor=centered?info.center:info.world[info.index];drag={kind:'solid-size',before:snapshot(),selection:[...selection],primary,id:info.id,info,axes,anchor,handleAnchor,centered,basis:M.clone(scene.basis),start:q,last:q,changed:false};canvas.style.cursor='crosshair';capture(e);drawHandles();return true;
+ const axisHandle=!!axisTarget,anchor=axisHandle?info.center:info.world[info.index^7],handleAnchor=axisHandle?info.center:info.world[info.index];drag={kind:'solid-size',before:snapshot(),selection:[...selection],primary,id:info.id,info,axes,anchor,handleAnchor,axisHandle,basis:M.clone(scene.basis),start:q,last:q,changed:false};canvas.style.cursor='crosshair';capture(e);drawHandles();return true;
 }
 function solidRigidRotation(angle){
  const matrix=M.axisRotation(worldAxes[drag.axis],angle);for(const o of selected().filter(o=>o.type!=='hole')){const p=M.add(drag.center,M.mat(matrix,M.sub(M.origin(doc(),o),drag.center)));o.position=M.sub(p,[0,0,M.floor(doc(),o)?.height||0]);o.orientation=M.product(matrix,o.orientation);if(o.type==='text')o.textAngle+=angle*180/Math.PI}
@@ -80,7 +80,7 @@ function constrainSolidFactors(o,factors,axes){
  if(o.type==='ladder'){factors[0]=Math.max(factors[0],5/o.span,1/o.railWidth);factors[1]=Math.max(factors[1],1/o.thickness)}
 }
 function resizeSolid(delta,grid=false){
- const o=doc().objects.find(o=>o.id===drag.id),{b,index}=drag.info,extent=M.sub(b.max,b.min),factors=extent.map((n,i)=>Math.max(grid?gridStep()/n:.02,1+delta[i]*(drag.centered?1:((index>>i)&1?1:-1))/n));
+ const o=doc().objects.find(o=>o.id===drag.id),{b,index}=drag.info,extent=M.sub(b.max,b.min),factors=extent.map((n,i)=>Math.max(grid?gridStep()/n:.02,1+delta[i]*(drag.axisHandle?1:((index>>i)&1?1:-1))/n));
  constrainSolidFactors(o,factors,drag.axes);
  const original=M.clone(o),before=doc().objects.filter(t=>t.type==='text').map(t=>({t,position:[...t.position]}));
  scaleHost(o,worldAxes,factors,drag.anchor);if(['stairs','spiral'].includes(o.type))o.thickness*=factors[2];
@@ -97,8 +97,8 @@ function moveSolidTransform(q,e){
   const angle=snappedAngle(drag.rawAngle,e);project=JSON.parse(drag.before);solidRigidRotation(angle);drag.angle=angle;status(`旋转 ${worldNames[drag.axis]} · ${(angle*180/Math.PI).toFixed(1)}° · Esc 取消`);
  }else{
   let delta;if(drag.basis.eye){const values=M.dragAxes(q,drag.start,drag.handleAnchor,drag.axes.map(i=>drag.info.axes[i]),drag.basis);if(!values)return;delta=[0,0,0];drag.axes.forEach((axis,j)=>delta[axis]=values[j])}else delta=solidSizeDelta(drag.axes,M.sub(q,drag.start),drag.info.vectors);if(!delta)return;
-  if(gridEnabled(e)){const extent=M.sub(drag.info.b.max,drag.info.b.min);for(const i of drag.axes){const sign=drag.centered?1:((drag.info.index>>i)&1?1:-1);delta[i]=(gridLength(extent[i]+delta[i]*sign)-extent[i])*sign}}
-  project=JSON.parse(drag.before);const dimensions=resizeSolid(delta,gridEnabled(e));status(`长 / 宽 / 高：${dimensions.map(n=>n.toFixed(1)).join(' / ')} · ${drag.centered?'中心固定':'对角点固定'} · Esc 取消`);
+  if(gridEnabled(e)){const extent=M.sub(drag.info.b.max,drag.info.b.min);for(const i of drag.axes){const sign=drag.axisHandle?1:((drag.info.index>>i)&1?1:-1);delta[i]=(gridLength(extent[i]+delta[i]*sign)-extent[i])*sign}}
+  project=JSON.parse(drag.before);const dimensions=resizeSolid(delta,gridEnabled(e));status(`长 / 宽 / 高：${dimensions.map(n=>n.toFixed(1)).join(' / ')} · ${drag.axisHandle?'共用角点固定':'对角点固定'} · Esc 取消`);
  }
  drag.last=q;drag.changed=true;drawCanvas();
 }

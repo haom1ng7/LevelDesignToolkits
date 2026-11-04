@@ -18,7 +18,7 @@ const contrast=(a,b)=>{a=luminance(a);b=luminance(b);return (Math.max(a,b)+.05)/
   const context=await browser.newContext({viewport:{width:1440,height:1000},colorScheme:'light',acceptDownloads:true});
   await context.addInitScript(()=>{
    const set=Storage.prototype.setItem,remove=Storage.prototype.removeItem;
-   const projectKey=k=>/^(spatial-studio-v9:|level-diagram-studio-desktop-v1)/.test(k);
+   const projectKey=k=>/^spatial-studio-v9:/.test(k);
    Storage.prototype.setItem=function(k,v){if(!projectKey(k))return set.call(this,k,v)};
    Storage.prototype.removeItem=function(k){if(!projectKey(k))return remove.call(this,k)};
    window.showSaveFilePicker=undefined;

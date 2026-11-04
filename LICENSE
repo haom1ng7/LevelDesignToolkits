@@ -1,16 +1,21 @@
-关卡设计工具箱 / Level Design Toolkits
-Copyright (c) 2026 Haoming7。保留全部权利。
+MIT License
 
-允许用户免费下载、在本地或作者发布的网站运行本工具，并使用本工具
-创建、编辑和导出的图稿，包括将这些图稿用于个人或商业项目。
-本声明不对用户自己创建的工程、文字或图稿主张权利。
+Copyright (c) 2026 Haoming7
 
-除法律允许的情形及 GitHub 平台条款赋予的权限外，未经权利人另行书面
-许可，不授权修改、再分发、再许可或将本项目源码用于其他软件；不授权
-将本工具重新打包分发。可以分享作者的仓库、下载或在线使用链接。
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
-这是一份软件使用许可及权利保留声明，不是开源许可证。
-第三方组件不受上述限制替代，继续适用各自原有许可证，详见
-THIRD_PARTY_NOTICES.md 和桌面运行时自带的许可文件。
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
 
-本软件按现状提供，不提供明示或默示保证。请自行保存工程 JSON 备份。
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

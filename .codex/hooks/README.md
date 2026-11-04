@@ -16,7 +16,7 @@
 2. `UserPromptSubmit`：在用户回合开始时，保存受监控文件的 SHA-256 和当前日志正文。
 3. `Stop`：对比新增、修改、删除的文件；发现变更但未追加完整日志时，返回 `decision: "block"`，让 Codex 继续补写日志。补齐后再次检查即可结束。
 
-受监控范围：`src/`、`desktop/`、`data/`、`tools/`、`tests/`、`dist/`、`package.json`、`package-lock.json`、`AGENTS.md`、`.codex/hooks.json`、`.codex/hooks/`、`.codex/rules/` 和 `.codex/skills/`。依赖目录、构建暂存、Git 元数据、Python 缓存及符号链接不递归扫描。仅改普通说明文档不会要求新增日志；规则和 skills 的变更属于开发流程变更，需要记录。
+受监控范围：`src/`、`data/`、`tools/`、`tests/`、`dist/`、`package.json`、`package-lock.json`、`AGENTS.md`、`.codex/hooks.json`、`.codex/hooks/`、`.codex/rules/` 和 `.codex/skills/`。依赖目录、构建暂存、Git 元数据、Python 缓存及符号链接不递归扫描。仅改普通说明文档不会要求新增日志；规则和 skills 的变更属于开发流程变更，需要记录。
 
 判断依据是受监控文件的内容变化，因此源码格式整理或只重建产物也可能要求写一条记录。hook 检查是否追加了含日期、变更、影响文件、验证的条目；具体描述是否准确仍由 Codex 按项目规则负责。写入一条日志后继续修改功能时，应同步补全该条记录。
 

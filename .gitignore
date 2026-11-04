@@ -1,7 +1,7 @@
-# npm 依赖：包括桌面应用等子目录中的安装结果，保留 package-lock.json。
+# npm 依赖：保留 package-lock.json。
 node_modules/
 
-# 桌面构建中间文件、本地发行附件与上传准备目录。
+# 本地工具中间文件、网页发行附件与上传准备目录。
 /.build/
 /release/
 /release-upload/
@@ -10,11 +10,10 @@ node_modules/
 /dist/*
 !/dist/index.html
 
-# 自动化检查的截图、下载文件、报告及桌面冒烟测试结果。
+# 自动化检查的截图、下载文件与报告。
 /qa/
 /test-results/
 /playwright-report/
-/docs/desktop-test-results.json
 
 # Python 字节码与本地虚拟环境。
 __pycache__/
@@ -34,6 +33,7 @@ npm-debug.log*
 !/.env.*.example
 
 # 编辑器交换文件、临时文件与系统元数据。
+/LevelDesignToolkits.lnk
 *.swp
 *.swo
 *~

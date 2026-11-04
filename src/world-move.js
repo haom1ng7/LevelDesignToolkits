@@ -15,7 +15,7 @@ function worldGizmoInfo(){
  if(!usesWorldGizmo()||!['select','move'].includes(tool))return null;
  let anchor;
  if(drag?.kind==='world-move')anchor=M.add(drag.gizmoAnchor,drag.applied||[0,0,0]);
- else anchor=solidCenter();
+ else anchor=solidPivot();
  if(scene.basis.eye&&M.cameraDepth(anchor,scene.basis)<scene.basis.near)return null;return {anchor,p:M.project(anchor,scene.basis),vectors:worldProjection(scene.basis,anchor)};
 }
 function worldGizmoMarkup(){

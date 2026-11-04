@@ -7,7 +7,7 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('n
  try{
   const page=await browser.newPage({viewport:{width:1440,height:1000}}),errors=[],network=[],report=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text())});page.on('request',r=>{if(/^https?:/.test(r.url()))network.push(r.url())});
   await page.goto(pathToFileURL(path.join(__dirname,'../dist/index.html')).href);
-  const house=JSON.parse(fs.readFileSync(path.join(__dirname,'../data/two-storey-house.json'),'utf8'));await page.evaluate(p=>SpatialEditor.loadProject(p),house);
+  const house=JSON.parse(fs.readFileSync(path.join(__dirname,'../data/空间图示例.json'),'utf8'));await page.evaluate(p=>SpatialEditor.loadProject(p),house);
   const original=await page.evaluate(()=>JSON.stringify(SpatialEditor.project));
   await page.locator('[data-action="export-menu"]').click();
   async function format(value){await page.locator('#export-format').selectOption(value);await page.waitForFunction(value=>SpatialEditor.exportPreview?.ready&&SpatialEditor.exportPreview.format===value&&!document.querySelector('#export-download').disabled,value)}

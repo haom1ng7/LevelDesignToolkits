@@ -1,6 +1,6 @@
-// Real Chrome keyboard/editor paths with a controlled picker; real Electron IPC and disk writes.
+// Real Chrome keyboard/editor paths with a controlled file picker.
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),{pathToFileURL}=require('node:url');
-const {chromium,_electron}=require('playwright-core');
+const {chromium}=require('playwright-core');
 const root=path.resolve(__dirname,'..'),out=path.join(root,'qa/project-saving');
 fs.mkdirSync(out,{recursive:true});
 const html=path.join(root,'dist/index.html'),checks=[],errors=[];
@@ -84,43 +84,4 @@ async function browserChecks(){
   checks.push('不支持文件保存接口时下载有效 JSON，并明确说明位置由浏览器决定');
  }finally{await browser.close()}
 }
-async function desktopChecks(){
- const staging=path.join(out,'desktop-app'),profile=path.join(out,'profile-'+Date.now());fs.mkdirSync(staging,{recursive:true});
- for(const name of ['main.cjs','preload.cjs','package.json','icon.ico'])fs.copyFileSync(path.join(root,'desktop',name),path.join(staging,name));
- fs.copyFileSync(html,path.join(staging,'index.html'));
- const a=await _electron.launch({executablePath:require('electron'),args:[staging,'--studio-profile='+profile],timeout:60000});
- try{
-  const page=await a.firstWindow();page.on('pageerror',e=>errors.push(e.message));await page.waitForFunction(()=>!!window.SpatialEditor);
-  assert.equal(await page.evaluate(()=>typeof require),'undefined');
-  assert.deepEqual(await page.evaluate(()=>Object.keys(window.studioDesktop)),['saveProject']);
-  const preferences=await a.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].webContents.getLastWebPreferences());
-  assert(preferences.sandbox&&preferences.contextIsolation&&!preferences.nodeIntegration);
-  await a.evaluate(({dialog})=>{global.saveDialogs=[];global.nextSave=null;dialog.showSaveDialog=async(_window,options)=>{global.saveDialogs.push(options);return global.nextSave||{canceled:true}}});
-  await page.evaluate(()=>SpatialEditor.command('save'));assert.equal(await a.evaluate(()=>global.saveDialogs.length),1);
-  const first=path.join(out,'桌面工程.json'),second=path.join(out,'另一份工程.json');
-  await a.evaluate((_electron,file)=>{global.nextSave={canceled:false,filePath:file}},first);
-  await page.evaluate(()=>{SpatialEditor.createDocument('space','桌面文件');return SpatialEditor.command('save')});
-  assert.equal(JSON.parse(fs.readFileSync(first,'utf8')).documents[0].name,'桌面文件');
-  await page.evaluate(()=>{SpatialEditor.document.name='Ctrl S 快速覆盖'});await page.keyboard.press('Control+s');
-  await page.waitForFunction(()=>!document.querySelector('[data-action="project"]').hasAttribute('aria-busy'));
-  assert.equal(JSON.parse(fs.readFileSync(first,'utf8')).documents[0].name,'Ctrl S 快速覆盖');
-  assert.equal(await a.evaluate(()=>global.saveDialogs.length),2,'quick save never reopens native dialog');
-  const before=fs.readFileSync(first,'utf8');
-  await page.evaluate(()=>SpatialEditor.loadProject(SpatialEditor.project));
-  await a.evaluate((_electron,file)=>{global.nextSave={canceled:false,filePath:file}},path.join(out,'missing-folder','failure.json'));
-  await page.evaluate(()=>{window.desktopAlerts=[];window.alert=message=>desktopAlerts.push(message);return SpatialEditor.command('save')});
-  assert.match(await page.evaluate(()=>desktopAlerts[0]),/保存失败/);assert.equal(fs.readFileSync(first,'utf8'),before);
-  await a.evaluate((_electron,file)=>{global.nextSave={canceled:false,filePath:file}},second);
-  await page.evaluate(()=>SpatialEditor.command('save'));assert.equal(fs.readFileSync(second,'utf8'),before);
-  assert(!fs.readdirSync(out).some(name=>name.endsWith('.tmp')));
-  await assert.rejects(page.evaluate(()=>studioDesktop.saveProject('invalid JSON',false)));
-  const dialogs=await a.evaluate(()=>global.saveDialogs.length);
-  await page.evaluate(()=>SpatialEditor.loadProject(SpatialEditor.project));
-  await a.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].close());
-  await new Promise(resolve=>a.process().exitCode!==null?resolve():a.process().once('exit',resolve));
-  assert.equal(fs.readFileSync(first,'utf8'),before);
-  checks.push('真实 Electron 沙箱/隔离及窄 IPC；原生对话框入口（测试替代选路径）/取消；真实 JSON 写盘及 Ctrl+S 覆盖；失败保留原文件；打开新工程重新选择；关闭未保存工程不弹保存窗口');
-  assert(dialogs>=4);
- }finally{await a.close().catch(()=>{})}
-}
-(async()=>{await browserChecks();await desktopChecks();assert.deepEqual(errors,[]);fs.writeFileSync(path.join(out,'report.json'),JSON.stringify({pass:true,checks,errors,pickerNote:'浏览器文件句柄与系统对话框选择使用测试替身；Electron IPC、沙箱、写盘、覆盖、关闭及 Chrome 编辑和键盘均真实运行。'},null,2));console.log('PASS project saving: '+checks.join('；'))})().catch(error=>{console.error(error);process.exitCode=1});
+(async()=>{await browserChecks();assert.deepEqual(errors,[]);fs.writeFileSync(path.join(out,'report.json'),JSON.stringify({pass:true,checks,errors,pickerNote:'浏览器文件句柄与文件选择器使用测试替身；Chrome 编辑、键盘及 JSON 下载真实运行。'},null,2));console.log('PASS project saving: '+checks.join('；'))})().catch(error=>{console.error(error);process.exitCode=1});

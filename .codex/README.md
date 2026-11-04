@@ -29,7 +29,7 @@
 | --- | --- |
 | 新增或修改编辑功能、修复模型/几何/交互 | [level-studio-edit](skills/level-studio-edit/SKILL.md) |
 | 选择回归、定位测试失败、验证浏览器/导出 | [level-studio-verify](skills/level-studio-verify/SKILL.md) |
-| 同步教程、生成离线网页、封装 Windows 和整理附件 | [level-studio-package](skills/level-studio-package/SKILL.md) |
+| 同步教程、生成离线网页和整理附件 | [level-studio-package](skills/level-studio-package/SKILL.md) |
 
 按需读取相应技能，不为每个任务加载全部内容。技能的界面元数据保留默认自动选择策略，但能否出现在客户端技能列表中，取决于客户端实际发现的路径。
 

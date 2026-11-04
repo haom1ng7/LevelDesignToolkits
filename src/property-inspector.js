@@ -9,6 +9,25 @@ function componentActionsMarkup(){
 }
 document.addEventListener('toggle',e=>{const key=e.target.dataset?.inspectorSection;if(key)inspectorSections.set(key,e.target.open)},true);
 document.addEventListener('focusin',e=>{if(e.target.closest('#properties')&&e.target.dataset.scope)lastFormKey=null});
+
+// Select on a completed first click, so pressing and dragging can still scrub.
+let numberEntryClick=null;
+document.addEventListener('pointerdown',e=>{
+ numberEntryClick=null;const input=e.target;
+ if(e.button!==0||e.isPrimary===false||e.shiftKey||e.ctrlKey||e.metaKey||e.altKey||!input.matches('input[type="number"]')||input.disabled||input.readOnly||document.activeElement===input)return;
+ numberEntryClick={input,pointer:e.pointerId,x:e.clientX,y:e.clientY,moved:false};
+},true);
+document.addEventListener('pointermove',e=>{const a=numberEntryClick;if(a&&a.pointer===e.pointerId&&Math.hypot(e.clientX-a.x,e.clientY-a.y)>=4)a.moved=true},true);
+document.addEventListener('click',e=>{
+ const a=numberEntryClick;numberEntryClick=null;
+ if(a&&!a.moved&&!e.defaultPrevented&&e.target===a.input&&document.activeElement===a.input)a.input.select();
+},true);
+document.addEventListener('focusin',e=>{if(e.target.matches('input[type="number"]')&&numberEntryClick?.input!==e.target)e.target.select()});
+document.addEventListener('focusout',e=>{if(numberEntryClick?.input===e.target)numberEntryClick=null});
+document.addEventListener('pointercancel',()=>numberEntryClick=null,true);
+document.addEventListener('keydown',()=>numberEntryClick=null,true);
+window.addEventListener('blur',()=>numberEntryClick=null);
+
 function propertyRotation(o){
  const m=o.orientation,y=Math.asin(clamp(-m[6],-1,1)),regular=Math.abs(Math.cos(y))>1e-7;
  return [regular?Math.atan2(m[7],m[8]):Math.atan2(-m[5],m[4]),y,regular?Math.atan2(m[3],m[0]):0].map(v=>v*180/Math.PI);
@@ -191,6 +210,8 @@ function finishPropertyScrub(cancel=false){
 document.addEventListener('pointerdown',e=>{
  const field=e.target.closest('[data-property-scrub]'),input=field?.querySelector('input');
  if(!input||input.disabled||e.button!==0||e.isPrimary===false||drag||propertyScrub||locked())return;
+ // Once typing, native caret placement and text selection take priority over scrubbing.
+ if(e.target===input&&document.activeElement===input&&!e.shiftKey)return;
  const key=input.dataset.key;finishEditing();
  propertyScrub={key,pointer:e.pointerId,capture:$('#properties'),before:snapshot(),document:current,selection:selection.join(','),start:[e.clientX,e.clientY],lastX:e.clientX,delta:0,started:false,changed:false,values:new Map(propertyObjects().map(o=>[o.id,propertyValue(o,'prop',key)])),min:input.min===''?-Infinity:+input.min,max:input.max===''?Infinity:+input.max};
 },true);

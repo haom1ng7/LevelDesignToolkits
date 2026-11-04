@@ -42,7 +42,7 @@ async function main(){
    const edges=new Map();for(const t of mesh.triangles)for(let i=0;i<3;i++){const a=t[i],b=t[(i+1)%3],key=[Math.min(a,b),Math.max(a,b)].join(',');edges.set(key,(edges.get(key)||0)+1)}assert([...edges.values()].every(n=>n===2),'ramp mesh is watertight');
   }
   // The complete supplied two-storey project also imports through both readers.
-  const house=M.validate(JSON.parse(fs.readFileSync(path.join(__dirname,'../data/two-storey-house.json'),'utf8'))).documents[0];check(E.build(house));
+  const house=M.validate(JSON.parse(fs.readFileSync(path.join(__dirname,'../data/空间图示例.json'),'utf8'))).documents[0];check(E.build(house));
   assert.throws(()=>E.build(blank()),/没有可导出的实体/);assert.throws(()=>E.build(M.createDocument('curve')),/仅支持空间图/);
   // Export UI: independent of active floor/view/selection, disabled image-only
   // options, error recovery, curve fallback and stale async downloads.

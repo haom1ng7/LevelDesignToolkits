@@ -9,8 +9,8 @@
 | 范围 | 规则文件 |
 | --- | --- |
 | 模型、几何、编辑器交互、曲线、导出 | `.codex/rules/editor-behavior.md` |
-| 构建、回归、浏览器/桌面验证、测试结果 | `.codex/rules/validation.md` |
-| 教程、离线网页、Windows 封装、源码归档 | `.codex/rules/release.md` |
+| 构建、回归、浏览器验证、测试结果 | `.codex/rules/validation.md` |
+| 教程、离线网页、源码归档 | `.codex/rules/release.md` |
 
 项目 skills 集中维护在 `.codex/skills/`。任务匹配时，按下表路径读取相应 `SKILL.md` 并执行；即使当前客户端的技能列表没有列出它们，也按本入口加载，不要求为每个任务读取全部 skills。
 
@@ -18,7 +18,7 @@
 | --- | --- |
 | [level-studio-edit](.codex/skills/level-studio-edit/SKILL.md) | 新增/修改编辑功能、修复模型或交互缺陷 |
 | [level-studio-verify](.codex/skills/level-studio-verify/SKILL.md) | 构建验证、回归选择、浏览器/导出检查与失败定位 |
-| [level-studio-package](.codex/skills/level-studio-package/SKILL.md) | 同步教程、构建离线网页、封装 Windows 和检查本地发布附件 |
+| [level-studio-package](.codex/skills/level-studio-package/SKILL.md) | 同步教程、构建离线网页和检查本地发布附件 |
 
 ## 功能变更必须记录日志
 

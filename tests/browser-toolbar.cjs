@@ -3,7 +3,7 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('n
 const {pathToFileURL}=require('node:url'),{chromium}=require('playwright-core');
 const out=path.join(__dirname,'../qa/single-row-toolbar');
 const url=pathToFileURL(path.join(__dirname,'../dist/index.html')).href;
-const house=JSON.parse(fs.readFileSync(path.join(__dirname,'../data/two-storey-house.json'),'utf8'));
+const house=JSON.parse(fs.readFileSync(path.join(__dirname,'../data/空间图示例.json'),'utf8'));
 const suppressPersistence=()=>{Storage.prototype.setItem=function(){};Storage.prototype.removeItem=function(){}};
 const withinToolbar=el=>{const a=el.getBoundingClientRect(),b=el.closest('.canvas-top').getBoundingClientRect();return a.left>=b.left-.5&&a.right<=b.right+.5&&a.top>=b.top&&a.bottom<=b.bottom};
 (async()=>{

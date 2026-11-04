@@ -1097,3 +1097,64 @@
 - 验证：node tests/browser-empty-project.cjs 修复前在真实 Chrome 中复现启动及删空后 canvasDisplay 为 block、两张卡片均无法命中，随后断言失败；最终在独立临时配置的真实无头 Chrome 中通过首页卡片与删除按钮实际点击、平面／立面／WebGL 立体／曲线图、撤销重做、删空混合工程与暂存重载、重新创建，以及 1440px／390px 与深浅主题共 16 组组合，无页面异常或在线请求。已查看修复后桌面浅色与窄屏深色首页截图；截图关闭入场动画以检查最终画面。首次沙箱启动 Chrome 遇到 EPERM，获准独立启动后继续；专项驱动初轮误假设曲线图自带组件，修正夹具后通过。
 - 验证：src/app.js 及两份新增测试的 node --check、git diff --check 通过，仅有既有 LF／CRLF 提示；临时 Node.js 检查正式种子为空与离线构建插入点已展开通过。确认根目录 LevelDesignToolkits.lnk 的目标为本次更新的 dist/index.html。
 - 未运行：本次真实浏览器导出下载、教程重建、Windows 重新封装及桌面 EXE 冒烟、手机真机；此次修复空工程界面生命周期，未修改教程内容或桌面实现，窄屏使用真实 Chrome 视口验证。
+
+## 2026-11-04 · 放置组件后自动切换到组件属性
+
+- 变更：从“图稿设置”开始创建组件时，拖拽平面／圆形／楼梯／爬梯／旋转楼梯／空洞、沿边放置墙壁、完成多边形／路线及点击放置标记，成功创建并选中后自动切换到“组件属性”，显示新组件字段。文字沿用已有的选中与编辑切换。面板切换只发生在创建成功后，预览、取消、过小或无效创建保留当前图稿设置；手动切回图稿设置后可正常编辑，连续创建和单次撤销重做保留。窄屏仍保持画布入口以便连续放置，打开“属性与设置”时显示新组件属性。
+- 影响文件：src/app.js、src/interactions.js、src/wall-placement.js、tests/browser-creation-inspector.cjs、dist/index.html、dist/build-report.json、logs/CHANGELOG.md；专项截图与报告位于 qa/creation-inspector/。保留工作区同期其他修改。
+- 验证：npm run build 成功；npm test 一次顺序执行的 30 组全部通过。运行期间工作区因同期立体变换和数值输入修改再次构建，因此整套结果来自执行各组时的构建，而非固定的同一份构建快照；本次面板专项随后在更新后的离线网页上完整复跑通过。
+- 验证：node tests/browser-creation-inspector.cjs 修复前在真实 Chrome 中复现“已创建并选中，但面板仍为 document”的断言失败；修复后最终 25 个场景通过，覆盖平面／立面／曲线、各条创建路径、预览与取消、无效轮廓、手动编辑图稿设置、单次撤销重做、390px 窄屏及连续创建，无页面异常或在线请求。已查看桌面与窄屏组件属性截图。沙箱内首次启动 Chrome 遇到 EPERM，获准独立临时配置启动后继续；专项驱动中旧空洞工具无可见按钮及立面投影坐标的夹具问题已修正，未修改产品工具入口或投影。
+- 验证：三份应用 JS 及新增浏览器专项的 node --check 通过；相关文件 git diff --check 通过，仅有既有 LF／CRLF 提示。临时 Node.js 检查当前构建报告字节数、脚本插入点展开、正式空种子与浏览器报告通过。
+- 未运行：本次真实浏览器导出下载、教程重建和手机真机；修复恢复现有教程中“选中组件后自动切到组件属性”的行为，未调整教程、导出或桌面实现。
+
+## 2026-11-04 · 移除桌面端并保留纯网页交付
+
+- 变更：删除 Electron 主进程、preload、桌面图标与包配置，移除桌面启动、Windows 目录版和便携版 npm 命令，卸载 @electron/packager、electron、electron-builder 及其不再需要的间接依赖；锁文件从 355 个包条目缩减为 49 个，保留 three、terser、jsdom、playwright-core 四项直接依赖。删除桌面冒烟测试、桌面打包脚本和本次确认的 qa/project-saving 桌面测试产物。
+- 变更：网页保存逻辑移除 studioDesktop IPC 分支和桌面暂存键注入入口，继续使用原有网页路径暂存键、浏览器文件保存接口、IndexedDB 文件句柄恢复及下载回退。保留项目根目录指向 dist/index.html 的网页快捷方式。发布脚本改为整理离线 HTML、网页 ZIP、源码 ZIP、教程、示例和 SHA256 校验值；修正源码归档日志路径，补入 hooks 回归所需脚本，移除已删除的桌面输入及不存在的 .gitattributes 要求。同步 README、内外教程、发布指南、协作规则、项目上下文、项目技能和 hooks 监控范围；历史日志与历史验收记录保留。
+- 影响文件：desktop/（删除）、tools/package-desktop.mjs（删除）、tools/package-portable.mjs（删除）、tests/desktop-smoke.cjs（删除）、package.json、package-lock.json、src/app.js、src/project-saving.js、src/help/content.json、tests/browser-project-saving.cjs、tests/browser-ark-ui.cjs、tests/browser-endfield-workbench.cjs、tools/package-release.py、tools/release_files.py、tools/prepare-github.py、README.md、docs/、.gitignore、AGENTS.md、.codex/、dist/index.html。保留工作区其他并行任务的创建、属性与变换改动，本条不将其计为本次清理的实现。
+- 验证：npm uninstall --save-dev @electron/packager electron electron-builder --ignore-scripts --offline --no-audit --no-fund 成功，移除 306 个包；npm ls --depth=0 --ignore-scripts 正常。npm run build 成功，npm test 的 30 组应用回归全部通过。node tests/browser-project-saving.cjs 与 node tests/browser-project-saving-restart.cjs 在真实 Chrome 中通过，覆盖快捷保存、输入提交、取消/失败/并发、JSON 下载、真实进程重启、IndexedDB 和 OPFS 文件写入、权限及不同网页路径隔离。node --test tests/changelog-hooks.test.cjs 的 15 项通过；首次沙箱执行遇到 spawn EPERM，获准在沙箱外重跑通过。使用实际可用的 Python 3 执行 tools/build-manual.py、tools/package-release.py、tools/prepare-github.py 均成功；网页和源码 ZIP 内容、归档完整性、MIT 元数据及 6 个附件 SHA256 校验通过。level-studio-package、level-studio-verify 的 quick_validate.py 和更新的技能 YAML 元数据校验通过；校验所需 PyYAML 临时安装于 .build/skill-validation，未加入项目或全局依赖。静态检查确认当前源码、脚本、锁文件与协作配置不再引用桌面运行或打包入口。
+- 未运行：远端上传、GitHub Pages 部署及手机真机检查；本次仅修改本地源码与交付流程，未请求外部发布。
+
+## 2026-11-04 · 原创代码改用 MIT 并移除独立 third_party 目录
+
+- 变更：按作者要求将根目录 LICENSE 替换为标准 MIT，保留 Copyright (c) 2026 Haoming7，并同步 package.json、package-lock.json、README、第三方声明、发布指南、上传提示和协作上下文中的许可表述。移除旧的修改和再分发须书面许可条款。
+- 变更：删除仅供已移除桌面封装使用的 NSIS、StdUtils、LGPL 文件，以及重复的 Three.js 许可副本，完整移除 third_party/。保留 THIRD_PARTY_NOTICES.md 与 src/fonts/ 下两份 OFL；Three.js 原始 MIT 从已安装依赖读取并随网页嵌入。离线应用和独立教程 HTML 均嵌入项目完整 MIT，应用另保留 Three.js MIT、Saira OFL、Noto Sans SC OFL 全文；第三方组件和字体继续适用其原始许可证。
+- 影响文件：LICENSE、THIRD_PARTY_NOTICES.md、third_party/（删除）、package.json、package-lock.json、src/editor.html、tools/build.mjs、tools/build-manual.py、tools/package-release.py、tools/release_files.py、tools/prepare-github.py、README.md、docs/GitHub发布指南.md、.codex/rules/release.md、.codex/project-context.md、dist/index.html、docs/使用说明.html。
+- 验证：最终 npm run build 成功，Node.js 检查项目 MIT、Three.js MIT 和两份字体 OFL 的完整文本均嵌入 HTML、所有构建占位符已展开、正式种子为空、无桌面桥接标记；最终重建前后四个 script 块的合并 SHA256 相同，许可注释未改变运行脚本。使用实际 Python 3 重建教程，检查独立教程 HTML 包含完整 MIT 且移除桌面保存说明通过。项目与锁文件的 MIT 标识和直接依赖一致性、desktop/ 与 third_party/ 不存在、依赖树中无桌面打包组件的断言通过；本次完整回归、浏览器与附件校验见上一条。
+- 未运行：外部发布和历史已发版本的重打包；本次许可与目录清理作用于当前工作区及本地重新生成的网页附件，历史记录未改写。
+
+## 2026-11-04 · 立体图三个变换工具共用角点
+
+- 变更：将立体视图 W 移动、E 旋转、R 大小主手柄的共用点从组件中心改为本地包围框最小 X/Y/Z 角点；切换工具、转动视角和旋转组件后沿用同一角点。旋转以该角点为轴心，本地尺寸轴以该角点为固定基点向另一侧伸缩。多选移动与旋转使用整体世界包围框最小 X/Y/Z 角点。直接拖动包围框其他角点仍固定对角点，点击角点不改主手柄基点。同步状态提示及内置/外部教程，重建离线网页；保留工作区其他同期修改。
+- 影响文件：src/world-move.js、src/world-transform.js、src/app.js、src/help/content.json、tests/fixtures/world-move-points.cjs、tests/verify-solid-transform.cjs、tests/verify-grid-snapping.cjs、tests/browser-solid-transform.cjs、docs/使用说明.md、docs/使用说明.html、dist/index.html、dist/build-report.json、logs/CHANGELOG.md；本地浏览器证据在 qa/solid-transform/、qa/perspective/。
+- 验证：npm run build 成功；使用 bundled Python 执行 tools/build-manual.py 成功。node tests/verify-solid-transform.cjs 通过六类实体的三轴角点旋转与尺寸、倾斜/非对称组件及非零楼层、三种观察方位、工具切换、固定基点和对角点、宿主空洞/编组、撤销重做/取消及 JSON/导出排除检查。npm test 本次一次完整运行的全部 30 组通过，包括移动、网格、变换吸附、属性、摄像机、组件/楼层列表、切割、集合和导出。
+- 验证：node tests/browser-solid-transform.cjs 使用独立临时配置的真实 Chrome 通过 W/E/R 角点一致性、旋转角点固定、实际尺寸轴与角点命中/拖动、撤销重做和 Esc、输入/锁定、宿主、JSON 与三视图同步；已查看 W/E/R 三张角点截图。node tests/browser-perspective.cjs 通过真实透视移动/旋转/尺寸、近裁剪、400 实体缓存导航和 PNG/SVG 实际下载，无页面异常或在线请求；此脚本首次沙箱内启动 Chrome 遇到 EPERM，获准独立启动后通过。
+- 验证：本次七份源码/测试的 node --check 通过；临时 Node.js 检查立体变换教程在内置/Markdown/HTML 三处同步、正式种子为空与构建插入点展开通过；相关文件 git diff --check 通过，仅有既有 LF/CRLF 提示。
+- 未运行：手机真机和大型复杂场景长时压力测试；本次使用真实 Chrome 及现有 400 实体导航回归验证。
+
+## 2026-11-04 · 数值框首次单击全选与直接拖动分流
+
+- 变更：数值输入框首次单击松开后全选数字，直接输入替换全部内容；保持焦点再次单击可定位到具体数字，定位后可拖选部分文本。离开后重新点击、或用 Tab 进入数值框时重新全选；组件三轴、外观参数、楼梯 flight、图稿设置与曲线数值共用交互。
+- 变更：保留无需先点击的三轴横向拖动调值，首次按下后直接拖动仍右增左减，只有单击松开才进入输入状态。进入输入状态后普通拖动交给原生文本选择；X/Y/Z 色块始终可拖动，Shift 拖动继续精细调值，保留多选差值、一次撤销、取消和属性快捷复制粘贴。仅聚焦、点击与文本选区不改变模型和历史。同步内置与外部教程，更新离线网页；保留工作区同期其他修改。
+- 影响文件：src/property-inspector.js、src/help/content.json、tests/browser-number-entry.cjs、docs/使用说明.md、docs/使用说明.html、dist/index.html、dist/build-report.json、logs/CHANGELOG.md；专项浏览器截图、报告、产物检查与整套回归输出在 qa/number-entry/。
+- 验证：npm run build 成功；使用 bundled Python 执行 tools/build-manual.py 成功。node tests/verify-property-inspector.cjs、node tests/verify-property-clipboard.cjs 通过。node tests/browser-number-entry.cjs 在独立真实无头 Chrome 中通过 48 项检查，覆盖三视图、首次全选和第二次指定位置插入、直接键入替换、负数/小数、数字框之间切换焦点、原生部分文本选择、未聚焦时直接拖动、聚焦时拖色块、撤销重做、Tab、轻微手抖、不同参数/flight、多个值批量输入、图稿/曲线与 390px 深浅主题；无页面异常或在线请求，已查看桌面与窄屏全选截图。
+- 验证：node tests/browser-property-scrub.cjs、node tests/browser-property-clipboard.cjs 在独立真实无头 Chrome 中通过，覆盖原有九轴拖动、Shift 精细调整、网格独立、多选差值、宿主空洞、取消、锁定、属性复制粘贴和窄屏/主题布局。node qa/number-entry/check-artifacts.cjs 检查内置帮助与两份外部教程文字一致、全部帮助媒体存在、正式种子为空及构建插入点展开通过；相关 JS 的 node --check 和相关文件 git diff --check 通过，仅有既有 LF/CRLF 提示。
+- 验证记录：专项测试在修改前真实复现首次点击没有全选并按预期失败。Chrome 初次沙箱启动 EPERM，自动审批允许独立临时配置启动后继续。新增测试初轮将原生 number 全选后的直接拖动假设为部分选区、遗漏撤销重做后需重新选择组件，并误设 Tab 会越过折叠分组标题；根据原生行为与项目既有规则修正测试步骤后最终通过，未放宽数值、选区、历史或拖动断言。
+- 未运行：本次真实浏览器导出下载、发布归档、远端上传和手机真机；此次调整数值输入与拖动分流，未更改导出和发布逻辑，窄屏使用真实 Chrome 视口验证。
+- 验证补充：本次最终 npm test 完整执行 30 组应用回归全部通过（退出码 0），输出保存在 qa/number-entry/regressions.log。
+
+## 2026-11-04 · 两个示例工程统一改名
+
+- 变更：将“两层小楼示例”改名为“空间图示例”，将“空间与曲线示例”改名为“曲线图示例”；源码中的两个 JSON 文件、空间主图稿和曲线图稿名称、README 下载链接、QA 生成路径、发布脚本、测试夹具引用与项目上下文同步更新。保留全部图稿、组件、标识和原有打开位置，曲线工程仍保留原有辅助空间图稿。
+- 变更：同步 release/ 中两个独立 JSON、网页 ZIP 与源码 ZIP 的示例名称及相关引用，重新生成六个附件的 SHA256 校验值。对已有压缩包作局部更新，其余条目内容保持原样；未执行完整重新打包。
+- 影响文件：data/空间图示例.json、data/曲线图示例.json（原文件改名）、README.md、tools/make-qa.mjs、tools/package-release.py、tests/verify-mesh-export.cjs、tests/browser-toolbar.cjs、tests/browser-endfield-workbench.cjs、tests/browser-mesh-export.cjs、tests/browser-ui-shell.cjs、.codex/project-context.md、release/、logs/CHANGELOG.md；临时附件同步脚本在 .build/rename-examples/sync.py。
+- 验证：node tests/verify-mesh-export.cjs 通过，包括改名后的空间工程经独立 Three.js FBX/OBJ 读取器校验。临时 Node.js 检查两个 JSON 经现有模型校验后图稿与组件数量不变，与原发布副本比较仅目标图稿名称变化，README 链接和正式空种子正确；首次使用 Node.js 子进程读取 Git 基线遇到环境 spawnSync EPERM，改用改名前的发布 JSON 直接比较后通过。修改的六份 JS/MJS 的 node --check 通过，相关文件 git diff --check 通过，仅有既有 LF/CRLF 提示。
+- 验证：使用 bundled Python 3 执行 .build/rename-examples/sync.py，通过两份 ZIP 完整性、条目无重复、旧示例路径移除、新示例与源码 JSON 字节一致、其余条目内容不变、六个 SHA256 校验及发布脚本语法检查。rg 检查当前 README、数据、工具、测试及项目上下文无旧示例路径或旧示例名称引用。
+- 未运行：应用构建、整套 npm test、真实浏览器、QA 工程重新生成与教程重建；本次只调整示例名称、路径及发布附件，不改应用实现，避免重生成示例时重置对象标识。完整 tools/package-release.py 未运行，当前工作区缺少既有归档必需的 THIRD_PARTY_NOTICES.md、docs/GitHub发布指南.md、docs/空间图_平面.png 和 docs/曲线图_事件.png，因此仅同步已有附件中的本次变更；未执行上传或部署。
+
+## 2026-11-04 · 补齐本机快捷方式忽略规则
+
+- 变更：忽略根目录 LevelDesignToolkits.lnk，并取消其 Git 跟踪，保留本地快捷方式。沿用现有依赖、构建中间文件、发布附件、QA 报告及缓存忽略规则；正式离线单页与源码资料继续保留。
+- 影响文件：.gitignore、LevelDesignToolkits.lnk（仅取消跟踪）、logs/CHANGELOG.md。
+- 验证：git check-ignore -v 确认快捷方式、node_modules/、.build/、release/、qa/、dist/build-report.json 和 Python 缓存命中规则；git ls-files -ci --exclude-standard 无输出，确认没有已跟踪文件被忽略规则遗漏处理；Test-Path 确认快捷方式仍存在。Git 索引首次写入因沙箱权限被拒，经审批执行 git rm --cached 成功。
+- 未运行：应用构建和应用回归测试；本次仅修改 Git 忽略及跟踪配置，不涉及应用行为。

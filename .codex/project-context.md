@@ -2,15 +2,14 @@
 
 供应用实现、构建、验证和打包任务按需阅读；协作入口见 [README.md](README.md)，持久指引见 [AGENTS.md](../AGENTS.md)。
 
-整理日期：2026-10-22；依据当前目录中的源码和脚本。产品说明见 [根目录 README](../README.md)，用户操作见 [使用说明](../docs/使用说明.md)。环境缺件属于本次快照，执行任务前需重新核实。
+整理日期：2026-11-04；依据当前目录中的源码和脚本。产品说明见 [根目录 README](../README.md)，用户操作见 [使用说明](../docs/使用说明.md)。执行命令前需核实本机依赖和构建产物。
 
 ## 项目概况
 
-- 名称：关卡设计工具箱 / Level Design Toolkits；npm 包名 `level-design-toolkits`，当前产品版本 `1.1.0`。
+- 名称：关卡设计工具箱 / Level Design Toolkits；npm 包名 `level-design-toolkits`，当前产品版本 `1.2.0`。
 - 用途：供关卡策划绘制空间布局和游玩节奏，包括空间三视图、楼层与组件、节奏/压力曲线，以及 JSON 工程保存和 PNG/SVG 导出。
-- 网页采用原生 JavaScript、HTML、CSS 与 SVG，无前端框架或第三方运行时脚本。构建后是可离线打开的单个 `dist/index.html`，无需后端。
-- Windows 桌面版使用 Electron，复用构建后的网页；支持目录版和单文件便携版。
-- 依赖用于开发、构建、测试及桌面封装，版本由 `package-lock.json` 锁定。
+- 项目只交付浏览器网页，采用原生 JavaScript、HTML、CSS 与 SVG；透视立体图使用 Three.js / WebGL。构建后是可离线打开的单个 `dist/index.html`，无需后端。
+- 直接依赖为 `three`、`terser`、`jsdom`、`playwright-core`；后三者用于构建与测试，版本由 `package-lock.json` 锁定。
 
 ## 目录导航
 
@@ -21,15 +20,13 @@
 | `src/fonts/` | Saira 英文与 Noto Sans SC 中文可变字体、来源及 OFL 许可，构建时一并嵌入单页；中文缺字及画布文字保留系统黑体 |
 | `src/help/` | 内置教程内容 `content.json`、7 段 GIF 及其 PNG 封面 |
 | `data/initial-project.json` | 正式启动种子，当前为空工程 |
-| `data/qa-project.json`、`data/two-storey-house.json` | 空间/曲线和两层小楼示例 |
-| `desktop/` | Electron 主进程 `main.cjs`、包信息和图标 |
-| `tools/` | 网页构建、教程生成、QA 示例生成、桌面封装和发布归档脚本 |
-| `tests/` | 自动回归、浏览器操作片段、导出文件检查及桌面冒烟测试 |
+| `data/空间图示例.json`、`data/曲线图示例.json` | 空间图和曲线图示例工程；曲线工程保留辅助空间图稿 |
+| `tools/` | 网页构建、教程生成、QA 示例生成和发布归档脚本 |
+| `tests/` | 自动回归、浏览器操作片段及导出文件检查 |
 | `tests/fixtures/` | 回归测试所需的旧版吸附求解器对照样本 |
 | `dist/` | 网页构建产物；当前已有可直接打开的 `index.html` |
 | `docs/` | 用户教程、图稿示例、发布指南和历史检查记录 |
-| `third_party/` | 桌面封装相关第三方许可文件 |
-| `.build/`、`release/`、`release-upload/` | 封装/发布脚本运行时产生的目录，当前快照未包含 |
+| `.build/`、`release/`、`release-upload/` | 本地工具中间文件、网页附件及上传准备目录 |
 
 ## 源码组织与构建顺序
 
@@ -66,7 +63,7 @@ model → geometry → model-features → curved-geometry → creation-colors
 | 网格与移动吸附、旋转/大小吸附 | `grid-snapping.js`、`move-snapping.js`、`transform-snapping.js` |
 | 立体图世界轴/平面手柄 | `world-move.js`、`world-transform.js` |
 | 文字编辑、输入法和快捷键 | `text-editing.js`、`keyboard.js`，以及 `app.js` 中的事件绑定 |
-| 工程文件保存、Ctrl/Command+S 与桌面写盘 | `project-saving.js`，桌面通过 `preload.cjs` 的受限 IPC 调用 `main.cjs` |
+| 工程文件保存、Ctrl/Command+S 与文件关联恢复 | `project-saving.js`，浏览器文件保存接口与 IndexedDB，兼容下载保存 |
 | 曲线属性、事件位置和排序 | `curve-panel.js`、`event-editing.js` |
 | PNG/SVG 预览、输出范围、异步下载 | `export-preview.js`，以及 `app.js`、`render.js` 中的导出逻辑 |
 | FBX/OBJ 三维网格、空洞三角化与文件序列化 | `mesh-export.js` 的 `StudioMeshExport`；复用模型几何，由 `export-preview.js` 接入格式选择和下载 |
@@ -76,18 +73,18 @@ model → geometry → model-features → curved-geometry → creation-colors
 
 ## 数据与交互约定
 
-- 当前工程格式为 `format: "level-spatial-editor"`、`version: 7`。产品版本 `1.1.0`、文件名中的 v9/v10 与工程格式版本含义不同。
+- 当前工程格式为 `format: "level-spatial-editor"`、`version: 7`。产品版本 `1.2.0`、文件名中的 v9/v10 与工程格式版本含义不同。
 - 空间图的 `gridSize` 表示每格虚幻单位，默认 100，允许 1–10000 的整数，随 JSON、暂存和撤销保存；旧工程缺省为 100。网格显示与网格吸附独立开关，网格吸附启动时默认开启，可手动关闭。网格吸附优先于组件边吸附，新建实体取整格尺寸，移动按主组件包围框边界对齐，画布尺寸手柄按当前网格取整，Ctrl 暂停；属性编辑器的尺寸输入和数值拖动不按网格取整，单选、多选均允许有效的非整格或小于一格尺寸。已有组件不会在切换开关时批量修改。
 - 工程包含 `documents` 和可选的 `activeDocument`；图稿类型为 `space` 或 `curve`。空间对象包含平面、墙壁、宿主空洞、楼梯、爬梯、旋转楼梯、文字、路线及标记。
 - 导入和启动恢复通过 `StudioModel.validate` 完成校验/迁移；修改数据结构时应一起检查各层校验包装和旧工程兼容性。
 - `app.js` 的 `mutate`、`history` 管理变更校验、失败回滚和撤销记录；编辑功能需沿用现有的操作提交/取消机制。
 - 属性面板的三轴数值框及色块支持横向拖动：右增左减，Shift 精细调整，尺寸不受网格吸附限制，无需按 Ctrl/Command；多选拖动保留各件数值差，直接输入统一设置。厚度、宽度、半径和起止高度等属性参数同样不触发整格缩放。拖动过程从起始状态预览，松开一次提交历史，Esc/指针取消/失焦及切换操作恢复原状态。
-- 网页暂存键默认为 `spatial-studio-v9:` 加 `location.pathname`；桌面封装时改为固定键 `level-diagram-studio-desktop-v1`。更换网页路径、浏览器或电脑不会自动迁移暂存，JSON 工程文件用于长期保存和跨端转移。“保存工程”及 Ctrl/Command+S 首次选择位置，本次打开期间复用目标；导入或 `loadProject` 后重置目标，目标不写入工程 JSON/撤销历史。不支持文件保存接口的浏览器回退下载，位置由浏览器设置决定。桌面使用隔离 preload 和受限 IPC，通过临时文件写完后替换目标；关闭窗口使用 `autosave` 命令，不触发文件选择。
-- 界面字体、控件及间距统一为原界面的约 110%，使用 rem 尺寸，不缩放图稿坐标。“工程图稿”内提供新增、切换、复制、删除，复制与删除以两列排列；空间图名称通过右侧“图稿设置”修改，曲线图的图内标题单独设置。界面采用 Endfield 工业工作台风格（endfield / maximal）：灰白工作面、炭黑操作区、信号黄与切角；启动、空间三视图、曲线、导出与帮助分别构图，真实视图和选择状态驱动外壳；标题左侧两位编号由当前图稿在工程 documents 中的顺序生成（空工程 00），切换三视图保持图稿号，编号不写入工程数据。界面主题使用独立的 `level-toolkits-ui-theme` 键，不进入工程、撤销记录或导出图稿。990px 及以下使用底部三个面板入口；三视图、参考线、箭头、吸附、背景、取景及上下文选项在所有窗口下保持单行，空间不足时工具栏内横向滚动，键盘焦点自动滚动到对应控件，不再折叠编辑选项。选择绘图工具后返回画布；键盘跳转链接会恢复画布面板和焦点。左侧 LD/ 导航列与底部工作状态行已移除；英文小标签只保留英文，中文主要标题与功能名称保留。`data-workspace-mode` 等外壳状态与按钮的 `data-view`、`data-tool` 属性分开，避免通用选择器误命中根节点。桌面注入暂存键时保留 `<html>` 上的设计配置属性。
+- 网页暂存键为 `spatial-studio-v9:` 加 `location.pathname`。更换网页路径、浏览器或电脑不会自动迁移暂存，JSON 工程文件用于长期保存和转移。“保存工程”及 Ctrl/Command+S 首次选择位置，之后复用目标；Chrome、Edge 使用 IndexedDB 记住文件句柄，重启后恢复暂存工程仍可保存到原位置，必要时重新申请写权限。导入或 `loadProject` 后重置目标，目标不写入工程 JSON/撤销历史。不支持文件保存接口的浏览器回退下载，位置由浏览器设置决定。
+- 界面字体、控件及间距统一为原界面的约 110%，使用 rem 尺寸，不缩放图稿坐标。“工程图稿”内提供新增、切换、复制、删除，复制与删除以两列排列；空间图名称通过右侧“图稿设置”修改，曲线图的图内标题单独设置。界面采用 Endfield 工业工作台风格（endfield / maximal）：灰白工作面、炭黑操作区、信号黄与切角；启动、空间三视图、曲线、导出与帮助分别构图，真实视图和选择状态驱动外壳；标题左侧两位编号由当前图稿在工程 documents 中的顺序生成（空工程 00），切换三视图保持图稿号，编号不写入工程数据。界面主题使用独立的 `level-toolkits-ui-theme` 键，不进入工程、撤销记录或导出图稿。990px 及以下使用底部三个面板入口；三视图、参考线、箭头、吸附、背景、取景及上下文选项在所有窗口下保持单行，空间不足时工具栏内横向滚动，键盘焦点自动滚动到对应控件，不再折叠编辑选项。选择绘图工具后返回画布；键盘跳转链接会恢复画布面板和焦点。左侧 LD/ 导航列与底部工作状态行已移除；英文小标签只保留英文，中文主要标题与功能名称保留。`data-workspace-mode` 等外壳状态与按钮的 `data-view`、`data-tool` 属性分开，避免通用选择器误命中根节点。
 - 立体图实体支持 W 世界轴移动、E 三轴刚体旋转、R 单实体本地角点调尺寸（对角点固定）；路线快捷键为 L，S 不切换工具。多实体可一起移动/旋转，独立轮廓顶点编辑仍在平面/立面完成；文字保留各视图字号和旋转，空洞依附宿主。路线使用直接节点操作。
 - 导出需区分完整图稿和当前视野；编辑手柄不得进入成品。异步预览切换/关闭后应取消旧下载并释放临时对象 URL。
-- FBX/OBJ 仅用于空间图，输出所有可见楼层的五类实体及宿主空洞，不按当前视角、选中范围或预览取景裁切；不输出文字、路线和标记。三角网格保持世界坐标数值 1:1、Z 轴向上；二进制 FBX 7.4 使用厘米并含基础颜色/透明度，OBJ 为单个几何文件（含法线，不带 MTL）。`three` 仅作为开发测试依赖，用独立读取器验证输出，不嵌入网页。
-- 网页 CSP 禁止网络连接；Electron 也拦截外部网络，关闭 Node 集成并启用上下文隔离及沙箱。
+- FBX/OBJ 仅用于空间图，输出所有可见楼层的五类实体及宿主空洞，不按当前视角、选中范围或预览取景裁切；不输出文字、路线和标记。三角网格保持世界坐标数值 1:1、Z 轴向上；二进制 FBX 7.4 使用厘米并含基础颜色/透明度，OBJ 为单个几何文件（含法线，不带 MTL）。`three` 的独立读取器用于验证导出；其运行库另由构建脚本嵌入网页，供 `webgl-viewport.js` 渲染透视图。
+- 网页 CSP 禁止网络连接，脚本、字体和教程媒体随离线 HTML 嵌入。
 
 ## 常用命令
 
@@ -101,38 +98,35 @@ npm run manual
 ```
 
 - `build`：生成 `dist/index.html` 和 `dist/build-report.json`。修改源码后先构建，再运行测试，因为多数回归加载的是构建产物。
-- `test`：顺序运行 20 组 `tests/verify-*.cjs`，覆盖版本兼容、事件、视角、空间操作、三角楼梯踏步与端点、楼梯吸附、世界移动、立体旋转与角点尺寸、变换吸附、平面/立面独立尺寸、多选属性与三轴数值编辑、组件列表排序与范围选择、导出临时图像内存限制及 FBX/OBJ 的独立读取、空洞/法线/世界坐标和取消下载。
+- `test`：顺序运行 `package.json` 中列出的 `tests/verify-*.cjs`，覆盖版本兼容、事件、视角、空间操作、楼梯、吸附、世界变换、属性编辑、组件与楼层列表、切割、集合运算、多边形、几何缓存、导出及旧工程兼容。
 - `manual`：等价于 `python -X utf8 tools/build-manual.py`，从 `src/help/content.json` 和媒体生成 `docs/使用说明.md`、`docs/使用说明.html`。修改教程后需同时重建网页和外部说明。
-- `npm run qa`：生成 `data/qa-project.json` 和带示例种子的 `dist/qa.html`；会覆盖已有 QA 示例数据，按需使用。
+- `npm run qa`：生成 `data/曲线图示例.json` 和带示例种子的 `dist/qa.html`；会覆盖已有 QA 示例数据，按需使用。
 - 单组回归可用 `node tests/verify-world-move.cjs` 等直接执行；仍需先构建。
 
-Windows 封装及发布归档：
+网页附件及源码归档：
 
 ```sh
-npm run package:portable
+npm run build
+npm run manual
 python -X utf8 tools/package-release.py
 ```
 
-`package:portable` 依次构建网页、生成 `.build/desktop/关卡设计工具箱-win32-x64/` 目录版，再生成 `.build/portable/LevelDesignToolkits-1.1.0-Windows-x64.exe`。发布脚本将产物、源码、示例和校验值整理到 `release/`；它本身不上传或部署。当前快照的封装缺件见下节。
+发布脚本将离线 HTML、网页 ZIP、源码 ZIP、教程、示例和 SHA256 校验值整理到 `release/`；它本身不上传或部署，也不需要额外的应用运行时。
 
-## 验证方式与当前快照缺件
+## 验证方式与环境
 
-自动模型/jsdom 回归、真实浏览器交互、实际导出文件和 Windows 桌面运行是不同层面的验证。`docs/最终检查记录.md` 记录的是 2026-10-16 的历史验证，后续修改应另行报告本次实际执行的检查。
+自动模型/jsdom 回归、真实浏览器交互和实际导出文件是不同层面的验证。`docs/最终检查记录.md` 记录的是 2026-10-16 的历史验证，后续修改应另行报告本次实际执行的检查。
 
 - `tests/browser-*.js` 多为接收 Playwright `page` 的函数片段，部分包含历史工作目录或本地服务地址；未接入 `npm test`，运行前需准备浏览器驱动入口并检查输出路径。
 - `node tests/browser-mesh-export.cjs` 可直接在 Chrome 中检查 FBX/OBJ 实际下载并用独立读取器验证，兼查 PNG/SVG、窄屏设置、空图与曲线图限制；证据写入 `qa/mesh-export/`。
-- `tests/check-*.cjs` 依赖预先生成的 QA 报告/导出文件；当前目录没有对应 `qa/` 证据目录。
-- `tests/desktop-smoke.cjs` 通过 `STUDIO_EXE` 指向目录版 EXE，并使用独立用户配置运行。历史记录说明单文件便携启动器不适用同一 Electron 调试启动方式。
-- 当前目录没有 `node_modules/`；依赖尚未在此快照中安装。本次建立上下文文档未安装依赖或重跑应用回归。
-- 当前目录没有 `.git/`、`.github/`、`.gitignore`、`.gitattributes`。根 README 和发布指南提到的 Pages/Windows Actions 配置不在这份快照中，不能据此认定已存在或已部署。
-- `tools/release_files.py` 明确要求根目录的 `.gitignore` 和 `.gitattributes`，二者缺失会使源码归档/上传准备失败。
-- `tools/package-desktop.mjs` 还要复制 `docs/导出图稿_预览.png` 和 `docs/事件名称排序_拖动中.png`，当前均缺失；桌面封装前需补齐这些输入或修正复制清单。
-- `npm run desktop` 会让主进程加载 `desktop/index.html`，当前不存在该文件；`npm run build` 只输出到 `dist/`。直接运行此命令尚缺页面准备步骤，封装脚本则会向暂存应用目录写入页面。
+- `tests/check-*.cjs` 依赖预先生成的 QA 报告/导出文件，不可用旧证据代替本次检查。
+- 当前工作区包含 `.git/`、`.github/workflows/deploy.yml` 和 `.gitignore`；Pages 配置从 `master` 发布已构建的 `dist/`，远端是否启用或部署须另行核实。
+- 系统 `python` 可能是 Microsoft Store 占位入口，可使用实际可用的 Python 3 路径；浏览器测试使用已安装的 Chrome 或 `STUDIO_BROWSER` 指定的浏览器。
 
 ## 后续维护提示
 
 - 从 `src/` 修改功能，通过构建更新 `dist/`；教程以 `src/help/content.json` 为内容源。生成文件上的临时修改会被下一次构建覆盖。
 - 保留正式种子的空工程状态；用独立示例或测试夹具验证，避免把用户暂存和 QA 工程嵌入正式页面。
 - 修改空间交互时重点检查宿主/空洞、编组、整层操作、撤销重做、取消拖拽和视图切换；修改导出时检查实际文件及异步取消行为。
-- 发布源码使用 `tools/release_files.py` 的目录/文件清单；`.codex/` 当前不在发布清单中。新增必要资源时需检查构建、桌面复制和发布归档是否都能带上。
-- 许可属于权利保留及软件使用许可，详见 `LICENSE`，并非开源许可证；第三方许可见 `THIRD_PARTY_NOTICES.md`。
+- 发布源码使用 `tools/release_files.py` 的目录/文件清单，包含 `logs/CHANGELOG.md` 和 hooks 测试所需的脚本；其余 `.codex/` 本机配置不随包分发。新增必要资源时需检查构建和发布归档是否都能带上。
+- 原创代码采用 MIT，详见 `LICENSE`；第三方组件及字体许可见 `THIRD_PARTY_NOTICES.md`。项目 MIT、Three.js MIT 和字体 OFL 全文随离线 HTML 嵌入；字体原始许可同时保留在 `src/fonts/`。

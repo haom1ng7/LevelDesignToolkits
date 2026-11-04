@@ -78,7 +78,7 @@ const url=pathToFileURL(path.join(__dirname,'../dist/index.html')).href;
   await page.locator('#theme-toggle').click();await page.waitForTimeout(220);await page.screenshot({path:path.join(out,'curve-light.png')});await bounds(page,'desktop curve');
   for(const width of [360,430,768,1024,1440]){await page.setViewportSize({width,height:1000});await bounds(page,'curve '+width)}
   assert.equal(await page.locator('#workspace-count').textContent(),String(await page.evaluate(()=>SpatialEditor.document.curve.events.length)),'readout uses real event count');
-  const house=JSON.parse(fs.readFileSync(path.join(__dirname,'../data/two-storey-house.json'),'utf8'));await page.evaluate(p=>SpatialEditor.loadProject(p),house);await page.locator('[data-view="solid"]').click();await page.waitForTimeout(220);await page.screenshot({path:path.join(out,'workspace-light.png')});
+  const house=JSON.parse(fs.readFileSync(path.join(__dirname,'../data/空间图示例.json'),'utf8'));await page.evaluate(p=>SpatialEditor.loadProject(p),house);await page.locator('[data-view="solid"]').click();await page.waitForTimeout(220);await page.screenshot({path:path.join(out,'workspace-light.png')});
   await page.locator('#theme-toggle').click();await page.waitForTimeout(220);await page.screenshot({path:path.join(out,'workspace-dark.png')});
   await page.emulateMedia({reducedMotion:'reduce'});
   assert(await page.locator('[data-tool="select"]').evaluate(el=>getComputedStyle(el).transitionDuration==='0s'),'reduced motion disables transitions');

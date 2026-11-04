@@ -48,6 +48,6 @@ function finishWallPlacement(edge){
   const za=a[2]-center[2],zb=b[2]-center[2];o.points=[[-length/2,za],[length/2,zb],[length/2,zb+180],[-length/2,za+180]];
   d.objects.push(o);lastCreated={doc:current,id:o.id};selection=[o.id];primary=o.id;eventId=null;floorSelection=null;vertexIndex=null;curveSelected=false;
  },'已沿边缘放置墙壁 · 可继续点击其他边缘 · Esc / 右键退出');
- if(!success){selection=previous.selection;primary=previous.primary;lastCreated=previous.lastCreated;prune();render()}
+ if(success){panel='properties';render()}else{selection=previous.selection;primary=previous.primary;lastCreated=previous.lastCreated;prune();render()}
 }
 canvas.addEventListener('lostpointercapture',()=>{if(drag?.kind==='place-wall')endDrag(true)});

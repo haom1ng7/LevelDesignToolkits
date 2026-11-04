@@ -8,7 +8,7 @@ const { createHash } = require('node:crypto');
 const ROOT = path.resolve(__dirname, '../..');
 const LOG = 'logs/CHANGELOG.md';
 const WATCHED = [
-  'src', 'desktop', 'data', 'tools', 'tests', 'dist',
+  'src', 'data', 'tools', 'tests', 'dist',
   'package.json', 'package-lock.json', 'AGENTS.md',
   '.codex/hooks.json', '.codex/hooks', '.codex/rules', '.codex/skills',
 ];

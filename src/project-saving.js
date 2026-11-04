@@ -27,11 +27,10 @@ function projectFileRecord(mode,value){
 function resetProjectFile(){
  projectFileHandle=null;projectFileToken=null;projectFileRevision++;
  try{persistProjectFileToken()}catch{}
- if(!window.studioDesktop?.saveProject&&window.indexedDB)projectFileRecord('delete').catch(()=>{});
+ if(window.indexedDB)projectFileRecord('delete').catch(()=>{});
  $('[data-action="project"]').title='将工程保存为 JSON 文件';
 }
 function restoreProjectFile(restoredDraft){
- if(window.studioDesktop?.saveProject)return;
  try{projectFileToken=restoredDraft?localStorage.getItem(projectFileKey):null;if(!restoredDraft)persistProjectFileToken()}catch{}
  if(!projectFileToken)return;
  const token=projectFileToken,revision=projectFileRevision;
@@ -71,11 +70,7 @@ function saveProject(){
    if(revision!==projectFileRevision)return false;
    let handle=projectFileHandle,name=projectDefaultName;
    let remembered=true;
-   if(window.studioDesktop?.saveProject){
-    const result=await window.studioDesktop.saveProject(content,!handle);
-    if(result.canceled){status('已取消保存');return false}
-    handle={name:result.name};name=result.name;
-   }else if(typeof window.showSaveFilePicker==='function'){
+   if(typeof window.showSaveFilePicker==='function'){
     if(!handle)handle=await window.showSaveFilePicker({suggestedName:projectDefaultName,types:[{description:'关卡设计工具箱工程',accept:{'application/json':['.json']}}]});
     else if(typeof handle.queryPermission==='function'&&await handle.queryPermission({mode:'readwrite'})!=='granted'){
      if(await handle.requestPermission({mode:'readwrite'})!=='granted'){status('未获得原工程文件的写入权限，内容仍保留；再次保存可重试授权');return false}
