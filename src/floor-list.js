@@ -1,10 +1,10 @@
 // Floor positions are list positions; changing the order never changes heights or IDs.
 let floorOrderDrag=null,floorClickSuppressed=false,floorListState=null;
-function resetFloorListSelection(){floorListState=null}
+function resetFloorListSelection(){floorListState=null;delete view.floorIds}
 function floorListIds(){const d=doc();return floorListState?.doc===current?floorListState.ids.filter(id=>d?.floors?.some(f=>f.id===id)):d?.floors?[d.activeFloor]:[]}
 function renderFloors(d){
  if(floorOrderDrag)finishFloorOrder(true);
- const selectedIds=floorListIds();
+ const selectedIds=floorListIds();if(d?.floors)view.floorIds=[...selectedIds];else delete view.floorIds;
  $('#floors').innerHTML=d?.floors?d.floors.map((f,i)=>{
   const shortcut=i<10?String((i+1)%10):'',hint=`楼层列表中的第 ${i+1} 层`;
   return `<div class="floor-row"><button data-floor="${f.id}" class="${selectedIds.includes(f.id)?'active':''}" aria-pressed="${selectedIds.includes(f.id)}" aria-current="${d.activeFloor===f.id}" ${shortcut?`aria-keyshortcuts="${shortcut}"`:''} style="touch-action:none;user-select:none" title="${hint}">${R.esc(f.name)}<small>${+f.height.toFixed(1)}</small></button><button data-floor-visible="${f.id}" title="楼层${f.visible?'当前可见':'当前隐藏'}"><span class="visibility-dot" aria-hidden="true">${f.visible?'●':'○'}</span></button></div>`;
@@ -12,11 +12,12 @@ function renderFloors(d){
 }
 function chooseFloorList(id,e){
  if(!e.ctrlKey&&!e.metaKey&&!e.shiftKey){chooseFloor(id);return}
+ finishFloorOrder(true);finishLayerOrder(true);finishPropertyScrub(true);stopCameraNavigation();if(drag)endDrag(true);finishEditing();drawing=null;placementGhost=null;
  const d=doc(),order=d.floors.map(f=>f.id),previous=floorListIds(),anchor=floorListState?.doc===current&&order.includes(floorListState.anchor)?floorListState.anchor:d.activeFloor,mod=e.ctrlKey||e.metaKey;
  let ids;
  if(e.shiftKey){const from=order.indexOf(anchor),to=order.indexOf(id),range=order.slice(Math.min(from,to),Math.max(from,to)+1);ids=mod?[...new Set([...previous,...range])]:range}
  else ids=previous.includes(id)?previous.filter(f=>f!==id):[...previous,id];
- floorListState={doc:current,ids,anchor:e.shiftKey?anchor:id};renderFloors(d);
+ floorListState={doc:current,ids,anchor:e.shiftKey?anchor:id};render();
 }
 function chooseFloor(id){
  if(!floor(id))return;

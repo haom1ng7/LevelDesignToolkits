@@ -57,6 +57,18 @@ small,.muted{color:var(--ark-ink-2)}kbd{font:.625rem var(--ark-font-ui);backgrou
 /* The drawing fills the center. Two unequal rails have stable, readable fields. */
 .workspace{display:grid;grid-template-columns:15rem minmax(0,1fr) 21.5rem;flex:1;min-height:0;overflow:hidden;background:var(--ark-ground)}
 aside{min-width:0;overflow:auto;background:var(--ark-panel);padding:1.125rem 1rem}.left{border-right:1px solid var(--ark-rule);display:flex;flex-direction:column}.right{border-left:1px solid var(--ark-rule)}aside>*{flex-shrink:0}
+/* Sidebar scrollbars overlay the existing edge padding instead of resizing fields. */
+.workspace{position:relative}
+.workspace.overlay-scrollbars>aside{scrollbar-width:none}
+.workspace.overlay-scrollbars>aside::-webkit-scrollbar{display:none}
+.sidebar-scrollbar{position:absolute;z-index:10;width:.625rem;touch-action:none;cursor:default}
+.sidebar-scrollbar:focus-visible{outline:none}
+.sidebar-scrollbar-thumb{position:absolute;left:.25rem;right:.25rem;background:var(--ark-ink-2);opacity:0;border-radius:1rem;box-shadow:0 0 0 3px var(--ark-panel);pointer-events:none;transition:opacity 180ms var(--ark-mech),left 180ms var(--ark-mech),right 180ms var(--ark-mech)}
+.sidebar-scrollbar.is-hovered .sidebar-scrollbar-thumb,.sidebar-scrollbar.is-scrolling .sidebar-scrollbar-thumb{opacity:.45}
+.sidebar-scrollbar:hover .sidebar-scrollbar-thumb,.sidebar-scrollbar:focus-visible .sidebar-scrollbar-thumb,.sidebar-scrollbar.is-dragging .sidebar-scrollbar-thumb{opacity:.8;left:.1875rem;right:.1875rem}
+.sidebar-scrollbar:focus-visible .sidebar-scrollbar-thumb{outline:1px solid var(--ark-ink);outline-offset:2px}
+.sidebar-scrollbar.is-dragging{cursor:grabbing}
+@media(hover:none){.sidebar-scrollbar-thumb{opacity:.35}}
 .section-heading{display:flex;align-items:center;justify-content:space-between;gap:.625rem;margin:0 0 .8125rem}.section-heading:not(:first-child){margin-top:1.25rem}.section-heading select{width:auto;max-width:5.625rem;padding:.375rem;font-size:.6875rem}.section-heading button{min-height:2.25rem;padding:.25rem .5rem}
 .project-dock{margin:-1.125rem -1rem 0;padding:1.125rem 1rem;border-bottom:1px solid var(--ark-rule);background:var(--ark-paper)}
 .drawing-heading-actions{display:flex;align-items:center;gap:.625rem}.badge{font-size:1.375rem;line-height:1;font-weight:500;color:var(--ark-ink-2)}.drawing-heading-actions .add-document{display:flex;align-items:center;gap:.25rem;font-size:.6875rem;background:var(--ark-ink);color:var(--ark-panel)}.add-document>span{font-size:1.125rem;line-height:1}.project-dock .add-document:hover{background:var(--ark-signal);color:var(--ark-on-signal)}

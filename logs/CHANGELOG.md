@@ -1158,3 +1158,24 @@
 - 影响文件：.gitignore、LevelDesignToolkits.lnk（仅取消跟踪）、logs/CHANGELOG.md。
 - 验证：git check-ignore -v 确认快捷方式、node_modules/、.build/、release/、qa/、dist/build-report.json 和 Python 缓存命中规则；git ls-files -ci --exclude-standard 无输出，确认没有已跟踪文件被忽略规则遗漏处理；Test-Path 确认快捷方式仍存在。Git 索引首次写入因沙箱权限被拒，经审批执行 git rm --cached 成功。
 - 未运行：应用构建和应用回归测试；本次仅修改 Git 忽略及跟踪配置，不涉及应用行为。
+
+## 2026-11-04 · 楼层多选同步画布显示
+
+- 变更：修复 Ctrl / Command、Shift 及组合键多选楼层只更新列表高亮的问题。平面图按所选楼层同时显示实体、文字、路线、标记、宿主空洞和楼梯方向箭头，所选层保持正常不透明度；隐藏层仍不显示，未选层仅在开启其他楼层参考时淡色显示，取消全部选择后不显示正常楼层几何。多选范围属于视图状态，不写入工程 JSON 或新增编辑历史，保留当前创建楼层和既有组件选择。
+- 变更：平面图组件列表、画布点选、框选、全选、切割及移动吸附使用同一楼层范围；点选非当前层组件或点击空白取消组件选择时保留多层显示。楼层按钮的无障碍选中状态与实际多选一致。普通点击或数字键恢复单层；从立面/立体选中其他层组件、或修改所属楼层时，回到平面图仍显示目标层。内置帮助、外部教程与离线网页同步更新。
+- 影响文件：src/floor-list.js、src/app.js、src/component-list.js、src/render.js、src/render-features.js、src/view-features.js、src/advanced-render.js、src/move-snapping.js、src/cutting.js、src/property-inspector.js、src/ui-shell.js、src/help/content.json、tests/verify-floor-list.cjs、tests/browser-floor-list.cjs、docs/使用说明.md、docs/使用说明.html、dist/index.html、logs/CHANGELOG.md。
+- 验证：npm run build 通过；使用 bundled Python 3 执行 python -X utf8 tools/build-manual.py，通过生成 8 节教程及 7 段离线媒体。最终 npm test 完整执行 30 组回归全部通过；node tests/verify-floor-list.cjs 专项通过新增的多层几何、全类型轮廓/标注/空洞点选、隐藏/参考/空范围、列表/无障碍、吸附、JSON/历史隔离以及视图/图稿/楼层归属切换检查。初轮整套检查发现吸附独立测试缺少渲染器变量 R，已移除该新增依赖后重新完整运行通过。
+- 验证：node tests/browser-floor-list.cjs 在真实 Chrome 中通过 Ctrl/Shift 多选同步显示、正常不透明度、非当前层组件点选、空白点击保留范围、隐藏层过滤与数字键恢复单层；同时通过楼层拖动排序/撤销取消、JSON/暂存及 1440/390 像素深浅主题检查，无页面异常或网络请求。实际下载并核查多层 SVG 与 1200×800 PNG，SVG 包含两层组件且排除其他层与编辑手柄，已查看画布截图及 PNG；证据在 qa/floor-list/。沙箱启动 Chrome 首次遇到 EPERM，获准独立启动后通过。
+- 验证：两个新增/扩展测试的 node --check 通过；临时 Node.js 检查内置/Markdown/HTML 教程同步、离线媒体存在、构建插入点展开与正式空种子通过。
+- 未运行：手机真机、发布归档及远端上传/部署；本次交付本地修复后的离线网页，窄屏使用真实 Chrome 视口验证。
+
+## 2026-11-04 · 双侧侧栏浮动滚动条与宽度稳定
+
+- 变更：修复切换不同组件数量楼层、或改变右侧属性内容时，传统滚动条出现/消失挤窄菜单内容的问题。左右侧栏保持原有原生滚动容器，滚动指示与拖动控件覆盖在边缘留白内，不占布局宽度；支持鼠标滚轮、滑块拖动、点击轨道及方向键/PageUp/PageDown/Home/End，滚动条键盘操作不修改已选组件。缺少布局观察 API 的旧环境保留原生滚动条。
+- 变更：按现有 Endfield 空间工作台风格将滑块收为低对比中性灰细圆角，悬停、滚动、拖动或键盘聚焦时显示，闲置淡出；移除整条黄色焦点框，键盘焦点仅标记滑块。滚动区域从两侧标题分隔线下方开始，滑块周围以面板底色隔开线条，避免与标题线、面板边界交叉；窄屏切换工具/属性/画布时只显示当前面板的滚动条。保留此前楼层多选修复与其他工作区修改。
+- 影响文件：src/editor.css、src/ui-shell.js、tests/browser-sidebar-width.cjs、dist/index.html、logs/CHANGELOG.md。
+- 验证：修改前新增真实 Chrome 专项关闭自动化隐藏滚动条参数，并模拟传统滚动条，复现 1440×1600 时组件增多导致左侧内容宽度从 210.203125 缩至 195.203125 像素，按预期失败。修复后 npm run build 通过；最终 node tests/browser-sidebar-width.cjs 通过 0/1/2/3/4/30 个组件、长名称、左右内容宽度稳定、1440/1024/390 像素宽度、1000/1600 两种高度及深浅主题检查，并通过双侧滚轮/键盘/真实滑块拖动、无整条焦点框、标题分隔线避让、闲置淡出、窄屏切换与工程数据不变检查。报告和截图在 qa/sidebar-width/。
+- 验证：最终 node tests/browser-endfield-workbench.cjs 通过七种桌面/竖屏/横屏布局、深浅主题、创建/属性/撤销、窄屏选项与减少动态效果回归，无页面异常或网络请求。本次 node tests/browser-floor-list.cjs、node tests/verify-floor-list.cjs、node tests/verify-empty-project.cjs 均通过；src/ui-shell.js 与新增浏览器脚本的 node --check 通过，git diff --check 通过（仅有既有 LF/CRLF 提示）。
+- 验证限制：node tests/browser-ui-shell.cjs 未完整通过，停止于其既有触屏按钮宽高必须至少 44 像素的断言。另以 Git HEAD 原版网页与本次网页在同一 Chrome 触屏视口测量，二者撤销/重做按钮均为 39.59375×39.59375，主题按钮宽度均为 39.59375，确认与本次滚动条修改无关；未调整这些既有按钮或放宽断言。对照证据在 qa/sidebar-width/touch-baseline.json。
+- 视觉验收：已实际查看最终双侧深浅主题、右侧细滑块特写及闲置状态截图；视觉 verified，响应式 verified，桌面滚动/键盘交互 verified；手机真机触控手势 not tested。设计沿用空间画布与边缘工具轨家族，以清晰和稳定宽度为主要约束，不新增装饰线或其他游戏素材。
+- 未运行：本次整套 npm test、手机真机、实际导出文件、发布归档或远端部署；本次仅修改侧栏 UI 与滚动显示，已运行针对性模型/楼层及真实浏览器工作台回归，未引用上一任务的整套检查作为本次结果。

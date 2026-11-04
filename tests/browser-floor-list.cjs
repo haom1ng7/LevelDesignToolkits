@@ -61,6 +61,35 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
    const floors=await fresh();await start(floors[4],floors[1]);assert(await page.locator('.floor-insertion-line').isVisible());await page.screenshot({path:path.join(out,`${width}-${theme}.png`),fullPage:true});await page.mouse.up();assert.deepEqual(await order(),[floors[0],floors[4],floors[1],floors[2],floors[3]]);
    const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth);assert(!overflow);responsive.push({width,theme,overflow});
   }
+  // A real Ctrl/Shift gesture must refresh the artwork as well as the list rows.
+  await page.setViewportSize({width:1440,height:1000});await page.evaluate(()=>{document.body.dataset.pane='canvas'});
+  ids=await fresh(4);await page.evaluate(()=>{
+   const A=SpatialEditor;for(const [i,f] of A.document.floors.entries())for(const o of A.document.objects.filter(o=>o.floor===f.id&&o.type!=='hole'))o.position=[240+i*300,350,0];
+   document.querySelector('#ghost').checked=false;A.setTool('select');A.command('fit');
+  });await page.keyboard.press('1');
+  const planes=await page.evaluate(()=>SpatialEditor.document.objects.filter(o=>o.type==='plane').map(o=>o.id));
+  const displayed=async()=>page.evaluate(()=>[...new Set(SpatialEditor.scene.faces.filter(f=>!f.ghost).map(f=>f.owner.floor))].sort());
+  await row(ids[1]).click({modifiers:['Control']});assert.deepEqual(await displayed(),ids.slice(0,2).sort());assert.equal(await page.locator(`#scene [data-object="${planes[1]}"]`).count()>0,true);
+  assert.equal(await row(ids[0]).getAttribute('aria-pressed'),'true');assert.equal(await row(ids[1]).getAttribute('aria-pressed'),'true');
+  await page.screenshot({path:path.join(out,'multi-floor-canvas.png'),fullPage:true});
+  await page.locator('[data-action="export-menu"]').click();await page.locator('#export-format').selectOption('svg');
+  await page.waitForFunction(()=>SpatialEditor.exportPreview?.ready&&SpatialEditor.exportPreview.format==='svg');
+  for(const id of planes.slice(0,2))assert(await page.locator(`#export-preview-content [data-object="${id}"]`).count()>0,'export preview contains selected floors');
+  let downloaded=page.waitForEvent('download');await page.locator('#export-download').click();let file=await downloaded;await file.saveAs(path.join(out,'multi-floor.svg'));
+  const svg=fs.readFileSync(path.join(out,'multi-floor.svg'),'utf8');for(const id of planes.slice(0,2))assert(svg.includes(`data-object="${id}"`));for(const id of planes.slice(2))assert(!svg.includes(`data-object="${id}"`));assert(!svg.includes('data-selection-outline'));
+  await page.locator('#export-format').selectOption('png');await page.locator('#export-scale').selectOption('1');
+  await page.waitForFunction(()=>SpatialEditor.exportPreview?.ready&&SpatialEditor.exportPreview.format==='png'&&SpatialEditor.exportPreview.mult===1);
+  downloaded=page.waitForEvent('download');await page.locator('#export-download').click();file=await downloaded;await file.saveAs(path.join(out,'multi-floor.png'));
+  const png=fs.readFileSync(path.join(out,'multi-floor.png'));assert.equal(png.readUInt32BE(16),1200);assert.equal(png.readUInt32BE(20),800);assert(png.length>1000);
+  await page.locator('[data-action="export-close"]').first().click();
+  const hit=await page.evaluate(id=>{const A=SpatialEditor,M=StudioModel,o=A.document.objects.find(o=>o.id===id),p=M.project(M.world(A.document,o,[40,40,0]),A.scene.basis),svg=document.querySelector('#canvas'),point=svg.createSVGPoint();point.x=p[0];point.y=p[1];const q=point.matrixTransform(svg.getScreenCTM());return {x:q.x,y:q.y}},planes[1]);
+  await page.mouse.click(hit.x,hit.y);assert.equal(await page.evaluate(()=>SpatialEditor.selection.id),planes[1]);assert.deepEqual(await displayed(),ids.slice(0,2).sort());
+  const blank=await page.evaluate(()=>{const svg=document.querySelector('#canvas'),p=svg.createSVGPoint();p.x=900;p.y=600;const q=p.matrixTransform(svg.getScreenCTM());return {x:q.x,y:q.y}});await page.mouse.click(blank.x,blank.y);assert.deepEqual(await displayed(),ids.slice(0,2).sort(),'clearing component selection keeps floor display scope');
+  await page.locator('#canvas').focus();await page.keyboard.press('Escape');assert.deepEqual(await displayed(),ids.slice(0,2).sort());
+  await row(ids[0]).click({modifiers:['Control']});assert.deepEqual(await displayed(),[ids[1]]);
+  await row(ids[3]).click({modifiers:['Shift']});assert.deepEqual(await displayed(),[ids[0],ids[1],ids[3]].sort(),'Shift range excludes the hidden floor');
+  await page.keyboard.press('2');assert.deepEqual(await displayed(),[ids[1]]);
+  checks.push('Real Ctrl/Shift updates SVG geometry at full opacity, respects hidden floors, supports picking a non-current floor, retains multiple floors during selection, collapses with digit shortcuts, and exports actual SVG/PNG with the selected floor scope');
   assert.deepEqual(errors,[]);assert.deepEqual(requests,[]);fs.writeFileSync(path.join(out,'report.json'),JSON.stringify({checks,responsive,errors,requests},null,2));
   console.log('PASS Chrome floor list: real digit/numpad input, typing protection, three views, pointer preview/reorder, unchanged data and selection, history/cancel, rename/icons, JSON/autosave, 30-floor scrolling, desktop/narrow light/dark. Evidence: qa/floor-list/.');
  }finally{await browser.close()}

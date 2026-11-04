@@ -23,7 +23,7 @@ const MoveSnapping=(()=>{
   const add=(e,id,depth)=>{const a=M.project(e.a,basis),b=M.project(e.b,basis);targets.push({...e,id,a2:a,b2:b,depth:depth||range([e.a,e.b]),box:[Math.min(a[0],b[0]),Math.min(a[1],b[1]),Math.max(a[0],b[0]),Math.max(a[1],b[1])]})};
   for(const o of d.objects){
    if(excluded.has(o.id)||o.visible===false||M.floor(d,o)?.visible===false||!['plane','wall','stairs','ladder','spiral','solid'].includes(o.type))continue;
-   if(view.mode==='plan'&&!ghost&&o.floor!==d.activeFloor)continue;
+   if(view.mode==='plan'&&!ghost&&!(view.floorIds??[d.activeFloor]).includes(o.floor))continue;
    if(view.mode==='elevation'&&(view.scope==='floor'&&o.floor!==d.activeFloor||view.scope==='selection'&&!view.focusIds?.includes(o.id)))continue;
    const fs=features(d,o),depth=range(fs.flatMap(e=>[e.a,e.b])),zs=fs.flatMap(e=>[e.a[2],e.b[2]]),height=[Math.min(...zs),Math.max(...zs)];fs.forEach((e,i)=>add({...e,height},o.id+':'+i,o.type==='wall'?depth:null));
    if(o.type==='plane'){
@@ -32,7 +32,7 @@ const MoveSnapping=(()=>{
     if(view.mode==='elevation'&&Math.abs(M.normal(o)[2])>.9999){const ps=fs.map(e=>e.a),xs=ps.map(p=>M.project(p,basis)[0]),y=M.project(ps[0],basis)[1];add({a:M.unproject([Math.min(...xs),y],basis,ps[0]),b:M.unproject([Math.max(...xs),y],basis,ps[0]),owner:o,kind:'surface'},o.id+':surface',depth)}
    }
   }
-  return {sources,targets,basis,mode:view.mode,activeFloor:d.activeFloor,held:null};
+  return {sources,targets,basis,mode:view.mode,activeFloor:d.activeFloor,floorIds:view.floorIds,held:null};
  }
  function compatible(s,t,c){
   const a=s.owner,b=t.owner;if(a.type==='cursor')return true;
@@ -42,7 +42,7 @@ const MoveSnapping=(()=>{
   if(['stairs','spiral'].includes(b.type))return ['plane','wall'].includes(a.type)&&(t.kind==='end'||c.mode==='plan'&&t.kind==='side');
   const ladder=a.type==='ladder'?a:b.type==='ladder'?b:null,other=ladder===a?b:a,feature=ladder===a?s:t;
   if(ladder){const vertical=Math.abs(M.mat(ladder.orientation,[0,0,1])[2])>.9999;if(other.type==='wall')return vertical&&Math.abs(M.normal(other)[2])<.0001;return other.type==='plane'&&(feature.kind==='end'||Math.abs(M.mat(ladder.orientation,[0,1,0])[2])>.9999)}
-  return ['plane','wall'].includes(a.type)&&['plane','wall'].includes(b.type)&&(c.mode!=='plan'||b.floor===c.activeFloor)&&t.kind!=='hole';
+  return ['plane','wall'].includes(a.type)&&['plane','wall'].includes(b.type)&&(c.mode!=='plan'||(c.floorIds??[c.activeFloor]).includes(b.floor))&&t.kind!=='hole';
  }
  function eligible(s,t,c,total=[0,0,0]){
   if(!compatible(s,t,c))return false;const b=c.basis,depth=s.owner.type==='plane'&&s.depth?s.depth.map(v=>v+M.dot(total,b.n)):[Math.min(M.dot(s.a,b.n),M.dot(s.b,b.n))+M.dot(total,b.n),Math.max(M.dot(s.a,b.n),M.dot(s.b,b.n))+M.dot(total,b.n)];

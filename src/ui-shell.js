@@ -30,7 +30,7 @@ function updateShell(){
  $('[data-action="new"]').disabled=project.documents.length>=30;
  for(const attr of ['tool','view','side','panel','background'])document.querySelectorAll('[data-'+attr+']').forEach(b=>b.setAttribute('aria-pressed',String(b.classList.contains('active'))));
  document.querySelectorAll('[data-layer]').forEach(b=>{b.setAttribute('aria-pressed',String(selection.includes(b.dataset.layer)))});
- document.querySelectorAll('[data-floor]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.floor===d?.activeFloor)));
+ document.querySelectorAll('[data-floor]').forEach(b=>b.setAttribute('aria-pressed',String(floorListIds().includes(b.dataset.floor))));
  document.querySelectorAll('[data-visible]').forEach(b=>{const o=objects.get(b.dataset.visible);b.setAttribute('aria-label',(o?.visible?'隐藏':'显示')+'组件：'+(o?.name||''))});
  document.querySelectorAll('[data-lock]').forEach(b=>{const o=objects.get(b.dataset.lock);b.setAttribute('aria-label',(o?.locked?'解除锁定：':'锁定组件：')+(o?.name||''))});
  syncToolGroups();syncShellPanes();
@@ -99,3 +99,46 @@ document.addEventListener('click',e=>{if(!e.target.closest('.skip-workspace'))re
 shellNarrow?.addEventListener('change',()=>{syncShellPanes();if(!shellNarrow.matches||document.body.dataset.pane==='canvas')requestAnimationFrame(()=>{if(doc())fit()})});
 shellDark?.addEventListener('change',syncShellTheme);
 syncShellTheme();
+
+// Keep native scroll containers and overlay only the scrollbar controls.
+// Older environments retain their native bars when observers are unavailable.
+(()=>{
+ if(!window.ResizeObserver||!window.MutationObserver)return;
+ const workspace=$('.workspace');
+ for(const pane of workspace.querySelectorAll(':scope>aside')){
+  const bar=document.createElement('div'),thumb=document.createElement('div');
+  bar.className='sidebar-scrollbar';bar.hidden=true;bar.tabIndex=0;bar.setAttribute('role','scrollbar');bar.setAttribute('aria-label',pane.getAttribute('aria-label')+'滚动条');bar.setAttribute('aria-controls',pane.id);bar.setAttribute('aria-orientation','vertical');bar.setAttribute('aria-valuemin','0');
+  thumb.className='sidebar-scrollbar-thumb';thumb.setAttribute('aria-hidden','true');bar.append(thumb);workspace.append(bar);
+  let frame=0,hideTimer=0,drag=null,travel=0,maximum=0;
+  function release(){if(drag&&bar.hasPointerCapture?.(drag.pointer))bar.releasePointerCapture(drag.pointer);drag=null;bar.classList.remove('is-dragging')}
+  function paint(){
+   frame=0;const box=pane.getBoundingClientRect(),root=workspace.getBoundingClientRect();maximum=Math.max(0,pane.scrollHeight-pane.clientHeight);
+   bar.hidden=!box.width||!box.height||maximum<1;
+   if(bar.hidden){release();return}
+   const heading=pane.querySelector(':scope>.project-dock,:scope>.inspector-heading'),inset=Math.min((heading?.getBoundingClientRect().height||0)+12,Math.max(4,pane.clientHeight-48)),height=Math.max(0,pane.clientHeight-inset-4),size=Math.min(height,Math.max(28,height*pane.clientHeight/pane.scrollHeight)),width=bar.getBoundingClientRect().width;travel=height-size;
+   bar.style.left=box.right-root.left-width-1+'px';bar.style.top=box.top-root.top+inset+'px';bar.style.height=height+'px';
+   thumb.style.height=size+'px';thumb.style.top=(maximum?pane.scrollTop/maximum*travel:0)+'px';
+   bar.setAttribute('aria-valuemax',String(maximum));bar.setAttribute('aria-valuenow',String(Math.round(pane.scrollTop)));
+  }
+  function schedule(){if(!frame)frame=requestAnimationFrame(paint)}
+  function move(e){if(!drag||e.pointerId!==drag.pointer)return;pane.scrollTop=clamp((e.clientY-bar.getBoundingClientRect().top-drag.offset)/Math.max(1,travel),0,1)*maximum;schedule()}
+  bar.addEventListener('pointerdown',e=>{
+   if(e.button!==0)return;e.preventDefault();e.stopPropagation();bar.focus({preventScroll:true});
+   const box=thumb.getBoundingClientRect();drag={pointer:e.pointerId,offset:e.clientY>=box.top&&e.clientY<=box.bottom?e.clientY-box.top:box.height/2};
+   bar.classList.add('is-dragging');bar.setPointerCapture(e.pointerId);move(e);
+  });
+  bar.addEventListener('pointermove',move);bar.addEventListener('pointerup',release);bar.addEventListener('pointercancel',release);bar.addEventListener('lostpointercapture',release);window.addEventListener('blur',release);
+  bar.addEventListener('keydown',e=>{
+   const delta={ArrowUp:-40,ArrowDown:40,PageUp:-pane.clientHeight*.9,PageDown:pane.clientHeight*.9,Home:-maximum,End:maximum}[e.key];
+   if(delta===undefined)return;e.preventDefault();e.stopPropagation();pane.scrollTop+=delta;schedule();
+  });
+  // Wheel events over the overlay must reach the same native scroll container.
+  bar.addEventListener('wheel',e=>{e.preventDefault();pane.scrollTop+=e.deltaY*(e.deltaMode===1?16:e.deltaMode===2?pane.clientHeight:1);schedule()},{passive:false});
+  pane.addEventListener('pointerenter',()=>bar.classList.add('is-hovered'));pane.addEventListener('pointerleave',()=>bar.classList.remove('is-hovered'));
+  pane.addEventListener('scroll',()=>{bar.classList.add('is-scrolling');clearTimeout(hideTimer);hideTimer=setTimeout(()=>bar.classList.remove('is-scrolling'),800);schedule()},{passive:true});window.addEventListener('resize',schedule);
+  const observed=new Set(),resize=new ResizeObserver(schedule);resize.observe(pane);
+  function observeContent(){for(const el of observed)if(el.parentElement!==pane){resize.unobserve(el);observed.delete(el)}for(const el of pane.children)if(!observed.has(el)){observed.add(el);resize.observe(el)}schedule()}
+  new MutationObserver(observeContent).observe(pane,{childList:true,subtree:true,attributes:true,attributeFilter:['hidden','open']});observeContent();
+ }
+ workspace.classList.add('overlay-scrollbars');
+})();

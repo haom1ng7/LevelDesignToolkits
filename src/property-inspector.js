@@ -112,7 +112,7 @@ function applyObjectProperty(o,scope,key,value){
 function applyComponentProperty(scope,key,value){
  if(scope==='prop'&&key==='name'){M.renameComponents(doc(),propertyObjects().map(o=>o.id),value);return}
  if(key==='floor'){
-  const ids=childIds();doc().objects.filter(o=>ids.has(o.id)).forEach(o=>o.floor=value);doc().activeFloor=value;return;
+  const ids=childIds();doc().objects.filter(o=>ids.has(o.id)).forEach(o=>o.floor=value);doc().activeFloor=value;if(!floorListIds().includes(value))resetFloorListSelection();return;
  }
  for(const o of propertyObjects())applyObjectProperty(o,scope,key,value);
 }

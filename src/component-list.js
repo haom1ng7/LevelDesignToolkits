@@ -2,7 +2,7 @@
 let layerAnchor=null,layerOrderDrag=null,layerClickSuppressed=false;
 function componentListRows(){
  const d=doc(),filter=$('#layer-filter').value;if(!d)return [];
- const inFloor=o=>!d.floors||o.floor===d.activeFloor;
+ const inFloor=o=>!d.floors||(view.mode==='plan'?R.floorInScope(d,o.floor,view):o.floor===d.activeFloor);
 
  const holes=new Map();if(filter==='all')for(const h of d.objects)if(h.type==='hole'){if(!holes.has(h.host))holes.set(h.host,[]);holes.get(h.host).push(h)}
  return [...d.objects].reverse().filter(o=>o.type!=='hole'&&inFloor(o)&&(filter==='all'||o.type===filter)).flatMap(o=>filter==='all'?[o,...holes.get(o.id)||[]]:[o]);
@@ -17,7 +17,7 @@ function chooseLayer(id,e){
  eventId=null;floorSelection=null;vertexIndex=null;curveText=null;curveSelected=false;
  if(view.mode==='elevation'&&view.scope==='selection')view.focusIds=[...selection];render();canvasFocus();
 }
-function layerOrderScope(){return current+'|'+(doc()?.activeFloor||'')+'|'+$('#layer-filter').value}
+function layerOrderScope(){return current+'|'+(view.mode==='plan'?floorListIds().join(','):doc()?.activeFloor||'')+'|'+$('#layer-filter').value}
 function layerOrderLocked(objects){return objects.some(o=>o.locked||o.type==='hole'&&doc().objects.find(h=>h.id===o.host)?.locked)}
 function moveComponentStep(direction){
  const d=doc();if(!d||!selection.length)return;

@@ -23,7 +23,7 @@ try{
  $('#help-dialog').showModal();key('4');assert.equal(A.document.activeFloor,ids[1]);$('#help-dialog').close();
  ids=fresh(3);key('0');key('9');assert.equal(A.document.activeFloor,ids[0],'missing floors do nothing');key('End',{code:'Numpad1'});assert.equal(A.document.activeFloor,ids[0]);
  for(const mode of ['plan','elevation','solid']){$(`[data-view="${mode}"]`).click();key('2');assert.equal(A.document.activeFloor,ids[1]);assert.equal(A.view.mode,mode);key('1')}
- // Ctrl/Shift select list rows for stable batch ordering without changing the canvas.
+ // Ctrl/Shift select floors for simultaneous display and stable batch ordering.
  ids=fresh();let [sa,sb,sc,sd,se]=ids;key('2');let initial=contents();h=A.undoCount;
  clickFloor(sd,{ctrlKey:true});same(floorSelectionIds(),[sb,sd]);same(contents(),initial);clickFloor(sb,{ctrlKey:true});same(floorSelectionIds(),[sd]);clickFloor(sa,{shiftKey:true});same(floorSelectionIds(),[sa,sb]);clickFloor(se,{ctrlKey:true,shiftKey:true});same(floorSelectionIds(),[sa,sb,sc,sd,se]);assert.equal(A.undoCount,h);
  clickFloor(sd);clickFloor(sb,{shiftKey:true});same(floorSelectionIds(),[sb,sc,sd]);clickFloor(sc,{shiftKey:true});same(floorSelectionIds(),[sc,sd],'range contracts from the original anchor');clickFloor(se,{metaKey:true});same(floorSelectionIds(),[sc,sd,se]);key('1');same(floorSelectionIds(),[sa],'digit shortcuts collapse list selection');
@@ -41,5 +41,40 @@ try{
  pointer($(`[data-floor-visible="${a}"]`),'pointerdown',220,220);pointer(d,'pointermove',220,270);assert(!$('.floor-drag-ghost'));const visible=A.document.floors.find(f=>f.id===a).visible;$(`[data-floor-visible="${a}"]`).click();assert.equal(A.document.floors.find(f=>f.id===a).visible,!visible);
  $(`[data-floor="${b}"]`).click();$(`[data-floor="${b}"]`).click();assert($('.row-rename'));key('9',{},$('.row-rename'));assert.equal(A.document.activeFloor,b);key('Escape',{},$('.row-rename'));
  y=start(a,f);const old=A.document,oldOrder=rows();A.createDocument('space','另一图稿');drop(y);same(old.floors.map(f=>f.id),oldOrder,'switching documents cancels old drag');assert(!$('.floor-drag-ghost'));A.createDocument('curve','曲线');before=JSON.stringify(A.project);key('1');key('0');same(JSON.stringify(A.project),before,'curve documents ignore floor keys');
- assert.deepEqual(errors,[]);console.log('PASS floor list: 1–0/numpad switching, typing/IME/modifier/dialog/repeat protection, three views, pointer reorder with unchanged floor data/objects/selection, history/no-op/rollback, cancellation, JSON, rename and visibility.');
+ // The selected floor scope must reach geometry, annotations, holes and picking.
+ ids=fresh(3);$('[data-view="plan"]').click();$('#ghost').checked=false;
+ const types=['wall','stairs','ladder','spiral','text','marker','route'];
+ for(const [i,f] of A.document.floors.entries()){
+  A.document.activeFloor=f.id;
+  for(const [j,type] of types.entries()){const o=M.createObject(A.document,type,[200+i*600,200+j*250,0]);A.document.objects.push(o)}
+  const p=A.document.objects.find(o=>o.floor===f.id&&o.type==='plane');p.shape='ellipse';p.position[0]=200+i*600;
+ }
+ A.document.activeFloor=ids[0];key('1');const original=JSON.stringify(A.project);h=A.undoCount;
+ const planeAt=i=>A.document.objects.find(o=>o.floor===ids[i]&&o.type==='plane');
+ const shownFloors=()=>[...new Set(A.scene.faces.filter(f=>!f.ghost).map(f=>f.owner.floor))].sort();
+ const expected=(...indexes)=>indexes.map(i=>ids[i]).sort();
+ same(shownFloors(),expected(0));clickFloor(ids[1],{ctrlKey:true});same(shownFloors(),expected(0,1),'Ctrl-selected floor has real geometry rather than ghost geometry');
+ same(floorSelectionIds(),ids.slice(0,2),'shell accessibility state matches multiple active rows');
+ const snaps=w.StudioSnapping.prepare(A.document,[planeAt(0).id],A.scene.basis,A.view,false);
+ assert(snaps.targets.some(t=>t.owner.floor===ids[1]),'selected non-current floors participate in snapping');
+ assert(!snaps.targets.some(t=>t.owner.floor===ids[2]),'hidden floors do not participate in snapping');
+ for(const o of A.document.objects.filter(o=>o.floor===ids[1])){
+  assert(A.scene.outlines.has(o.id),'selected floor outline: '+o.type);
+  if(o.type==='hole')assert(A.scene.holeHits.some(h=>h.id===o.id),'selected floor hole is pickable');
+  if(['text','marker','route'].includes(o.type))assert(A.scene.hits.some(h=>h.id===o.id),'selected annotation is pickable: '+o.type);
+  assert($(`[data-layer="${o.id}"]`),'selected floor is listed: '+o.type);
+ }
+ assert(A.scene.faces.filter(f=>f.owner.floor===ids[1]).every(f=>f.opacity===f.owner.opacity),'selected floor keeps full opacity');
+ clickFloor(ids[2],{shiftKey:true});same(shownFloors(),expected(1),'hidden floors remain hidden during range selection');
+ $('#ghost').checked=true;A.setTool('select');same(shownFloors(),expected(1));assert(A.scene.faces.some(f=>f.owner.floor===ids[0]&&f.ghost),'unselected visible floor stays a ghost');
+ $('#ghost').checked=false;A.setTool('select');A.select(planeAt(1).id);assert.equal(A.selection.id,planeAt(1).id,'canvas selection accepts a selected non-current floor');same(floorSelectionIds(),ids.slice(1));same(shownFloors(),expected(1));
+ clickFloor(ids[0],{ctrlKey:true});clickFloor(ids[1],{ctrlKey:true});clickFloor(ids[2],{ctrlKey:true});same(shownFloors(),expected(0),'deselected floors disappear immediately');
+ clickFloor(ids[0],{ctrlKey:true});same(shownFloors(),[],'empty floor selection has no regular geometry');
+ assert.equal(JSON.stringify(A.project),original,'floor display selection never changes project JSON');assert.equal(A.undoCount,h);
+ key('2');same(shownFloors(),expected(1),'digit shortcut restores one floor');
+ clickFloor(ids[0],{metaKey:true});for(const mode of ['elevation','solid','plan']){$(`[data-view="${mode}"]`).click();same(floorSelectionIds(),ids.slice(0,2));if(mode==='plan')same(shownFloors(),expected(0,1))}
+ key('1');$('[data-view="elevation"]').click();A.select(planeAt(1).id);$('[data-view="plan"]').click();same(shownFloors(),expected(1),'selecting another floor in elevation keeps that floor visible on return');
+ const destination=$('#prop-floor');destination.value=ids[0];destination.dispatchEvent(new w.Event('change',{bubbles:true}));same(shownFloors(),expected(0),'moving a component to another floor keeps the destination visible');
+ A.createDocument('space','新图稿');assert.equal(A.view.floorIds.length,1,'new documents reset floor scope');
+ assert.deepEqual(errors,[]);console.log('PASS floor list: shortcuts, batch reorder/history/cancel/JSON, Ctrl/Shift simultaneous floor geometry and annotations, full opacity and picking, hidden/ghost/empty scopes, component list/accessibility, selection and view/document switching.');
 }finally{dom.window.close()}

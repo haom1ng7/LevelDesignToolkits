@@ -2,7 +2,7 @@
 const cutCursor='url("data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><g fill="none" stroke="white" stroke-width="5" stroke-linecap="round"><path d="M10 22 27 5M16 16 27 27"/><circle cx="7" cy="25" r="4"/><circle cx="7" cy="8" r="4"/><path d="m10 11 6 5"/></g><g fill="none" stroke="#18212b" stroke-width="2" stroke-linecap="round"><path d="M10 22 27 5M16 16 27 27"/><circle cx="7" cy="25" r="4"/><circle cx="7" cy="8" r="4"/><path d="m10 11 6 5"/></g></svg>')+'") 16 16, crosshair';
 function cutTarget(){
  const roots=selected().filter(o=>o.type!=='hole');if(doc()?.type!=='space'||roots.length!==1||floorSelection||locked())return null;const o=roots[0];
- if(!['plane','wall'].includes(o.type)||selected().some(h=>h.id!==o.id&&h.host!==o.id)||o.visible===false||M.floor(doc(),o)?.visible===false||view.mode==='plan'&&o.floor!==doc().activeFloor)return null;
+ if(!['plane','wall'].includes(o.type)||selected().some(h=>h.id!==o.id&&h.host!==o.id)||o.visible===false||M.floor(doc(),o)?.visible===false||view.mode==='plan'&&!R.floorInScope(doc(),o.floor,view))return null;
  const footprint=o.type==='wall'&&(view.mode==='plan'||!!(o.wallPath||o.wallFootprint));
  if(footprint&&!o.wallPath&&!o.wallFootprint){const b=bounds2(o.points);if(o.shape||o.curves?.some(Boolean)||o.points.length!==4||o.points.some(p=>!([b.min[0],b.max[0]].includes(p[0])&&[b.min[1],b.max[1]].includes(p[1]))))return null}
  const frame=footprint?{origin:[0,0,0],r:[1,0,0],d:[0,1,0],n:[0,0,1]}:localFrame(o),normal=M.mat(o.orientation,frame.n),facing=M.dot(normal,M.viewBasis(doc(),view).n);
