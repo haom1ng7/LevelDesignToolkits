@@ -48,7 +48,7 @@ try{
  // Host sizes carry holes once; all views share the same model and exact non-grid sizes.
  [a,b]=fresh();const hole=Object.assign(M.createObject(A.document,'hole'),{host:b,floor:object(b).floor,points:[[-20,-20],[20,-20],[20,20],[-20,20]]});A.document.objects.push(hole);object(a).points=object(a).points.map(p=>[p[0]*137.25/240,p[1]]);choose([a]);copy('#prop-dimensionX');
  for(const mode of ['plan','elevation','solid']){
-  $(`[data-view="${mode}"]`).click();A.select(b);before=objects();count=A.undoCount;paste('#prop-dimensionX');near(+$('#prop-dimensionX').value,137.25);near(object(hole.id).points[1][0]-object(hole.id).points[0][0],40*137.25/240);assert(M.validHole(A.document,object(hole.id)));assert.equal(A.undoCount,count+1);A.command('undo');assert.equal(objects(),before);
+  $(`[data-view="${mode}"]`).click();A.select(b);before=objects();count=A.undoCount;paste('#prop-dimensionX');near(+$('#prop-dimensionX').value,137.25);near(object(b).points[0][0],-120,'paste fixes left edge');near(object(b).points[1][0],-120+137.25,'paste moves only right edge');near(object(hole.id).points[1][0]-object(hole.id).points[0][0],40*137.25/240);assert(M.validHole(A.document,object(hole.id)));assert.equal(A.undoCount,count+1);A.command('undo');assert.equal(objects(),before);
  }
  // Shift held from pointer-down still starts fine scrubbing after moving, rather than pasting.
  choose([b]);count=A.undoCount;const initial=object(b).position[0];pointer('pointerdown',$('#prop-px'),{shiftKey:true});pointer('pointermove',$('#properties'),{shiftKey:true,clientX:120});pointer('pointerup',$('#properties'),{shiftKey:true,clientX:120});near(object(b).position[0],initial+2);assert.equal(A.undoCount,count+1);pointer('click',$('#properties'),{shiftKey:true});

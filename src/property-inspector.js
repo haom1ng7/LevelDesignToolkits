@@ -34,6 +34,10 @@ function propertyRotation(o){
 }
 function propertyOrientation(angles){return M.product(M.product(M.axisRotation([0,0,1],angles[2]*Math.PI/180),M.axisRotation([0,1,0],angles[1]*Math.PI/180)),M.axisRotation([1,0,0],angles[0]*Math.PI/180))}
 function propertyDimensions(o){const b=solidLocalBounds(o);return M.sub(b.max,b.min)}
+function propertyRectangle(o){
+ if(o.type!=='plane'||o.shape==='ellipse'||o.points.length!==4||o.curves?.some(v=>Math.abs(v)>1e-7))return false;
+ return o.points.every((p,i)=>{const a=M.sub(o.points[(i+1)%4],p),b=M.sub(o.points[(i+2)%4],o.points[(i+1)%4]);return (Math.abs(a[0])<1e-7||Math.abs(a[1])<1e-7)&&Math.abs(M.dot(a,b))<1e-7});
+}
 function transformFields(o){
  if(o.type==='hole')return '';
  const row=(label,keys,values,titles)=>`<div class="transform-row" role="group" aria-label="${label}"><span class="transform-label" title="组件的三轴${label}参数">${label}</span><div class="transform-values">${keys.map((key,i)=>`<label class="axis-field axis-${i}" data-property-scrub="${key}" title="${titles[i]}"><span aria-hidden="true">${'XYZ'[i]}</span><input id="prop-${key}" data-scope="prop" data-key="${key}" type="number" step="any" ${key.startsWith('dimension')?'min="0.01"':''} value="${+values[i].toFixed(4)}" aria-label="${titles[i]}"></label>`).join('')}</div></div>`;
@@ -95,7 +99,10 @@ function resizeProperty(o,axis,value){
  factors[axis]=value/extent[axis];
  constrainSolidFactors(o,factors,[axis]);
  const labels=doc().objects.filter(t=>t.type==='text').map(t=>({t,position:[...t.position]}));
- scaleHost(o,worldAxes,factors,M.origin(doc(),o));if(['stairs','spiral'].includes(o.type))o.thickness*=factors[2];
+ // Keep the rectangle's starting edges fixed, including after rigid rotation.
+ // Its top face remains the thickness anchor, as in the existing plane model.
+ const b=propertyRectangle(o)?solidLocalBounds(o):null,anchor=b?M.world(doc(),o,[b.min[0],b.min[1],0]):M.origin(doc(),o);
+ scaleHost(o,worldAxes,factors,anchor);if(['stairs','spiral'].includes(o.type))o.thickness*=factors[2];
  for(const {t,position} of labels)t.position=position;
 }
 function applyObjectProperty(o,scope,key,value){

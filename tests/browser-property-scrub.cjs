@@ -22,12 +22,26 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('n
   // Live preview has no history entry; one release commits the complete gesture.
   await fresh();let before=await read(),undo=await count(),p=await start('dimensionX');await move(p,20);await move(p,40);assert.equal(await count(),undo);assert(await page.locator('body').evaluate(el=>el.classList.contains('property-scrubbing')));near((await read())[0].points[1][0]-(await read())[0].points[0][0],280);await page.mouse.up();assert.equal(await count(),Math.min(80,undo+1));
   let after=await read();assert.deepEqual(after[0].position,before[0].position);await page.locator('[data-action="undo"]').click();assert.deepEqual(await read(),before);await page.locator('[data-action="redo"]').click();assert.deepEqual(await read(),after);await select();
+  assert.equal(after[0].points[0][0],before[0].points[0][0],'rectangle left edge fixed during real scrub');assert.equal(after[0].points[1][0],before[0].points[1][0]+40,'only right edge grows');
   await scrub('dimensionX',-20,[],true);near(+(await page.locator('#prop-dimensionX').inputValue()),260,'badge drags left to decrease');
   // Every transform row and axis works in all three views.
   for(const mode of ['plan','elevation','solid'])for(const key of ['px','py','pz','rx','ry','rz','dimensionX','dimensionY','dimensionZ']){
    await fresh({mode});const value=+(await page.locator('#prop-'+key).inputValue());await scrub(key,12);near(+(await page.locator('#prop-'+key).inputValue()),value+12,mode+' '+key);
   }
+  // Real input and shrinking scrub share the rotated rectangle's fixed starting edges.
+  for(const mode of ['plan','elevation','solid'])for(const axis of ['X','Y']){
+   await fresh({mode});await page.evaluate(()=>{const A=SpatialEditor,M=StudioModel,o=A.document.objects[0];o.orientation=M.product(M.axisRotation([0,0,1],.6),M.axisRotation([1,0,0],.3));A.select(o.id,false,true)});
+   const corners=()=>page.evaluate(()=>{const A=SpatialEditor,M=StudioModel,o=A.document.objects[0];return [false,true].map(end=>M.world(A.document,o,[...[0,1].map(i=>(end?Math.max:Math.min)(...o.points.map(p=>p[i]))),0]))});
+   const start=await corners(),input=page.locator('#prop-dimension'+axis);before=await read();await input.fill('337.25');await input.press('Tab');let ends=await corners();ends[0].forEach((v,i)=>near(v,start[0][i],'typed size fixes rotated start'));assert.notDeepEqual(ends[1],start[1]);
+   await page.locator('#prop-px').click();await scrub('dimension'+axis,-40,[],true);ends=await corners();ends[0].forEach((v,i)=>near(v,start[0][i],'shrinking scrub fixes rotated start'));near(+(await input.inputValue()),297.25);
+   await page.locator('[data-action="undo"]').click();await select();near(+(await input.inputValue()),337.25);await page.locator('[data-action="undo"]').click();assert.deepEqual(await read(),before);
+  }
   // Mixed fields add the same delta to each target, preserving their differences.
+  for(const mode of ['plan','elevation','solid']){
+   await fresh({mode});await page.evaluate(()=>{const A=SpatialEditor,M=StudioModel,o=A.document.objects[0];o.orientation=M.axisRotation([1,0,0],.3);A.select(o.id,false,true)});
+   const top=await page.evaluate(()=>StudioModel.world(SpatialEditor.document,SpatialEditor.document.objects[0],[0,0,0]));
+   for(const height of [37.25,7.25]){const input=page.locator('#prop-dimensionZ');await input.fill(String(height));await input.press('Tab');const faces=await page.evaluate(()=>{const A=SpatialEditor,M=StudioModel,o=A.document.objects[0];return {top:M.world(A.document,o,[0,0,0]),bottom:M.world(A.document,o,[0,0,-o.thickness]),offset:M.mat(o.orientation,[0,0,-o.thickness])}});faces.top.forEach((v,i)=>near(v,top[i],'typed height fixes rotated top face'));faces.bottom.forEach((v,i)=>near(v,top[i]+faces.offset[i],'only bottom face changes'));near(+(await input.inputValue()),height)}
+  }
   await fresh({types:['plane','plane'],mixed:true,multi:true});before=await read();undo=await count();await scrub('dimensionX',30);after=await read();after.forEach((o,i)=>near(o.points[1][0]-o.points[0][0],i?391.25:270));assert.equal(await page.locator('#prop-dimensionX').getAttribute('placeholder'),'多个值');assert.equal(await count(),Math.min(80,undo+1));
   await scrub('px',20);after=await read();after.forEach((o,i)=>near(o.position[0],before[i].position[0]+20));near(after[1].position[0]-after[0].position[0],400);
   await scrub('rz',10);after=await read();after.forEach((o,i)=>near(Math.atan2(o.orientation[3],o.orientation[0])*180/Math.PI,i?40:10));

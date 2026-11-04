@@ -9,6 +9,7 @@ function change(selector,value,event='change'){const input=$(selector);assert(in
 function mixed(selector){assert.equal($(selector).value,'',selector+' blank');assert.equal($(selector).dataset.mixed,'true',selector+' mixed');assert.equal($(selector).placeholder,'多个值')}
 function dims(o){const ps=M.geometry(A.document,o).flatMap(f=>f.points.map(p=>M.local(A.document,o,p))),min=[0,1,2].map(i=>Math.min(...ps.map(p=>p[i]))),max=[0,1,2].map(i=>Math.max(...ps.map(p=>p[i])));if(o.type==='stairs'){min[2]=Math.min(...o.flights.flatMap(f=>[f.start,f.end]))-o.thickness;max[2]=Math.max(...o.flights.flatMap(f=>[f.start,f.end]))}if(o.type==='spiral')return [o.outer*2,o.outer*2,o.end-o.start+o.thickness];return M.sub(max,min)}
 function orientation(x,y,z){return M.product(M.product(M.axisRotation([0,0,1],z*Math.PI/180),M.axisRotation([0,1,0],y*Math.PI/180)),M.axisRotation([1,0,0],x*Math.PI/180))}
+function rectangleCorner(o,end=false){return M.world(A.document,o,[...[0,1].map(i=>(end?Math.max:Math.min)(...o.points.map(p=>p[i]))),0])}
 function propertyPointer(kind,x,target=$('#properties'),options={}){const e=new w.MouseEvent(kind,{bubbles:true,cancelable:true,button:0,clientX:x,clientY:100,...options});Object.defineProperties(e,{pointerId:{value:1},pointerType:{value:'mouse'}});target.dispatchEvent(e)}
 try{
  let ids=fresh(),[a,b]=ids;object(b).position[1]=425;object(b).orientation=orientation(0,0,30);object(b).thickness=28;object(b).fill='#123456';choose(ids);
@@ -20,6 +21,20 @@ try{
  change('#prop-fill','#789abc');assert(ids.every(id=>object(id).fill==='#789abc'));assert(!$('#prop-fill').closest('.mixed-color'));
  count=A.undoCount;change('#prop-name','批量','input');change('#prop-name','批量名称','input');assert.equal(A.undoCount,count+1,'typing is one batch undo');assert.deepEqual(ids.map(id=>object(id).name),['批量名称','批量名称_002'],'batch names are unique');A.command('undo');assert(ids.every(id=>!object(id).name.startsWith('批量名称')));A.command('redo');choose(ids);
  before=JSON.stringify(A.document.objects);count=A.undoCount;change('#prop-name','');assert.equal(JSON.stringify(A.document.objects),before,'empty component names are rejected');assert.equal(A.undoCount,count);choose(ids);
+ // Rectangle inputs fix the starting corner in world space, across views, rotations,
+ // growth/shrinkage, shifted local contours, floors and multiple selections.
+ for(const mode of ['plan','elevation','solid'])for(const angles of [[0,0,0],[20,15,35]])for(const axis of [0,1,2])for(const value of [337.25,7.25]){
+  ids=fresh();A.document.floors[0].height=125;ids.forEach((id,i)=>{const o=object(id);o.orientation=orientation(...angles);o.points=o.points.map(p=>[p[0]+31*i,p[1]-43*i])});$(`[data-view="${mode}"]`).click();choose(ids);$('#snap').checked=true;
+  const starts=ids.map(id=>rectangleCorner(object(id))),ends=ids.map(id=>rectangleCorner(object(id),true)),extents=ids.map(id=>dims(object(id))),matrices=ids.map(id=>[...object(id).orientation]);before=JSON.stringify(A.document.objects);count=A.undoCount;
+  change('#prop-dimension'+'XYZ'[axis],value,'input');change('#prop-dimension'+'XYZ'[axis],value);
+  ids.forEach((id,i)=>{const o=object(id);vector(rectangleCorner(o),starts[i],'rectangle start stays fixed');vector(M.sub(rectangleCorner(o,true),ends[i]),M.mat(matrices[i],[0,1,2].map(j=>axis<2&&j===axis?value-extents[i][axis]:0)),'only opposite side moves along rotated local axis');near(dims(o)[axis],value);if(axis===2){const bottom=M.world(A.document,o,[Math.min(...o.points.map(p=>p[0])),Math.min(...o.points.map(p=>p[1])),-o.thickness]);vector(M.sub(bottom,starts[i]),M.mat(matrices[i],[0,0,-value]),'height changes only below fixed top face')}});
+  assert.equal(A.undoCount,Math.min(80,count+1));const after=JSON.stringify(A.document.objects);A.command('undo');assert.equal(JSON.stringify(A.document.objects),before);A.command('redo');assert.equal(JSON.stringify(A.document.objects),after);
+ }
+ // Curves and nonrectangular contours retain their existing centered scaling.
+ for(const kind of ['polygon','ellipse','arc']){
+  ids=fresh(['plane']);a=ids[0];if(kind==='arc')object(a).curves=[.1,0,0,0];else if(kind==='ellipse')object(a).shape='ellipse';else object(a).points=[[-120,-90],[120,-90],[80,90],[-120,90]];M.validate(A.project);choose(ids);
+  const points=M.clone(object(a).points),width=dims(object(a))[0];change('#prop-dimensionX',width*1.25);object(a).points.forEach((p,i)=>vector(p,[points[i][0]*1.25,points[i][1]*(kind==='arc'?1.25:1)],'other contours keep scale anchor'));
+ }
  // Each entity uses its local physical dimensions, with rotation and origin retained.
  for(const type of types)for(let axis=0;axis<3;axis++){
   ids=fresh([type]);a=ids[0];$('#snap').checked=true;const o=object(a);o.orientation=orientation(20,15,35);choose(ids);const original=dims(o),origin=[...o.position],matrix=[...o.orientation],value=original[axis]*1.25+.375;
@@ -60,15 +75,15 @@ try{
  }
  // Circular coupling and host holes still follow exact dimensions below one grid cell.
  ids=fresh(['spiral']);a=ids[0];choose(ids);$('#snap').checked=true;change('#prop-dimensionX',37.25);vector(dims(object(a)).slice(0,2),[37.25,37.25],'exact circular coupling');
- ids=fresh(['plane']);a=ids[0];hole=Object.assign(M.createObject(A.document,'hole'),{host:a,floor:object(a).floor,points:[[-20,-20],[20,-20],[20,20],[-20,20]]});A.document.objects.push(hole);choose(ids);$('#snap').checked=true;change('#prop-dimensionX',137.25);near(object(hole.id).points[1][0]-object(hole.id).points[0][0],40*137.25/240);assert(M.validHole(A.document,object(hole.id)));
+ ids=fresh(['plane']);a=ids[0];hole=Object.assign(M.createObject(A.document,'hole'),{host:a,floor:object(a).floor,points:[[-20,-20],[20,-20],[20,20],[-20,20]]});A.document.objects.push(hole);choose(ids);$('#snap').checked=true;change('#prop-dimensionX',137.25);near(object(hole.id).points[1][0]-object(hole.id).points[0][0],40*137.25/240);near(object(hole.id).points[0][0],-120+100*137.25/240,'hole shares fixed-edge host scale');assert(M.validHole(A.document,object(hole.id)));
  // Euler singularities remain finite and round trip without changing the matrix.
  for(const y of [-90,-89.999,0,89.999,90]){ids=fresh();a=ids[0];object(a).orientation=orientation(25,y,40);choose([a]);const original=[...object(a).orientation];change('#prop-ry',+$('#prop-ry').value);vector(object(a).orientation,original,'singular Euler round trip')}
  const json=JSON.stringify(A.project);A.loadProject(JSON.parse(json));assert.equal(JSON.stringify(A.project),json,'JSON retains physical transforms');
  for(const mode of ['plan','elevation','solid']){$(`[data-view="${mode}"]`).click();choose([a]);assert.equal(d.querySelectorAll('.transform-row').length,3);assert.equal(d.querySelectorAll('.transform-values input').length,9)}
  // Horizontal scrubbing previews all nine values and commits one atomic edit.
  for(const key of ['px','py','pz','rx','ry','rz','dimensionX','dimensionY','dimensionZ']){
-  ids=fresh(['plane']);a=ids[0];choose(ids);$('#snap').checked=true;const initial=+$('#prop-'+key).value,original=JSON.stringify(A.document.objects);count=A.undoCount;
-  propertyPointer('pointerdown',100,$('#prop-'+key));propertyPointer('pointermove',112);propertyPointer('pointermove',125);assert.equal(A.undoCount,count,'preview does not create history');near(+$('#prop-'+key).value,initial+25,key+' scrub');propertyPointer('pointerup',125);assert.equal(A.undoCount,Math.min(80,count+1),'one scrub is one undo');A.command('undo');assert.equal(JSON.stringify(A.document.objects),original,'scrub undo restores exact geometry');
+  ids=fresh(['plane']);a=ids[0];choose(ids);$('#snap').checked=true;const initial=+$('#prop-'+key).value,original=JSON.stringify(A.document.objects),start=rectangleCorner(object(a));count=A.undoCount;
+  propertyPointer('pointerdown',100,$('#prop-'+key));propertyPointer('pointermove',112);propertyPointer('pointermove',125);assert.equal(A.undoCount,count,'preview does not create history');near(+$('#prop-'+key).value,initial+25,key+' scrub');if(['dimensionX','dimensionY'].includes(key))vector(rectangleCorner(object(a)),start,'scrub fixes rectangle start');propertyPointer('pointerup',125);assert.equal(A.undoCount,Math.min(80,count+1),'one scrub is one undo');A.command('undo');assert.equal(JSON.stringify(A.document.objects),original,'scrub undo restores exact geometry');
  }
  ids=fresh();choose(ids);before=JSON.stringify(A.document.objects);count=A.undoCount;propertyPointer('pointerdown',100,$('#prop-px'));propertyPointer('pointermove',120,$('#properties'),{shiftKey:true});
  propertyPointer('pointercancel',120);assert.equal(JSON.stringify(A.document.objects),before);assert.equal(A.undoCount,count,'cancel does not create history');

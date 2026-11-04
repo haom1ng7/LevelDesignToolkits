@@ -60,7 +60,7 @@ function inspector(){const d=doc(),o=obj(),e=d?.curve?.events.find(x=>x.id===eve
 }
 function documentInspector(){const d=doc();if(!d){$('#document-properties').innerHTML='<div class="empty-inspector"><b>暂无图稿</b><small>新建或打开图稿</small></div>';return}let html=(d.type==='curve'?'':field('图稿名称','name',d.name,'text','doc'))+field('宽度 / px','width',d.width,'number','doc','min="300" max="4096"')+field('高度 / px','height',d.height,'number','doc','min="300" max="4096"')+selectField('背景','background',d.background,backgrounds.map(([v,n])=>[v,n]),'doc');
  if(d.type==='space')html+='<hr><h2>网格</h2>'+field('每格/cm','gridSize',gridStep(d),'number','doc','min="1" max="10000" step="1"');
- if(d.floors){const f=floor(d.activeFloor);html+='<hr><h2>当前楼层</h2>'+field('楼层名称','name',f.name,'text','floor')+field('基准高度','height',f.height,'number','floor')+'<div class="button-row"><button data-action="add-floor">新增楼层</button><button data-action="copy-floor">复制楼层</button><button data-action="delete-floor" class="danger">删除楼层</button></div>'}
+ if(d.floors){const f=floor(d.activeFloor);html+='<hr><h2>当前楼层</h2>'+field('楼层名称','name',f.name,'text','floor')+field('基准高度','height',f.height,'number','floor')+field('新增组件默认颜色','componentColor',f.componentColor,'color','floor')+'<div class="button-row"><button data-action="add-floor">新增楼层</button><button data-action="copy-floor">复制楼层</button><button data-action="delete-floor" class="danger">删除楼层</button></div>'}
  $('#document-properties').innerHTML=html;
 }
 let layerMarkupKey=null,layerButtons=[];

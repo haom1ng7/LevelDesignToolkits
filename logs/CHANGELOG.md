@@ -1179,3 +1179,39 @@
 - 验证限制：node tests/browser-ui-shell.cjs 未完整通过，停止于其既有触屏按钮宽高必须至少 44 像素的断言。另以 Git HEAD 原版网页与本次网页在同一 Chrome 触屏视口测量，二者撤销/重做按钮均为 39.59375×39.59375，主题按钮宽度均为 39.59375，确认与本次滚动条修改无关；未调整这些既有按钮或放宽断言。对照证据在 qa/sidebar-width/touch-baseline.json。
 - 视觉验收：已实际查看最终双侧深浅主题、右侧细滑块特写及闲置状态截图；视觉 verified，响应式 verified，桌面滚动/键盘交互 verified；手机真机触控手势 not tested。设计沿用空间画布与边缘工具轨家族，以清晰和稳定宽度为主要约束，不新增装饰线或其他游戏素材。
 - 未运行：本次整套 npm test、手机真机、实际导出文件、发布归档或远端部署；本次仅修改侧栏 UI 与滚动显示，已运行针对性模型/楼层及真实浏览器工作台回归，未引用上一任务的整套检查作为本次结果。
+
+## 2026-11-04 · 矩形属性尺寸改为单侧伸缩
+
+- 变更：矩形在属性栏直接输入、横向拖动或粘贴 X/Y 长宽时，固定本地负向起始边，只改变正向一侧；旋转后沿组件自身方向伸缩，多选时分别固定每个矩形的起始边。高度（Z / 厚度）保持上表面固定，只改变下表面，直接输入与拖动一致。保持原点与朝向、精确小数、宿主空洞跟随及单次操作的撤销/重做、取消语义；圆形、椭圆、圆弧与非矩形轮廓保留原缩放行为。
+- 变更：按用户要求移除属性栏中“矩形长宽固定本地 X/Y 负向边，向正向一侧伸缩。”提示行；使用说明保留实际操作说明，内置帮助、外部教程和离线单页同步。
+- 影响文件：src/property-inspector.js、src/help/content.json、tests/verify-property-inspector.cjs、tests/verify-property-clipboard.cjs、tests/browser-property-scrub.cjs、docs/使用说明.md、docs/使用说明.html、dist/index.html、logs/CHANGELOG.md。
+- 验证：npm run build 通过；使用 bundled Python 3 执行 tools/build-manual.py 通过（8 节教程、7 段离线媒体）。node tests/verify-property-inspector.cjs 通过新增的三视图、旋转、多选、偏移轮廓、楼层高度、长宽高增减、固定侧世界坐标与历史检查，并检查圆弧/椭圆/非矩形保持原行为、空洞跟随及拖动取消；node tests/verify-property-clipboard.cjs 通过，包括三视图粘贴尺寸固定左侧边检查。本次 node tests/verify-orthographic-size.cjs、node tests/verify-grid-snapping.cjs 均通过。
+- 验证：node tests/browser-property-scrub.cjs 在真实 Chrome 中通过三视图旋转矩形直接输入长宽、拖动缩小固定侧，以及直接输入高度保持上表面、只改变下表面的新增检查；既有九轴拖动、单次历史、多选、精细调整、七种取消、宿主空洞、锁定和 390 像素窄屏检查通过。node tests/browser-property-inspector.cjs 通过真实输入、多选尺寸、三视图及 12 种宽度/主题组合检查，无页面异常或网络请求；证据在 qa/property-scrub/、qa/property-inspector/。Chrome 首次沙箱启动遇到 EPERM，获准独立启动后完成检查；初轮新增检查中的无效圆弧夹具及撤销后未恢复选择的测试驱动已修正，最终相关回归通过。
+- 验证：修改的属性源码及三个测试脚本 node --check 通过，git diff --check 通过（仅有既有 LF/CRLF 提示）；rg 确认属性源码及最终单页无已移除的提示行。
+- 未运行：整套 npm test、手机真机、实际导出文件、发布归档或远端部署；本次改动限于属性尺寸锚点，运行对应属性、尺寸、网格及真实浏览器回归。
+
+## 2026-11-04 · 当前楼层新增组件默认颜色设置
+
+- 变更：在“图稿设置 → 当前楼层”的基准高度下新增“新增组件默认颜色”选择器，读取并修改当前楼层的独立默认色。该层后续创建的平面（矩形、圆形、多边形）、墙壁、楼梯、爬梯与旋转楼梯使用此填充色及对应深色边线；已有组件、其他楼层及文字/路线/标记配色保持原有行为。沿用既有颜色校验、单次操作撤销/重做、JSON 保存和自动暂存，无需变更工程格式。同步内置帮助、外部教程与离线网页。
+- 影响文件：src/app.js、src/help/content.json、tests/browser-floor-colors.cjs、docs/使用说明.md、docs/使用说明.html、dist/index.html、logs/CHANGELOG.md。
+- 验证：npm run build 成功（离线单页 10,711,699 字节）；使用 bundled Python 3 执行 tools/build-manual.py 成功（8 节、7 段离线媒体）。node tests/verify-v9.cjs 通过，覆盖楼层默认配色、手动颜色、旧工程兼容、楼层复制/删除、撤销重做和 JSON。
+- 验证：node tests/browser-floor-colors.cjs 在真实 Chrome 中通过，覆盖设置入口、两个楼层独立设色与切换回显、六种实际创建入口、三视图、保留已有组件、单次撤销/重做、单组件改色、创建取消及 JSON/自动暂存刷新恢复；1600px/390px 和深浅主题四组布局通过，无页面异常或在线请求。已查看桌面浅色、桌面深色及窄屏浅色截图，证据在 qa/floor-colors/。首次沙箱启动 Chrome 遇到 EPERM，获准独立临时配置启动后完成专项。
+- 验证：node --check tests/browser-floor-colors.cjs 与 git diff --check 通过（仅有既有 LF/CRLF 提示）。未运行整套 npm test、手机真机、实际导出文件、发布归档或远端部署；本次仅新增既有楼层颜色数据的设置入口，运行对应配色及真实浏览器回归。
+
+
+## 2026-11-04 · 旋转楼梯支持零踏步与等高圆环
+
+- 变更：旋转楼梯的踏步数量允许 0–200 的整数；设为 0 时生成有厚度、无离散踏步的连续旋转坡面。顶端高度允许等于底端高度，属性输入和立面两端顶点拖动均可达到等高；等高时生成保留内外半径与厚度的圆环，不足一圈为圆环扇段，多圈合并为单圈实体，避免重复叠面。非等高的低踏步数量使用分段圆弧构造，避免一两级踏步的占地退化。
+- 变更：连续坡面和圆环共享三视图、封闭三角网格及 PNG/SVG/OBJ/FBX 导出几何；轮廓绘制隐藏内部三角化线。零踏步的方向箭头及吸附不再除以零，等高圆环隐藏楼梯方向箭头，完整圆环按实际内外轮廓吸附。沿用手动数量切换、JSON 格式和单次操作的撤销/重做/取消；同步内置帮助、外部教程及离线网页。
+- 影响文件：src/model.js、src/app.js、src/render.js、src/advanced-render.js、src/move-snapping.js、src/help/content.json、tests/verify-spiral-ring.cjs、tests/browser-spiral-ring.cjs、package.json、docs/使用说明.md、docs/使用说明.html、dist/index.html、logs/CHANGELOG.md。
+- 验证：npm run build 通过，最终离线单页 10,712,896 字节；使用 bundled Python 3 执行 tools/build-manual.py 通过（8 节教程、7 段离线媒体）。npm test 整套回归通过；最终轮廓修正后再次运行 node tests/verify-spiral-ring.cjs 通过，覆盖 64 组数量/等高/圈数/顺逆时针组合、网格封闭与绕序、圆环体积、三视图、JSON、有限箭头与吸附、零内半径、属性输入、撤销/重做和无效高度回滚。
+- 验证：node tests/browser-spiral-ring.cjs 在真实 Chrome 中通过，覆盖实际输入零踏步和等高、两端顶点拖至等高、取消及单次撤销/重做、三视图、JSON 往返、PNG/SVG/OBJ/FBX 实际下载；使用 Three.js 独立读取 OBJ/FBX 并以射线确认中孔、环面及外边界，无页面异常或在线请求。已查看最终平面/立面/立体截图和实际导出 PNG，证据在 qa/spiral-ring/。初次 Chrome 启动受沙箱 EPERM 限制，获准使用独立临时配置后完成验证；输入框原生撤销及立体 GPU 场景的测试驱动已修正，最终检查通过。
+- 验证：修改的模型/渲染/吸附源码与新增两个测试脚本 node --check 通过；git diff --check 通过（仅既有 LF/CRLF 提示）。未运行手机真机、发布归档或远端部署；本次交付本地功能、教程与离线单页。
+
+
+## 2026-11-04 · 回退旋转楼梯零踏步与等高圆环改动
+
+- 变更：按用户要求回退上一项旋转楼梯功能。恢复踏步数量最少为 3、顶端高度必须高于底端高度，以及原有踏步几何、方向箭头、吸附和立面端点高度限制；移除该功能新增的两个专项测试及 npm 测试入口，撤回对应帮助说明并重新生成教程与离线网页。保留此前的楼层默认颜色、矩形属性尺寸及其他已有修改；历史日志保留，由本条注明已回退。
+- 影响文件：src/model.js、src/app.js、src/render.js、src/advanced-render.js、src/move-snapping.js、src/help/content.json、package.json、tests/verify-spiral-ring.cjs（移除）、tests/browser-spiral-ring.cjs（移除）、docs/使用说明.md、docs/使用说明.html、dist/index.html、logs/CHANGELOG.md。
+- 验证：npm run build 通过（离线单页恢复为 10,711,699 字节）；使用 bundled Python 3 执行 tools/build-manual.py 通过。node tests/verify-ladder-snapping.cjs、node tests/verify-v7.cjs 均通过；额外模型冒烟检查确认普通旋转楼梯通过校验、零踏步及等高均按原规则拒绝，专项测试和对应帮助已移除。git diff 核对模型、渲染、方向箭头、吸附及 package.json 已无本次功能差异；git diff --check 通过（仅 LF/CRLF 提示）。
+- 未运行：本次整套 npm test、真实浏览器及实际导出文件检查；本次为准确撤回上一项改动，已核对原源码并运行旋转楼梯吸附、方向及校验针对性检查。未执行发布归档或远端部署。
