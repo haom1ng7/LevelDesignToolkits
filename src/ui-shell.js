@@ -27,6 +27,7 @@ function updateShell(){
  $('#workspace-count').textContent=d?.curve?d.curve.events.length:d?d.objects.length:project.documents.length;
  $('#workspace-count-label').textContent=d?.curve?'个事件':d?'个组件':'张图稿';
  $('#document-select').disabled=!project.documents.length;$('#layer-filter').disabled=!d;
+ $('#drawing-hint [data-action="finish"]').hidden=drawing?.kind==='freehand';
  $('[data-action="new"]').disabled=project.documents.length>=30;
  for(const attr of ['tool','view','side','panel','background'])document.querySelectorAll('[data-'+attr+']').forEach(b=>b.setAttribute('aria-pressed',String(b.classList.contains('active'))));
  document.querySelectorAll('[data-layer]').forEach(b=>{b.setAttribute('aria-pressed',String(selection.includes(b.dataset.layer)))});

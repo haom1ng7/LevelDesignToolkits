@@ -1,5 +1,5 @@
 function toolDescription(t){
- return {select:'确定当前编辑的组件',move:'改变组件在空间中的位置',size:'改变组件的长宽高',rotate:'改变组件在空间中的朝向',intersect:'保留多个实体共同重叠的体积',difference:'移除实体间的重叠体积，内部实体形成空腔',vertex:'改变组件的顶点位置与轮廓',plane:'创建矩形轮廓的平面组件',ellipse:'创建椭圆轮廓的平面组件',polygon:'创建自定义闭合轮廓的平面组件',wall:'沿组件的直边创建墙壁',cut:'沿闭合或贯穿的路径拆分平面与墙壁',hole:view.mode==='elevation'?'在墙壁中创建贯穿空洞':'在平面中创建贯穿空洞',stairs:'创建连接不同高度的直线楼梯',ladder:'创建连接不同高度的爬梯',spiral:'创建环绕中心轴的旋转楼梯',marker:'为图稿中的位置添加标记',route:'用连续线段表示路线',text:'为图稿添加文字标注',pan:'改变图稿在视窗中的位置'}[t];
+ return {select:'确定当前编辑的组件',move:'改变组件在空间中的位置',size:'改变组件的长宽高',rotate:'改变组件在空间中的朝向',intersect:'保留多个实体共同重叠的体积',difference:'移除实体间的重叠体积，内部实体形成空腔',vertex:'改变组件的顶点位置与轮廓',plane:'创建矩形轮廓的平面组件',ellipse:'创建椭圆轮廓的平面组件',polygon:'创建自定义闭合轮廓的平面组件',freehand:'按住左键自由绘画，松开闭合成平面组件',wall:'沿组件的直边创建墙壁',cut:'沿闭合或贯穿的路径拆分平面与墙壁',hole:view.mode==='elevation'?'在墙壁中创建贯穿空洞':'在平面中创建贯穿空洞',stairs:'创建连接不同高度的直线楼梯',ladder:'创建连接不同高度的爬梯',spiral:'创建环绕中心轴的旋转楼梯',marker:'为图稿中的位置添加标记',route:'用连续线段表示路线',text:'为图稿添加文字标注',pan:'改变图稿在视窗中的位置'}[t];
 }
 // GIFs are decoded only on demand, and replaced with their still when stopped.
 const helpDialog=$('#help-dialog');

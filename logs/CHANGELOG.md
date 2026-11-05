@@ -1215,3 +1215,18 @@
 - 影响文件：src/model.js、src/app.js、src/render.js、src/advanced-render.js、src/move-snapping.js、src/help/content.json、package.json、tests/verify-spiral-ring.cjs（移除）、tests/browser-spiral-ring.cjs（移除）、docs/使用说明.md、docs/使用说明.html、dist/index.html、logs/CHANGELOG.md。
 - 验证：npm run build 通过（离线单页恢复为 10,711,699 字节）；使用 bundled Python 3 执行 tools/build-manual.py 通过。node tests/verify-ladder-snapping.cjs、node tests/verify-v7.cjs 均通过；额外模型冒烟检查确认普通旋转楼梯通过校验、零踏步及等高均按原规则拒绝，专项测试和对应帮助已移除。git diff 核对模型、渲染、方向箭头、吸附及 package.json 已无本次功能差异；git diff --check 通过（仅 LF/CRLF 提示）。
 - 未运行：本次整套 npm test、真实浏览器及实际导出文件检查；本次为准确撤回上一项改动，已核对原源码并运行旋转楼梯吸附、方向及校验针对性检查。未执行发布归档或远端部署。
+
+## 2026-11-05 · 新增平面自由图形并简化多边形图标
+
+- 变更：在“平面”菜单新增“自由图形”。选择后按住鼠标左键自由绘画，实时显示笔迹与闭合区域预览，松开时自动连接首尾生成可编辑平面，可连续绘制。按屏幕像素采样并精简密集轮廓，保留凹形及顺逆方向，网格吸附不改变自由笔迹；生成图形精确使用当前楼层高度与默认配色，沿用现有 JSON、三视图与平面编辑模型，不新增工程格式。单击、无面积、自交、重叠或回折笔迹不创建组件；Esc、右键、指针取消/丢失捕获、窗口失焦及工具/视图/楼层/图稿切换取消草稿，一笔只产生一次撤销记录。自由绘制提示栏省去“完成绘制”按钮。按用户补充要求去掉“多边形”工具图标上的圆点，仅保留多边形轮廓。
+- 影响文件：src/freehand-tool.js、src/app.js、src/interactions.js、src/advanced-interactions.js、src/editor.html、src/ui-shell.js、src/usage-help.js、src/help/content.json、tools/build.mjs、package.json、tests/verify-freehand.cjs、tests/browser-freehand.cjs、tests/browser-tool-groups.cjs、docs/使用说明.md、docs/使用说明.html、dist/index.html、logs/CHANGELOG.md。
+- 验证：npm run build 通过，最终离线单页 10,716,227 字节；npm test 的 31 组应用回归全部通过，含新增自由图形回归。最终提示栏调整后单独运行 node tests/verify-freehand.cjs 通过，覆盖按住绘制/松开闭合、凹形/顺逆方向、连续绘制、密集轮廓简化、楼层颜色与小数高度、网格不干扰、撤销/重做、JSON/三视图、草稿不进入导出、无效轮廓、多指针与取消。Chrome 检查发现并修复密集轮廓中心求和导致的极小楼层高度偏差，最终楼层相对 Z 精确为 0。
+- 验证：node tests/browser-freehand.cjs 在真实 Chrome 中通过菜单选取、鼠标拖画与预览、闭合生成、顶点工具、单次撤销/重做、Esc/右键取消、画布外松开、三视图和 720px 窄屏流程；node tests/browser-tool-groups.cjs 通过新增自由图形后的键盘循环、十条真实创建路径、触屏菜单、42 组屏宽/主题/菜单布局及减少动态效果检查，无页面异常或在线请求。已查看桌面图形与窄屏截图；证据在 qa/freehand/ 和 qa/tool-groups/。初轮浏览器驱动对撤销后的选择与自交夹具假设已修正，最终检查通过。
+- 验证：npm run manual 因系统 Python 为 Microsoft Store 占位入口未能执行；改用本机 bundled Python 3 运行 tools/build-manual.py 成功，同步 8 节教程和 7 段离线媒体。git diff --check 通过（仅既有 LF/CRLF 提示）。未运行本次自由图形的实际 PNG/SVG 下载、手机真机、发布归档或远端部署；本次复用既有平面导出，整套回归中的共享导出检查已通过。
+
+## 2026-11-05 · 绘制用户工程平面47直穿S弯
+
+- 变更：在用户提供的 Flee_v02 工程副本中，将平面47的1000单位直段改为左右交替起伏的连续路面，两侧各3个突出位；横向偏移为60单位，中央保留80单位宽的贯通直线通道。两端各保留80单位直段与原有200单位接口，末端在相同标高完整衔接平面50。仅修改平面47的轮廓点，保留其ID、名称、楼层、配色、厚度及其他66个组件；桌面原始JSON保持原样，修改后的副本供用户导入。
+- 影响文件：output/平面47_S弯/关卡设计工具箱_工程_v1.2_S弯.json、修改前后局部PNG/SVG及验证报告.json；本次绘制和验证脚本为 .build/create-plane47-sbend.cjs。未修改应用源码或正式工程种子。
+- 验证：`node .build/create-plane47-sbend.cjs` 通过；使用本机Edge载入当前离线网页，原工程和修改后工程均通过原生StudioModel.validate、validGeometry及凹多边形三角化面积检查，平面/立面/立体视图均正常渲染，无页面异常。逐单位采样确认80单位直线通道完整位于路面内，精确核对平面50连接边的200单位宽度及标高；深比较确认仅平面47.points发生变化。实际生成并查看原生SVG渲染的修改后局部PNG。Windows沙箱启动遇到1385错误，获准后运行同一专项脚本完成检查。
+- 未运行：车辆物理/驾驶验证、整套应用回归、重新构建及发布；本次只修改用户工程几何副本。未将新副本导入用户当前打开的浏览器标签页，界面控制工具仍因Windows沙箱启动失败无法连接。

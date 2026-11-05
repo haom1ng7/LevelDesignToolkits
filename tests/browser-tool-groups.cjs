@@ -2,7 +2,7 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const {pathToFileURL}=require('node:url'),{chromium}=require('playwright-core');
 const out=path.join(__dirname,'../qa/tool-groups'),url=pathToFileURL(path.join(__dirname,'../dist/index.html')).href;
-const groups={shapes:['plane','ellipse','polygon'],buildings:['wall','stairs','ladder','spiral'],annotations:['text','marker','route']};
+const groups={shapes:['plane','ellipse','polygon','freehand'],buildings:['wall','stairs','ladder','spiral'],annotations:['text','marker','route']};
 (async()=>{
  fs.mkdirSync(out,{recursive:true});
  const browser=await chromium.launch({headless:true,...(process.env.STUDIO_BROWSER?{executablePath:process.env.STUDIO_BROWSER}:{channel:'chrome'})});
@@ -26,7 +26,7 @@ const groups={shapes:['plane','ellipse','polygon'],buildings:['wall','stairs','l
   await page.mouse.move(800,900);await menu('shapes').waitFor({state:'hidden'});
   await trigger('shapes').focus();await page.keyboard.press('ArrowDown');
   assert(await page.locator('[data-tool="plane"]').evaluate(el=>el===document.activeElement));
-  await page.keyboard.press('ArrowUp');assert(await page.locator('[data-tool="polygon"]').evaluate(el=>el===document.activeElement));
+  await page.keyboard.press('ArrowUp');assert(await page.locator('[data-tool="freehand"]').evaluate(el=>el===document.activeElement));
   await page.keyboard.press('Home');await page.keyboard.press('End');
   await page.keyboard.press('Escape');assert(await trigger('shapes').evaluate(el=>el===document.activeElement));
   assert.equal(await page.evaluate(()=>SpatialEditor.tool),'select','closing menu preserves tool');
@@ -63,10 +63,11 @@ const groups={shapes:['plane','ellipse','polygon'],buildings:['wall','stairs','l
    assert.equal(await page.evaluate(()=>SpatialEditor.document.objects.at(-1).type),t==='ellipse'?'plane':t);
   }
   await pick('polygon');const count=await page.evaluate(()=>SpatialEditor.document.objects.length);for(const a of [[200,300],[350,300],[300,450],[200,300]]){const q=await point(a);await page.mouse.click(q.x,q.y)}assert.equal(await page.evaluate(()=>SpatialEditor.document.objects.length),count+1);
+  await pick('freehand');const freehandCount=await page.evaluate(()=>SpatialEditor.document.objects.length),start=await point([850,540]);await page.mouse.move(start.x,start.y);await page.mouse.down();for(const a of [[1000,540],[940,650],[850,540]]){const q=await point(a);await page.mouse.move(q.x,q.y,{steps:8})}await page.mouse.up();assert.equal(await page.evaluate(()=>SpatialEditor.document.objects.length),freehandCount+1);
   await pick('text');let p=await point([400,570]);await page.mouse.click(p.x,p.y);await page.locator('#inline-editor').fill('分组工具');await page.keyboard.press('Control+Enter');
   assert(await page.evaluate(()=>SpatialEditor.document.objects.some(o=>o.type==='text'&&o.text==='分组工具')));
   await pick('route');for(const a of [[700,560],[900,600]]){p=await point(a);await page.mouse.click(p.x,p.y)}await page.keyboard.press('Enter');
-  assert(await page.evaluate(()=>SpatialEditor.document.objects.some(o=>o.type==='route')));checks.push('actual creation through all nine grouped tools');
+  assert(await page.evaluate(()=>SpatialEditor.document.objects.some(o=>o.type==='route')));checks.push('actual creation through ten grouped tools, including freehand');
   await page.keyboard.press('Escape');
   // Arrow navigation in a menu must never nudge selected geometry.
   await page.evaluate(()=>SpatialEditor.select(SpatialEditor.document.objects[0].id,false,true));const selectedBefore=await unchanged();
@@ -105,6 +106,6 @@ const groups={shapes:['plane','ellipse','polygon'],buildings:['wall','stairs','l
   await phone.locator('[data-tool-group="shapes"]').tap();assert(await phone.locator('#tool-shapes-menu').isVisible());assert.equal(await phone.locator('body').getAttribute('data-pane'),'tools');
   await phone.locator('[data-tool="ellipse"]').tap();assert.equal(await phone.locator('body').getAttribute('data-pane'),'canvas');assert.equal(await phone.evaluate(()=>SpatialEditor.tool),'ellipse');assert(await phone.locator('#tool-shapes-menu').isHidden());checks.push('touch opens menu, child selection returns to canvas');
   assert.deepEqual(errors,[]);assert.deepEqual(network,[]);fs.writeFileSync(path.join(out,'report.json'),JSON.stringify({checks,layouts,errors,network},null,2));
-  console.log('PASS tool groups: mouse/keyboard/touch, all nine creation paths, history isolation, view availability, 42 layouts, reduced motion; no errors or network. Evidence: qa/tool-groups/.');
+  console.log('PASS tool groups: mouse/keyboard/touch, ten creation paths including freehand, history isolation, view availability, 42 layouts, reduced motion; no errors or network. Evidence: qa/tool-groups/.');
  }finally{await browser.close()}
 })().catch(e=>{console.error(e);process.exitCode=1});

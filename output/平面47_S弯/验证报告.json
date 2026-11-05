@@ -1,0 +1,96 @@
+{
+  "source": "C:/Users/Prtswang/Desktop/关卡设计工具箱_工程_v1.2.json",
+  "sourceSha256": "4e5291edeb1fee452178606b071a981e4fe8f924d53a8c8cddfa5434264b76dc",
+  "outputPath": "C:\\Users\\Prtswang\\Desktop\\LevelDesignToolkits\\output\\平面47_S弯\\关卡设计工具箱_工程_v1.2_S弯.json",
+  "changedObjects": [
+    "平面47"
+  ],
+  "objectCount": 67,
+  "geometry": {
+    "originalWidth": 200,
+    "length": 1000,
+    "lobesPerSide": 3,
+    "amplitude": 60,
+    "straightCorridorWidth": 80,
+    "unchangedEntryAndExitWidth": 200,
+    "unchangedLeadAtEachEnd": 80,
+    "seamToPlane50": [
+      [
+        1889.1333909062175,
+        3362.2001265743124,
+        0
+      ],
+      [
+        2089.1333909062178,
+        3362.2001265743124,
+        0
+      ]
+    ],
+    "positiveLobes": [
+      [
+        2049.1333909062178,
+        2512.2001265743124,
+        0
+      ],
+      [
+        2049.1333909062178,
+        2792.2001265743124,
+        0
+      ],
+      [
+        2049.1333909062178,
+        3072.2001265743124,
+        0
+      ]
+    ],
+    "negativeLobes": [
+      [
+        1929.1333909062175,
+        2652.2001265743124,
+        0
+      ],
+      [
+        1929.1333909062175,
+        2932.2001265743124,
+        0
+      ],
+      [
+        1929.1333909062175,
+        3212.2001265743124,
+        0
+      ]
+    ]
+  },
+  "checks": [
+    "Exactly three protrusions per side",
+    "Only plane47.points changed",
+    "Plane50 seam matches over 200 units at identical elevation",
+    "Native app elevation view renders valid geometry (226 faces)",
+    "Native app solid view renders valid geometry (284 faces)",
+    "Native app plan view renders valid geometry (39 faces)",
+    "The 80-unit straight corridor was sampled at 1-unit longitudinal spacing using StudioModel.inside",
+    "Concave triangulation covers the full 200000-square-unit footprint",
+    "Output JSON loaded in the current offline app build without browser errors"
+  ],
+  "browserErrors": [],
+  "before": {
+    "simple": true,
+    "valid": true,
+    "corridorFailures": 0,
+    "area": 199999.99999999997,
+    "triangleArea": 200000,
+    "count": 67
+  },
+  "after": {
+    "simple": true,
+    "valid": true,
+    "corridorFailures": 0,
+    "area": 200000.00000000006,
+    "triangleArea": 199999.99999999997,
+    "count": 67
+  },
+  "limitations": [
+    "No vehicle physics or driving test; geometric construction and app import/render verified only",
+    "The supplied desktop JSON is unchanged; the new copy must be imported into the open editor"
+  ]
+}
