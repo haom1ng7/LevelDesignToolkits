@@ -1,9 +1,9 @@
 let hoverPoint=null,placementGhost=null,curveSelected=false;
-const pixel=()=>camera.w/Math.max(1,stage.getBoundingClientRect().width),surfaceAnchor=o=>M.origin(doc(),o);
+const pixel=()=>camera.w/Math.max(1,viewportBounds().width),surfaceAnchor=o=>M.origin(doc(),o);
 function drawSelection(o,r){return selectionMarkup(o)}
 // Artwork-independent colors and screen-space geometry keep nodes legible at any zoom.
 function contourHandleMarkup(p,index,midpoint=false){
- const bounds=stage.getBoundingClientRect(),sx=camera.w/Math.max(1,bounds.width),sy=camera.h/Math.max(1,bounds.height),active=!midpoint&&vertexIndex===index;
+ const bounds=viewportBounds(),sx=camera.w/Math.max(1,bounds.width),sy=camera.h/Math.max(1,bounds.height),active=!midpoint&&vertexIndex===index;
  const shape=midpoint?'M 0 -4.5 L 4.5 0 L 0 4.5 L -4.5 0 Z':'M -4.5 -4.5 H 2.5 L 4.5 -2.5 V 4.5 H -2.5 L -4.5 2.5 Z';
  return `<g class="contour-handle ${midpoint?'contour-midpoint':'contour-vertex'}${active?' is-selected':''}"><ellipse data-${midpoint?'midpoint':'vertex'}="${index}" cx="${p[0]}" cy="${p[1]}" rx="${sx*10}" ry="${sy*10}" fill="transparent"/><g class="contour-glyph" transform="translate(${p[0]} ${p[1]}) scale(${sx} ${sy})" pointer-events="none" aria-hidden="true"><path class="contour-halo" d="${shape}"/><path class="contour-body" d="${shape}"/>${midpoint?'<path class="contour-plus" d="M -2 0 H 2 M 0 -2 V 2"/>':'<path class="contour-center" d="M -1 -1 H 1 V 1 H -1 Z"/><path class="contour-brackets contour-halo" d="M -8 -3 V -8 H -3 M 8 3 V 8 H 3"/><path class="contour-brackets" d="M -8 -3 V -8 H -3 M 8 3 V 8 H 3"/>'}</g></g>`
 }

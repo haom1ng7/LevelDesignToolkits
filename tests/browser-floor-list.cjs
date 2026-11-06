@@ -90,6 +90,21 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
   await row(ids[3]).click({modifiers:['Shift']});assert.deepEqual(await displayed(),[ids[0],ids[1],ids[3]].sort(),'Shift range excludes the hidden floor');
   await page.keyboard.press('2');assert.deepEqual(await displayed(),[ids[1]]);
   checks.push('Real Ctrl/Shift updates SVG geometry at full opacity, respects hidden floors, supports picking a non-current floor, retains multiple floors during selection, collapses with digit shortcuts, and exports actual SVG/PNG with the selected floor scope');
+  // Deletion clears component selection while preserving the independent floor display scope.
+  for(const action of ['Delete','button','cut']){
+   ids=await fresh(2);await page.locator('[data-view="plan"]').click();
+   const fixture=await page.evaluate(()=>{
+    const A=SpatialEditor,M=StudioModel,floors=A.document.floors,host=A.document.objects.find(o=>o.floor===floors[1].id&&o.type==='plane'),hole=A.document.objects.find(o=>o.host===host.id),keep=M.createObject(A.document,'plane',[900,600,0]);keep.floor=floors[1].id;A.document.objects.push(keep);document.querySelector('#ghost').checked=false;A.setTool('select');return {host:host.id,hole:hole.id,keep:keep.id,firstFloorObjects:JSON.stringify(A.document.objects.filter(o=>o.floor===floors[0].id))};
+   });
+   await row(ids[0]).click();await row(ids[1]).click({modifiers:['Control']});await page.locator(`#layers [data-layer="${fixture.host}"]`).click();h=await history();
+   if(action==='button')await page.locator('#properties [data-action="delete"]').click();else await page.keyboard.press(action==='cut'?'Control+x':action);
+   assert.deepEqual(await selectedFloors(),ids,action+' keeps both floor rows selected');assert.deepEqual(await displayed(),[...ids].sort());assert.equal(await active(),ids[0]);
+   const after=await page.evaluate(({host,hole,keep})=>({selection:SpatialEditor.selection,removed:!SpatialEditor.document.objects.some(o=>[host,hole].includes(o.id)),kept:SpatialEditor.scene.faces.some(f=>f.owner.id===keep&&!f.ghost),firstFloorObjects:JSON.stringify(SpatialEditor.document.objects.filter(o=>o.floor===SpatialEditor.document.floors[0].id))}),fixture);
+   assert.deepEqual(after.selection.ids,[]);assert.equal(after.selection.floor,null);assert(after.removed);assert(after.kept);assert.equal(after.firstFloorObjects,fixture.firstFloorObjects);assert.equal(await history(),h+1);assert(await page.locator(`#layers [data-layer="${fixture.keep}"]`).isVisible());
+   if(action==='Delete')await page.screenshot({path:path.join(out,'multi-floor-after-delete.png'),fullPage:true});
+   await page.locator('[data-action="undo"]').click();assert(await page.evaluate(id=>SpatialEditor.document.objects.some(o=>o.id===id),fixture.host));await page.locator('[data-action="redo"]').click();assert(!await page.evaluate(id=>SpatialEditor.document.objects.some(o=>o.id===id),fixture.host));
+  }
+  checks.push('Real Delete, inspector delete button and Ctrl+X preserve both selected floor rows, remaining geometry and component list; host holes delete together, first-floor data stays unchanged and each action has one undo/redo');
   assert.deepEqual(errors,[]);assert.deepEqual(requests,[]);fs.writeFileSync(path.join(out,'report.json'),JSON.stringify({checks,responsive,errors,requests},null,2));
   console.log('PASS Chrome floor list: real digit/numpad input, typing protection, three views, pointer preview/reorder, unchanged data and selection, history/cancel, rename/icons, JSON/autosave, 30-floor scrolling, desktop/narrow light/dark. Evidence: qa/floor-list/.');
  }finally{await browser.close()}

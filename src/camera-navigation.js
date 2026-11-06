@@ -1,9 +1,19 @@
 // Solid views always use a perspective camera; plan/elevation retain drafting projection.
 const cameraKeys=new Set();
 let cameraFrame=null,cameraTickAt=0,cameraMoveSpeed=600;
+let solidOrientationKey=null;
+function syncSolidOrientation(){
+ const element=$('#solid-orientation'),d=doc();element.toggleAttribute('hidden',d?.type!=='space'||view.mode!=='solid');if(element.hasAttribute('hidden'))return;
+ const b=M.viewBasis(d,view),key=JSON.stringify([b.r,b.down,b.n,d.background]);if(key===solidOrientationKey)return;solidOrientationKey=key;
+ element.style.setProperty('--orientation-halo',d.background);
+ // Project directions only: camera position, distance and viewport scale cannot move the HUD.
+ const axes=['X','Y','Z'].map((name,i)=>{const x=b.r[i],y=b.down[i],length=Math.hypot(x,y);return {name,i,x:42+x*26,y:42+y*26,lx:42+x*26+(length>.12?x/length*10:10),ly:42+y*26+(length>.12?y/length*10:-10),depth:b.n[i],color:['#cc332f','#518a26','#2677ce'][i]}}).sort((a,c)=>a.depth-c.depth);
+ element.innerHTML='<title>世界坐标轴 · 随立体图视角旋转</title>'+axes.map(a=>`<g data-orientation-axis="${a.name}"><path d="M42 42L${a.x} ${a.y}" fill="none" stroke="${d.background}" stroke-width="4"/><path d="M42 42L${a.x} ${a.y}" fill="none" stroke="${a.color}" stroke-width="2"/><circle cx="${a.x}" cy="${a.y}" r="1.6" fill="${a.color}"/></g>`).join('')+`<circle cx="42" cy="42" r="2" fill="${R.contrast(d.background)}"/>`+axes.map(a=>`<text x="${a.lx}" y="${a.ly}" fill="${a.color}">${a.name}</text>`).join('');
+}
 function cameraMoveSpeedText(){return String(Math.round(cameraMoveSpeed/10)/10)}
 function syncPerspectiveControls(){
  const d=doc(),solid=d?.type==='space'&&view.mode==='solid',label=$('#zoom-label');
+ syncSolidOrientation();
  document.querySelectorAll('[data-action="zoom-in"],[data-action="zoom-out"]').forEach(b=>{
   const increase=b.dataset.action==='zoom-in',name=solid?(increase?'提高摄像机速率':'降低摄像机速率'):(increase?'放大':'缩小');
   b.disabled=!d||solid&&(increase?cameraMoveSpeed>=100000:cameraMoveSpeed<=10);b.setAttribute('aria-label',name);b.title=solid?(increase?'提高摄像机在空间中的移动速率':'降低摄像机在空间中的移动速率'):(increase?'放大图稿在视窗中的显示比例':'缩小图稿在视窗中的显示比例');
@@ -31,7 +41,7 @@ function moveCameraFrame(now){
  cameraFrame=null;if(!cameraKeys.size||!cameraNavigationAvailable()){stopCameraNavigation();return}
  const dt=clamp((now-cameraTickAt)/1000,0,.05);cameraTickAt=now;
  const side=Number(cameraKeys.has('d'))-Number(cameraKeys.has('a')),forward=Number(cameraKeys.has('w'))-Number(cameraKeys.has('s')),up=Number(cameraKeys.has('e'))-Number(cameraKeys.has('q')),b=M.viewBasis(doc(),view),direction=M.add(M.add(M.mul(b.r,side),M.mul(b.n,-forward)),[0,0,up]),length=Math.hypot(...direction);
- if(length>1e-9&&dt){view.fly.eye=M.add(view.fly.eye,M.mul(direction,cameraMoveSpeed*dt/length));drawCanvas()}
+ if(length>1e-9&&dt){view.fly.eye=M.add(view.fly.eye,M.mul(direction,cameraMoveSpeed*dt/length));requestCameraDraw()}
  cameraFrame=requestAnimationFrame(moveCameraFrame);
 }
 function beginCameraNavigation(e){

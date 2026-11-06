@@ -75,6 +75,21 @@ try{
  clickFloor(ids[0],{metaKey:true});for(const mode of ['elevation','solid','plan']){$(`[data-view="${mode}"]`).click();same(floorSelectionIds(),ids.slice(0,2));if(mode==='plan')same(shownFloors(),expected(0,1))}
  key('1');$('[data-view="elevation"]').click();A.select(planeAt(1).id);$('[data-view="plan"]').click();same(shownFloors(),expected(1),'selecting another floor in elevation keeps that floor visible on return');
  const destination=$('#prop-floor');destination.value=ids[0];destination.dispatchEvent(new w.Event('change',{bubbles:true}));same(shownFloors(),expected(0),'moving a component to another floor keeps the destination visible');
+ // Deleting or cutting a component must not collapse the independently selected floor scope.
+ for(const [mods,action] of [[{ctrlKey:true},'Delete'],[{shiftKey:true},'Backspace'],[{metaKey:true},'button'],[{ctrlKey:true},'cut']]){
+  const floors=fresh(2);$('[data-view="plan"]').click();$('#ghost').checked=false;
+  const host=A.document.objects.find(o=>o.floor===floors[1]&&o.type==='plane'),hole=A.document.objects.find(o=>o.host===host.id),keep=M.createObject(A.document,'plane',[900,600,0]);keep.floor=floors[1];A.document.objects.push(keep);A.setTool('select');
+  clickFloor(floors[0]);clickFloor(floors[1],mods);$(`[data-layer="${host.id}"]`).click();
+  same(floorSelectionIds(),floors);assert.equal(A.document.activeFloor,floors[0]);
+  const beforeDelete=JSON.stringify(A.project),untouched=JSON.stringify(A.document.objects.filter(o=>o.floor===floors[0]));h=A.undoCount;
+  if(action==='button')$('#properties [data-action="delete"]').click();else if(action==='cut')key('x',{ctrlKey:true});else key(action);
+  same(floorSelectionIds(),floors,action+' keeps both floors selected');same(A.view.floorIds,floors);
+  assert.equal(A.document.activeFloor,floors[0]);same(A.selection.ids,[]);assert.equal(A.selection.floor,null);
+  assert(!A.document.objects.some(o=>[host.id,hole.id].includes(o.id)),'host deletion includes its dependent hole');
+  assert($(`[data-layer="${keep.id}"]`),'remaining second-floor component stays listed');assert(A.scene.faces.some(f=>f.owner.id===keep.id&&!f.ghost),'remaining second-floor geometry stays visible');
+  assert.equal(JSON.stringify(A.document.objects.filter(o=>o.floor===floors[0])),untouched,'first-floor components stay unchanged');assert.equal(A.undoCount,h+1);
+  const afterDelete=JSON.stringify(A.project);A.command('undo');assert.equal(JSON.stringify(A.project),beforeDelete,'one undo restores host and hole');A.command('redo');assert.equal(JSON.stringify(A.project),afterDelete,'one redo reapplies deletion');
+ }
  A.createDocument('space','新图稿');assert.equal(A.view.floorIds.length,1,'new documents reset floor scope');
- assert.deepEqual(errors,[]);console.log('PASS floor list: shortcuts, batch reorder/history/cancel/JSON, Ctrl/Shift simultaneous floor geometry and annotations, full opacity and picking, hidden/ghost/empty scopes, component list/accessibility, selection and view/document switching.');
+ assert.deepEqual(errors,[]);console.log('PASS floor list: shortcuts, batch reorder/history/cancel/JSON, Ctrl/Shift simultaneous floor geometry and annotations, full opacity and picking, hidden/ghost/empty scopes, component list/accessibility, selection and view/document switching, deletion/cut floor scope with host holes and history.');
 }finally{dom.window.close()}

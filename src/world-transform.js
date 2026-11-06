@@ -8,6 +8,9 @@ function bounds3(points){const min=[Infinity,Infinity,Infinity],max=[-Infinity,-
 function solidPivot(){
  const roots=selected().filter(o=>!['hole','text','route'].includes(o.type));
  if(roots.length===1){const o=roots[0];if(o.type==='marker')return M.origin(doc(),o);return M.world(doc(),o,solidLocalBounds(o).min)}
+ // GPU synchronization precedes handle drawing, so these world bounds are
+ // current for every selected solid and need no face-array copies per frame.
+ if(gpuViewport?.drawingHandles&&roots.every(o=>o.type==='marker'||gpuViewport.cache.has(o.id))){const min=[Infinity,Infinity,Infinity];for(const o of roots){const p=o.type==='marker'?M.origin(doc(),o):gpuViewport.cache.get(o.id).min;for(let i=0;i<3;i++)min[i]=Math.min(min[i],p[i])}return min}
  return bounds3(roots.flatMap(o=>o.type==='marker'?[M.origin(doc(),o)]:M.geometry(doc(),o).flatMap(f=>f.points))).min;
 }
 function transformCenterMarkup(center,k=pixel()){const p=M.project(center,scene.basis);return `<circle data-transform-center="true" cx="${p[0]}" cy="${p[1]}" r="${k*3}" fill="white" stroke="#44536a" stroke-width="${k}" pointer-events="none"/>`}

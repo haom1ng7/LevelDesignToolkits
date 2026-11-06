@@ -2,7 +2,18 @@
 (()=>{
 'use strict';const M=window.StudioModel,EPS=1e-7;
 const unit=v=>M.mul(v,1/(Math.hypot(...v)||1));
-function hull(points){const p=points.filter((v,i,a)=>a.findIndex(q=>Math.hypot(q[0]-v[0],q[1]-v[1])<EPS)===i).sort((a,b)=>a[0]-b[0]||a[1]-b[1]);if(p.length<3)return p;const cross=(a,b,c)=>(b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0]),half=a=>{const out=[];for(const v of a){while(out.length>1&&cross(out.at(-2),out.at(-1),v)<=EPS)out.pop();out.push(v)}return out};return [...half(p).slice(0,-1),...half([...p].reverse()).slice(0,-1)]}
+function hull(points){
+ // Shared face vertices repeat heavily in stairs/spirals. Numeric buckets retain
+ // the original epsilon and first-occurrence rule without scanning every pair.
+ const cells=new Map(),exact=new Map(),unique=[];
+ for(const v of points){
+  let ys=exact.get(v[0]);if(ys?.has(v[1]))continue;if(!ys)exact.set(v[0],ys=new Set());ys.add(v[1]);
+  const x=Math.floor(v[0]/EPS),y=Math.floor(v[1]/EPS);let duplicate=false;
+  for(let dx=-1;dx<=1&&!duplicate;dx++){const column=cells.get(x+dx);if(!column)continue;for(let dy=-1;dy<=1&&!duplicate;dy++)duplicate=column.get(y+dy)?.some(q=>Math.hypot(q[0]-v[0],q[1]-v[1])<EPS)||false}
+  if(!duplicate)unique.push(v);
+  let column=cells.get(x);if(!column)cells.set(x,column=new Map());let cell=column.get(y);if(!cell)column.set(y,cell=[]);cell.push(v);
+ }
+ const p=unique.sort((a,b)=>a[0]-b[0]||a[1]-b[1]);if(p.length<3)return p;const cross=(a,b,c)=>(b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0]),half=a=>{const out=[];for(const v of a){while(out.length>1&&cross(out.at(-2),out.at(-1),v)<=EPS)out.pop();out.push(v)}return out};return [...half(p).slice(0,-1),...half([...p].reverse()).slice(0,-1)]}
 function triangles(ring){const area=ring.reduce((s,p,i)=>{const q=ring[(i+1)%ring.length];return s+p[0]*q[1]-p[1]*q[0]},0),p=area>0?[...ring]:[...ring].reverse(),out=[];let attempts=0;while(p.length>3&&attempts++<ring.length*ring.length){let found=false;for(let i=0;i<p.length;i++){const a=p[(i+p.length-1)%p.length],b=p[i],c=p[(i+1)%p.length],cross=(b[0]-a[0])*(c[1]-b[1])-(b[1]-a[1])*(c[0]-b[0]);if(cross<=EPS)continue;const orient=(u,v,w)=>(v[0]-u[0])*(w[1]-u[1])-(v[1]-u[1])*(w[0]-u[0]);if(p.some(v=>v!==a&&v!==b&&v!==c&&orient(a,b,v)>=-EPS&&orient(b,c,v)>=-EPS&&orient(c,a,v)>=-EPS))continue;out.push([a,b,c]);p.splice(i,1);found=true;break}if(!found)break}if(p.length===3)out.push(p);return out}
 function clip(poly,plane,sign=1){const out=[];for(let i=0;i<poly.length;i++){const a=poly[i],b=poly[(i+1)%poly.length],da=(M.dot(a,plane.n)-plane.w)*sign,db=(M.dot(b,plane.n)-plane.w)*sign;if(da<=EPS)out.push(a);if(da*db<-EPS*EPS){const t=da/(da-db);out.push(a.map((v,j)=>v+(b[j]-v)*t))}}return out.filter((p,i,a)=>!i||Math.hypot(...M.sub(p,a[i-1]))>EPS)}
 function nonzero(p){if(p.length<3)return false;return p.slice(1,-1).some((v,i)=>Math.hypot(...M.cross(M.sub(v,p[0]),M.sub(p[i+2],p[0])))>EPS)}

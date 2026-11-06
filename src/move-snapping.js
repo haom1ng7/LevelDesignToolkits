@@ -2,12 +2,19 @@
 // are computed while moving; no mesh, step, boolean or constraint solver is used.
 const MoveSnapping=(()=>{
  const cross=(a,b)=>a[0]*b[1]-a[1]*b[0],len=v=>Math.hypot(...v),mid=(a,b)=>M.mul(M.add(a,b),.5);
- function features(d,o){
+ function features(d,o,excluded=new Set()){
   const edges=[],world=p=>M.world(d,o,p),edge=(a,b,kind='boundary')=>edges.push({a:world(a),b:world(b),kind,owner:o});
   const ring=(ps,kind)=>ps.forEach((p,i)=>edge(p,ps[(i+1)%ps.length],kind));
-  if(o.type==='plane')ring(M.contour(o).map(p=>[...p,0]));
+  if(o.type==='plane'){
+   ring(M.contour(o).map(p=>[...p,0]));
+   for(const h of M.holes(d,o)){if(h.visible===false||excluded.has(h.id))continue;const ps=M.contour(h).map(p=>M.world(d,o,h.cut?M.holePoint(h,p):M.facePoint(o,p)));ps.forEach((p,i)=>edges.push({a:p,b:ps[(i+1)%ps.length],kind:'hole',owner:o,id:h.id+':'+i}))}
+  }
   if(o.type==='solid')for(const [a,b] of M.boundaryEdges(M.geometry(d,o)))edges.push({a,b,kind:'boundary',owner:o});
-  if(o.type==='wall'){const ps=M.wallFootprint(o),[lo,hi]=M.wallLevels(o);ring(ps.map(p=>[...p,lo]));ring(ps.map(p=>[...p,hi]));ps.forEach(p=>edge([...p,lo],[...p,hi]))}
+  // Cut/sloping/bent walls cannot be represented by an extruded bounding box.
+  if(o.type==='wall'){
+   const material=excluded.size?{...d,objects:d.objects.filter(h=>h.host!==o.id||!excluded.has(h.id))}:d;
+   for(const [a,b] of M.boundaryEdges(M.geometry(material,o)))edges.push({a,b,kind:'boundary',owner:o});
+  }
   if(o.type==='stairs'){const f=o.flights[0];edge([...f.points[0],f.start],[...f.points[1],f.start],'end');edge([...f.points[3],f.end],[...f.points[2],f.end],'end');edge([...f.points[0],f.start],[...f.points[3],f.end],'side');edge([...f.points[1],f.start],[...f.points[2],f.end],'side')}
   if(o.type==='hole'){const host=d.objects.find(x=>x.id===o.host);if(host){const ps=M.contour(o).map(p=>M.world(d,host,o.cut?M.holePoint(o,p):M.facePoint(host,p)));ps.forEach((p,i)=>edges.push({a:p,b:ps[(i+1)%ps.length],kind:'boundary',owner:o}))}}
   if(o.type==='spiral')for(const [a,z] of [[o.angle*Math.PI/180,o.start+(o.end-o.start)/o.steps],[(o.angle+o.direction*360*o.turns)*Math.PI/180,o.end]])edge([o.inner*Math.cos(a),o.inner*Math.sin(a),z],[o.outer*Math.cos(a),o.outer*Math.sin(a),z],'end');
@@ -25,9 +32,8 @@ const MoveSnapping=(()=>{
    if(excluded.has(o.id)||o.visible===false||M.floor(d,o)?.visible===false||!['plane','wall','stairs','ladder','spiral','solid'].includes(o.type))continue;
    if(view.mode==='plan'&&!ghost&&!(view.floorIds??[d.activeFloor]).includes(o.floor))continue;
    if(view.mode==='elevation'&&(view.scope==='floor'&&o.floor!==d.activeFloor||view.scope==='selection'&&!view.focusIds?.includes(o.id)))continue;
-   const fs=features(d,o),depth=range(fs.flatMap(e=>[e.a,e.b])),zs=fs.flatMap(e=>[e.a[2],e.b[2]]),height=[Math.min(...zs),Math.max(...zs)];fs.forEach((e,i)=>add({...e,height},o.id+':'+i,o.type==='wall'?depth:null));
+   const fs=features(d,o,excluded),depth=range(fs.flatMap(e=>[e.a,e.b])),zs=fs.flatMap(e=>[e.a[2],e.b[2]]),height=[Math.min(...zs),Math.max(...zs)];fs.forEach((e,i)=>add({...e,height},e.id||o.id+':'+i,o.type==='wall'?depth:null));
    if(o.type==='plane'){
-    for(const h of M.holes(d,o)){if(h.visible===false||excluded.has(h.id))continue;const ps=M.contour(h).map(p=>M.world(d,o,h.cut?M.holePoint(h,p):M.facePoint(o,p)));ps.forEach((p,i)=>add({a:p,b:ps[(i+1)%ps.length],owner:o,kind:'hole'},h.id+':'+i))}
     // In elevation a floor's top is a height reference across its material span.
     if(view.mode==='elevation'&&Math.abs(M.normal(o)[2])>.9999){const ps=fs.map(e=>e.a),xs=ps.map(p=>M.project(p,basis)[0]),y=M.project(ps[0],basis)[1];add({a:M.unproject([Math.min(...xs),y],basis,ps[0]),b:M.unproject([Math.max(...xs),y],basis,ps[0]),owner:o,kind:'surface'},o.id+':surface',depth)}
    }
@@ -38,11 +44,11 @@ const MoveSnapping=(()=>{
   const a=s.owner,b=t.owner;if(a.type==='cursor')return true;
   if((s.kind==='side'&&a.type==='stairs'||t.kind==='side'&&b.type==='stairs')&&c.mode!=='plan')return false;
   if(c.transform&&['hole','text'].includes(a.type))return ['plane','wall','stairs','ladder','spiral','solid'].includes(b.type);
-  if(['stairs','spiral'].includes(a.type))return ['plane','wall'].includes(b.type);
-  if(['stairs','spiral'].includes(b.type))return ['plane','wall'].includes(a.type)&&(t.kind==='end'||c.mode==='plan'&&t.kind==='side');
+  if(['stairs','spiral'].includes(a.type))return ['plane','wall','solid'].includes(b.type);
+  if(['stairs','spiral'].includes(b.type))return ['plane','wall','solid'].includes(a.type)&&(t.kind==='end'||c.mode==='plan'&&t.kind==='side');
   const ladder=a.type==='ladder'?a:b.type==='ladder'?b:null,other=ladder===a?b:a,feature=ladder===a?s:t;
-  if(ladder){const vertical=Math.abs(M.mat(ladder.orientation,[0,0,1])[2])>.9999;if(other.type==='wall')return vertical&&Math.abs(M.normal(other)[2])<.0001;return other.type==='plane'&&(feature.kind==='end'||Math.abs(M.mat(ladder.orientation,[0,1,0])[2])>.9999)}
-  return ['plane','wall'].includes(a.type)&&['plane','wall'].includes(b.type)&&(c.mode!=='plan'||(c.floorIds??[c.activeFloor]).includes(b.floor))&&t.kind!=='hole';
+  if(ladder){const vertical=Math.abs(M.mat(ladder.orientation,[0,0,1])[2])>.9999;if(other.type==='solid')return true;if(other.type==='wall')return vertical&&Math.abs(M.normal(other)[2])<.0001;return other.type==='plane'&&(feature.kind==='end'||Math.abs(M.mat(ladder.orientation,[0,1,0])[2])>.9999)}
+  return ['plane','wall','solid'].includes(a.type)&&['plane','wall','solid'].includes(b.type)&&(c.mode!=='plan'||(c.floorIds??[c.activeFloor]).includes(b.floor));
  }
  function eligible(s,t,c,total=[0,0,0]){
   if(!compatible(s,t,c))return false;const b=c.basis,depth=s.owner.type==='plane'&&s.depth?s.depth.map(v=>v+M.dot(total,b.n)):[Math.min(M.dot(s.a,b.n),M.dot(s.b,b.n))+M.dot(total,b.n),Math.max(M.dot(s.a,b.n),M.dot(s.b,b.n))+M.dot(total,b.n)];

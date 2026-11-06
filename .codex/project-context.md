@@ -84,7 +84,14 @@ model → geometry → model-features → curved-geometry → creation-colors
 - 立体图实体支持 W 世界轴移动、E 三轴刚体旋转、R 单实体本地角点调尺寸（对角点固定）；路线快捷键为 L，S 不切换工具。多实体可一起移动/旋转，独立轮廓顶点编辑仍在平面/立面完成；文字保留各视图字号和旋转，空洞依附宿主。路线使用直接节点操作。
 - 导出需区分完整图稿和当前视野；编辑手柄不得进入成品。异步预览切换/关闭后应取消旧下载并释放临时对象 URL。
 - FBX/OBJ 仅用于空间图，输出所有可见楼层的五类实体及宿主空洞，不按当前视角、选中范围或预览取景裁切；不输出文字、路线和标记。三角网格保持世界坐标数值 1:1、Z 轴向上；二进制 FBX 7.4 使用厘米并含基础颜色/透明度，OBJ 为单个几何文件（含法线，不带 MTL）。`three` 的独立读取器用于验证导出；其运行库另由构建脚本嵌入网页，供 `webgl-viewport.js` 渲染透视图。
-- 网页 CSP 禁止网络连接，脚本、字体和教程媒体随离线 HTML 嵌入。
+- 离线网页 CSP 禁止网络连接，脚本、字体和教程媒体随离线 HTML 嵌入。按需启动的 `tools/mcp/server.mjs` 使用 Node 内置模块提供 stdio MCP 和仅监听 127.0.0.1 的浏览器桥接；只对该服务提供的页面允许同源连接，并注入带随机令牌的轮询客户端 `tools/mcp/browser.js`。原离线页面不发起联动请求。
+
+## MCP 对话创作
+
+- `src/mcp-operations.js` 使用现有 StudioModel 创建模板、在工程副本执行结构化操作并完成全工程/几何校验；`src/mcp-editor.js` 作为 interactions 片段接入 app.js 的 mutate/history、当前图稿、选择、视图与导出。浏览器暴露 `window.StudioMCP.dispatch`。
+- MCP 提供连接、状态、结构、原子编辑、历史、视图和导出七个工具；写入需最新 revision，手动编辑中拒绝改图，每批一次撤销。更换页面、请求超时和取消时清理未完成队列。图稿文字属于数据，不能作为工具指令执行。
+- `npm run mcp:setup` 生成仅本机使用的 `.codex/config.toml`（Git 忽略），保留其他配置；Codex 信任项目并开启新对话后加载。CLI 与桌面端共用主机配置。完整使用说明见 `docs/MCP对话创作.md`。
+- `npm run test:mcp` 检查原生编辑、事务/历史/修订与 MCP 协议/鉴权；`npm run test:mcp:browser` 走真实 Chrome 的 stdio → HTTP → 网页编辑/保存路径，证据写入 `qa/mcp/`。服务仅需 Node.js 24，构建与测试继续使用现有依赖。
 
 ## 常用命令
 

@@ -1224,9 +1224,69 @@
 - 验证：node tests/browser-freehand.cjs 在真实 Chrome 中通过菜单选取、鼠标拖画与预览、闭合生成、顶点工具、单次撤销/重做、Esc/右键取消、画布外松开、三视图和 720px 窄屏流程；node tests/browser-tool-groups.cjs 通过新增自由图形后的键盘循环、十条真实创建路径、触屏菜单、42 组屏宽/主题/菜单布局及减少动态效果检查，无页面异常或在线请求。已查看桌面图形与窄屏截图；证据在 qa/freehand/ 和 qa/tool-groups/。初轮浏览器驱动对撤销后的选择与自交夹具假设已修正，最终检查通过。
 - 验证：npm run manual 因系统 Python 为 Microsoft Store 占位入口未能执行；改用本机 bundled Python 3 运行 tools/build-manual.py 成功，同步 8 节教程和 7 段离线媒体。git diff --check 通过（仅既有 LF/CRLF 提示）。未运行本次自由图形的实际 PNG/SVG 下载、手机真机、发布归档或远端部署；本次复用既有平面导出，整套回归中的共享导出检查已通过。
 
-## 2026-11-05 · 绘制用户工程平面47直穿S弯
+## 2026-11-06 · 新增 Codex MCP 对话创作与本机图稿联动
 
-- 变更：在用户提供的 Flee_v02 工程副本中，将平面47的1000单位直段改为左右交替起伏的连续路面，两侧各3个突出位；横向偏移为60单位，中央保留80单位宽的贯通直线通道。两端各保留80单位直段与原有200单位接口，末端在相同标高完整衔接平面50。仅修改平面47的轮廓点，保留其ID、名称、楼层、配色、厚度及其他66个组件；桌面原始JSON保持原样，修改后的副本供用户导入。
-- 影响文件：output/平面47_S弯/关卡设计工具箱_工程_v1.2_S弯.json、修改前后局部PNG/SVG及验证报告.json；本次绘制和验证脚本为 .build/create-plane47-sbend.cjs。未修改应用源码或正式工程种子。
-- 验证：`node .build/create-plane47-sbend.cjs` 通过；使用本机Edge载入当前离线网页，原工程和修改后工程均通过原生StudioModel.validate、validGeometry及凹多边形三角化面积检查，平面/立面/立体视图均正常渲染，无页面异常。逐单位采样确认80单位直线通道完整位于路面内，精确核对平面50连接边的200单位宽度及标高；深比较确认仅平面47.points发生变化。实际生成并查看原生SVG渲染的修改后局部PNG。Windows沙箱启动遇到1385错误，获准后运行同一专项脚本完成检查。
-- 未运行：车辆物理/驾驶验证、整套应用回归、重新构建及发布；本次只修改用户工程几何副本。未将新副本导入用户当前打开的浏览器标签页，界面控制工具仍因Windows沙箱启动失败无法连接。
+- 变更：新增 7 个 stdio MCP 工具：连接、读取状态、查询原生结构、原子批次编辑、撤销/重做、图稿/三视图/选择切换、SVG/工程 JSON 导出。支持对话创建或修改空间图、楼层、平面、墙壁、楼梯、爬梯、旋转楼梯、宿主空洞、路线、文字、标记及节奏曲线阶段/事件；新空间图为空，不改正式启动种子。复用 StudioModel 与 app.js 的 mutate/history，批内任一步失败全部回滚，每批一次撤销；宿主空洞和编组沿用现有关联语义。写入检查页面级 revision、锁定状态与正在进行的手动输入/拖拽/对话框；无变化的补丁保留选择且不新增历史。SVG 使用完整图稿取景和对应文字对比色图像，输出不含编辑手柄。
+- 变更：新增仅监听 127.0.0.1 的 HTTP 浏览器桥接，使用随机配对令牌、Host/Origin 校验和单页面占用；提供连接状态与“断开 AI”按钮，清理超时/取消请求，防止断开后的在途轮询恢复连接。客户端仅在本机服务页面注入，原离线 HTML 保持 connect-src none，不自动接管原有网页或上传工程。默认端口 32123，占用时另选端口；文档说明按端口隔离的暂存、JSON 备份和超时后先核对状态的恢复方式。
+- 变更：新增 npm MCP 启动、配置与专项验证命令；配置脚本保留其他设置，使用本机 Node/源码绝对路径生成 Git 忽略的 .codex/config.toml。本次已执行项目注册，codex mcp list 显示 level_design_toolkits 为 enabled。同步 README、内置/外部教程、MCP 接入说明和项目上下文，源码发布清单包含 MCP 说明与相关代码；未修改全局 Codex 配置。
+- 影响文件：src/mcp-operations.js、src/mcp-editor.js、src/app.js、tools/mcp/、tools/build.mjs、tools/release_files.py、package.json、.gitignore、.codex/config.toml（本机配置，不提交）、.codex/project-context.md、README.md、src/help/content.json、docs/MCP对话创作.md、docs/使用说明.md、docs/使用说明.html、dist/index.html、tests/helpers/mcp-client.cjs、tests/mcp.test.cjs、tests/browser-mcp.cjs、logs/CHANGELOG.md。
+- 验证：npm run build 通过，最终离线单页 10,727,380 字节；npm test 的 31 组原有应用回归全部通过。最终构建后 node --test tests/mcp.test.cjs 的 2 组检查通过，覆盖原子失败/无效几何/重复 ID/危险字段/正交旋转矩阵、修订冲突、手动输入保护、无操作选择/历史、宿主移动/转层/删除、楼层默认颜色、编组、锁定/解锁、各类原生组件、曲线、JSON/三视图、MCP stdio 协议协商与工具清单、鉴权、Host/Origin、页面占用、超时/取消无补发及断开后的旧轮询拒绝。node tests/browser-mcp.cjs 最终在真实 Chrome 中通过 stdio→HTTP→编辑器全链路，验证中文空间图/空洞/楼梯/路线创建、失败整批回滚、手动改图冲突、输入中拒写、单次撤销/重做、三视图、MCP SVG 与网页实际 SVG 下载、节奏曲线、完整工程 JSON 导出与实际重新导入、主动断开以及原离线页零在线请求；无页面异常，已查看平面、立体与曲线截图，证据在 qa/mcp/。初轮测试驱动的隐藏输入、Host 请求与旧导出菜单选择器假设已修正，最终通过。
+- 验证：npm run manual 因系统 Python 为 Microsoft Store 占位入口失败，改用本机 bundled Python 3 执行 tools/build-manual.py 成功，同步 8 节教程和 7 段离线媒体；node --test tests/changelog-hooks.test.cjs 的 15 项通过。npm run mcp:setup 与 codex mcp list 成功。git diff --check 通过（仅既有 LF/CRLF 提示）。部分 PowerShell/浏览器命令遇到 Windows 沙箱 1385 启动错误，获准后在沙箱外完成对应检查。
+- 未运行：重新开启后的实际 Codex 模型对话、远端/SSH 主机、手机真机、MCP 新增路径的实际 PNG/FBX/OBJ 下载、发布归档与远端部署；本次通过独立 stdio 客户端和真实 Chrome 验证 MCP 完整链路，其他导出复用原有网页功能与整套回归。新配置需在可信项目的新 Codex 对话中加载。
+
+## 2026-11-06 · 精简 AI 联动提示并移入画板下方状态栏
+
+- 变更：按用户要求将连接和主动断开的提示分别简化为“AI 已连接”和“AI 已断开”，删除后缀说明。将固定悬浮提示改为画板下方 .canvas-bottom 状态栏内的普通布局，与选择信息、缩放控件并排，取消浮层背景、边框和阴影；保留“断开 AI”按钮，避免遮挡绘图区。确认当前联动画稿为空且未在编辑后，重启本机服务以加载新脚本，返回更新后的配对地址。
+- 影响文件：tools/mcp/browser.js、tests/browser-mcp.cjs、logs/CHANGELOG.md。
+- 验证：node --check tools/mcp/browser.js 通过。node tests/browser-mcp.cjs 最终在真实 Chrome 中通过原有 MCP 全链路，并新增精简文案及 390/720/1500px 下的位置检查，确认状态提示位于画板下方、留在状态栏内、不遮挡缩放控件、不造成横向溢出，主动断开后仅显示“AI 已断开”；已查看 qa/mcp/status-dock.png。本次实际执行了空间/曲线创建、撤销/重做、修订保护、SVG 下载、JSON 重开、断开与离线页检查。git diff --check 通过（仅既有 LF/CRLF 提示）。沙箱语法检查初次遇到 Windows 1385，获准后在沙箱外完成。
+- 未运行：整套 npm test、网页重新构建与教程生成、发布归档和远端部署；本次仅修改本机服务注入的浏览器脚本与其专项测试，不涉及 dist/index.html 内嵌代码。当前应用内浏览器自动检查工具连续启动失败，已用独立真实 Chrome 完成布局验收。
+
+## 2026-11-06 · 修复 AI 状态在底栏中偏离画板中心
+
+- 变更：将联动状态所在底栏改为左右等宽、中间自适应的三列布局，使“AI 已连接”及断开按钮组合、“AI 已断开”文字均相对画板水平居中，不再受左侧选择信息或右侧缩放控件宽度影响。根据实际可用宽度自动将狭窄窗口的状态提示放到独立居中行，避免与缩放控件重叠，仍保持在绘图区下方。确认当前无连接中的图稿页后重启本机服务，加载更新后的注入脚本。
+- 影响文件：tools/mcp/browser.js、tests/browser-mcp.cjs、logs/CHANGELOG.md。
+- 验证：node --check tools/mcp/browser.js 通过；node tests/browser-mcp.cjs 在真实 Chrome 中通过，新增 390/720/1500px、长短两种选择信息、已连接与已断开两种状态的中心位置断言，均与画板中心偏差小于 1px，且不遮挡画板/缩放控件、不产生横向溢出。原有 MCP 空间与曲线编辑、撤销/重做、修订保护、SVG 下载、JSON 重开、主动断开及离线检查同时通过；已查看 qa/mcp/status-dock.png。git diff --check 通过（仅既有 LF/CRLF 提示）。
+- 未运行：整套 npm test、网页重新构建、教程生成、发布归档和远端部署；本次改动仅涉及服务注入的状态栏布局及专项浏览器检查，不改变离线单页内嵌代码或工程数据。
+
+## 2026-11-06 · 修复删除组件后楼层多选范围被重置
+
+- 变更：先选中楼层 A，再通过 Ctrl、Command 或 Shift 额外选中楼层 B，删除 B 的组件后继续保留原有楼层显示范围，不再退回只显示当前楼层 A。Delete、Backspace、属性面板删除按钮及剪切共用此行为；删除后清空组件选择，宿主仍携带附属空洞一起删除，每次操作保留一次撤销/重做语义。
+- 影响文件：src/app.js、tests/verify-floor-list.cjs、tests/browser-floor-list.cjs、dist/index.html、logs/CHANGELOG.md；本次浏览器证据在 qa/floor-list/。
+- 验证：新增回归在修复前以“Delete keeps both floors selected”断言失败，复现楼层选择由 A、B 变为 A；修复后 npm run build、node tests/verify-floor-list.cjs 均通过，覆盖 Ctrl/Shift/Command 多选、四种删除入口、剩余组件的列表/画布显示、楼层 A 数据不变、宿主空洞及完整工程的单次撤销/重做。node tests/browser-floor-list.cjs 在真实 Chrome 中通过，实测 Delete、属性面板删除和 Ctrl+X 后两层仍高亮且剩余组件可见，同时通过原有列表排序、三视图、响应式布局和实际 SVG/PNG 导出检查；无页面异常和网络请求，已查看 multi-floor-after-delete.png。源码与测试的 git diff --check 通过，仅有既有 LF/CRLF 提示。楼层专项与浏览器命令遇到 Windows 沙箱 1385 启动错误后，在获准的沙箱外完成。
+- 未运行：教程生成、发布归档和远端部署；本次修复不改变操作说明或工程格式。
+- 验证（整套回归）：本次 npm test 的 31 组应用回归全部通过，包含组件与楼层列表、空间交互、三视图变换、宿主空洞、工程历史、几何缓存、切割与集合运算、FBX/OBJ 导出及旧工程兼容。
+
+## 2026-11-06 · 立体图左下角新增世界坐标轴指示器
+
+- 变更：立体图画布左下角显示红色 X、绿色 Y、蓝色 Z 坐标轴，直接使用当前场景相机的投影方向，随右键转头、方位/俯仰调整及预设视角同步旋转。指示器固定屏幕位置与大小，平移、前进或后退不会改变其尺寸；轴线按深度排列，文字带图稿背景描边，接近轴向或俯仰极限时保持有限坐标。WebGL 与 SVG 回退渲染均显示，空工程、平面图、立面图及曲线图自动隐藏。
+- 变更：底部控制栏及绘制提示为左下角指示器留出位置，窄屏下不相互重叠；指示器允许鼠标穿透，不进入图稿 SVG、JSON 或撤销历史。同步内置帮助、外部教程和离线网页。
+- 影响文件：src/camera-navigation.js、src/editor.html、src/editor.css、src/help/content.json、tests/browser-orientation.cjs、docs/使用说明.md、docs/使用说明.html、dist/index.html、logs/CHANGELOG.md；浏览器证据在 qa/orientation/。
+- 验证：npm run build 通过；使用 bundled Python 3 执行 tools/build-manual.py 通过（8 节教程、7 段离线媒体）。node tests/verify-camera-navigation.cjs 通过；npm test 整套应用回归通过，覆盖相机、三视图变换、吸附、属性、组件与楼层列表、导出、切割/集合运算、自由绘制及几何缓存。
+- 验证：node tests/browser-orientation.cjs 在真实 Chrome 中通过实际右键转头、W 前进与中键平移，核对指示方向与场景世界轴一致、25 组方位/俯仰组合及预设视角、鼠标穿透、JSON/历史/图稿 SVG 隔离；1600/720/390px、深浅主题及深浅图稿背景下均位于画布左下角，文字无裁切、控制栏与路线提示无重叠，切换视图正确隐藏，SVG 回退保留三轴。无页面异常或在线请求，已查看桌面浅色、窄屏深色及 SVG 回退截图。初轮脚本点击窄屏隐藏菜单超时，改用实际 L 快捷键后通过。
+- 验证：git diff --check 通过，仅有既有 LF/CRLF 提示。相机专项、浏览器检查及差异读取遇到 Windows 沙箱 1385 启动错误后，获准在沙箱外完成。
+- 未运行：手机真机、浏览器实际 PNG/SVG 下载、发布归档及远端部署；本次为画布独立辅助层，已核对其不在图稿 SVG 内，并通过原有导出自动回归。
+
+## 2026-11-06 · 修复集合与切割结果的轮廓及组件吸附
+
+- 变更：平面、墙壁与集合实体的选中轮廓改为根据当前视图中的实际材料面生成，保留凹口、贯穿孔及分离区域，不再用凸包跨接空白区域；补齐集合实体和墙体合并面上内孔边缘的描边。选中轮廓保持细虚线，通过外侧遮罩限制实际线宽并采用平头虚线，修正初版粗黑轮廓和圆头填满虚线间隙的问题。
+- 变更：集合实体可与普通实体及其他集合实体双向吸附，也可连接楼梯、爬梯和旋转楼梯。墙体吸附直接采集实际几何边缘，保留切割后的斜边、异形占地和开口；平面内部开口边同时作为移动/旋转/尺寸吸附的来源和目标。单独编辑墙体开口时排除其自身原始边缘，避免自吸附干扰。保留网格优先、Ctrl 暂停、可见性与楼层范围、立面深度过滤及原有撤销/取消语义。
+- 影响文件：src/move-snapping.js、src/render.js、src/render-features.js、src/advanced-render.js、src/advanced-interactions.js、src/help/content.json、tests/verify-result-boundaries.cjs、tests/browser-result-boundaries.cjs、package.json、dist/index.html、docs/使用说明.md、docs/使用说明.html、logs/CHANGELOG.md；浏览器证据位于 qa/result-boundaries/ 与 qa/sets/。
+- 验证：新增专项回归在修复前以集合实体边缘未纠正吸附位移失败；修复后 npm run build、node tests/verify-result-boundaries.cjs 与 npm test 全部通过，整套共 32 组，覆盖双向集合吸附、楼梯类连接、集合旋转/缩放、实际斜墙边、内孔来源/目标、孔边描边长度、三视图轮廓、旧工程与几何缓存。完整回归期间发现并修复了墙体开口尺寸自吸附问题，复跑通过。node tests/browser-result-boundaries.cjs 在真实 Chrome 中通过，覆盖真实拖动、提示线、Ctrl/Esc、单次撤销/重做、裁剪内孔吸附，以及凹口/孔洞/分离区域的像素检查；追加线宽与虚线间隙像素断言通过，已查看最终 notch-plan.png 和 hole-solid.png。node tests/browser-sets.cjs 通过，包含真实集合菜单、编辑、保存恢复、8 种布局及 PNG/SVG/OBJ/FBX 实际下载，独立读取器确认体积、空腔和内壁；无页面异常或网络请求。使用实际 Python 运行 tools/build-manual.py，同步生成 8 节教程与 7 段离线 GIF。git diff --check 通过，仅有既有 LF/CRLF 提示。
+- 未运行：发布归档和远端部署；本次交付为本地构建网页与同步教程。
+
+## 2026-11-06 · 优化平面缩放平移与立体视角刷新
+
+- 变更：平面图和立面图平移、缩放时复用投影、命中数据和图稿 SVG 节点，只更新取景、网格、参考线、对比色及编辑辅助层；普通编辑、撤销重做和切换图稿/视图时重建缓存。高频鼠标输入和键盘相机移动合并到显示帧，释放视角拖动时不再重建整套侧栏及场景；拖动期间复用视窗尺寸，窗口调整后重新测量。
+- 变更：立体图缓存实体的共享世界顶点、面法线和包围范围，选择轮廓直接投影已有数据，整层选择时复用 GPU 包围范围计算手柄基点。保留宿主空洞、结构开口及独立空洞选择，并兼容工作区同期新增的材料轮廓 regions 数据。凸包顶点去重改用数值空间分桶，保持原有 epsilon 与首次出现规则。新增 npm run test:viewport，提供确定性缓存/历史回归和真实 Chrome 视角压力采样。
+- 影响文件：src/app.js、src/interactions.js、src/camera-navigation.js、src/webgl-viewport.js、src/world-transform.js、src/geometry.js、src/render.js、src/render-features.js、src/view-features.js、src/advanced-render.js、package.json、tests/viewport-navigation.test.cjs、tests/browser-viewport-performance.cjs、dist/index.html、logs/CHANGELOG.md；本机性能记录及截图位于 qa/viewport-performance/。
+- 验证：npm run build 通过；最终构建的 npm test 全部 32 组通过。node --test tests/viewport-navigation.test.cjs 通过，覆盖高频平移/滚轮合并、图稿节点和投影复用、命中一致、缩放标签、模型与历史隔离、编辑/撤销/重做/切换图稿与视图失效，以及 50 组旧版凸包结果对照。node tests/verify-camera-navigation.cjs、node tests/verify-world-move.cjs 通过；node tests/browser-camera-navigation.cjs 在真实 Chrome 中通过。
+- 验证：node tests/browser-viewport-performance.cjs comparison-before --baseline 与 node tests/browser-viewport-performance.cjs comparison-after --expect-reuse 完成同机采样。240 个混合实体、宿主空洞及结构开口、每帧 4 次输入的场景中，平面/立面平移帧间隔中位数分别由 834.1/934.2 ms 降至 16.7/33.3 ms，整层选择后的立体旋转由 767.6 ms 降至 99.6 ms；平面/立面平移与缩放不再调用组件几何或重建投影，立体 96 次输入合并为 24 次 GPU 绘制且几何调用为 0，96 个材料轮廓与完整场景路径一致。大量组件全选时的材料轮廓追踪和 SVG 绘制仍有开销，数值不代表任意工程或硬件的固定帧率。
+- 验证：node tests/browser-result-boundaries.cjs 最终独立两次通过真实拖动、孔洞/凹形/分离材料的像素检查、三视图和历史；中间一次孔洞边界像素断言未通过，保留原断言复跑通过。额外运行工作区同期新增的 node tests/browser-selection-dashes.cjs，立体图 maxRun=28 的虚线长度断言仍未通过，该专项未纳入 npm test，尚需在对应轮廓调整中复核。git diff --check 通过，仅有既有 LF/CRLF 提示。Windows 沙箱 1385 启动失败的必要命令获准后在沙箱外执行。
+- 未运行：手机真机、浏览器实际 PNG/SVG 下载、教程生成、发布归档和远端部署；本次更新本地离线网页，已运行既有自动导出回归。
+
+## 2026-11-06 · 修复复杂组件选中虚线反复叠成黑线
+
+- 变更：修正仅减小线宽仍会叠黑的问题。先将选中组件各投影面的三像素描边外扩范围合并，求出完整闭合轮廓，再统一绘制一套 2.5 像素细虚线；虚线不再在每个分面重新起笔，也不会因透视下的密集台阶、相邻细缝或重合边缘互相填满间隙。轮廓结果按组件、投影和显示比例缓存，保留原材料遮罩及可见的凹口、孔洞和分离区域，模型、吸附及工程数据不变。透视 WebGL 选中路径同步提供投影区域；补正内孔向内偏移时的负数斜接上限。
+- 影响文件：src/advanced-interactions.js、src/render-features.js、src/webgl-viewport.js、tests/verify-result-boundaries.cjs、tests/browser-selection-dashes.cjs、dist/index.html、logs/CHANGELOG.md；浏览器证据位于 qa/selection-dashes/ 和 qa/result-boundaries/。
+- 验证：新增 node tests/browser-selection-dashes.cjs 在修复前复现 48 面集合实体的边缘间隙率为 0、连续黑色采样长度为 340；最终修复后通过，16/48 面案例的相同直边采样间隙率约 41.5%、最长黑段为 9，三视图及滚轮缩放后的整圈采样间隙率约 42%–46%，最长黑段为 7–16，无页面异常，已查看最终立面与透视截图。node tests/verify-result-boundaries.cjs 通过，新增 48 片分面合并为一条四角轮廓、孔洞、反向绕序、重叠区域和点接触的独立点位判断，原有集合/裁剪吸附、历史及导出辅助元素排除检查保持通过。轮廓合并初版完成后执行 npm test，32 组全部通过；随后完成描边外扩范围合并的最终调整，重新执行 npm run build、node tests/verify-result-boundaries.cjs、node tests/browser-selection-dashes.cjs 和 node tests/browser-result-boundaries.cjs，全部通过。git diff --check 通过，仅有既有 LF/CRLF 提示。
+- 未运行：本次浏览器实际导出下载、教程重建、发布归档及远端部署；此次只修复选中辅助轮廓，原有操作说明继续适用，已由专项检查确认辅助轮廓不进入导出 SVG。
